@@ -1,4 +1,4 @@
-const CACHE = 'contec-challenge-v4';
+const CACHE = 'contec-challenge-v5';
 const ASSETS = [
   '/pdeometer/',
   '/pdeometer/index.html',

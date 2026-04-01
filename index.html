@@ -41,7 +41,7 @@
     #screen-login{align-items:center;justify-content:center;padding:2rem 1.25rem;background:linear-gradient(160deg,var(--navy) 0%,var(--navy2) 60%,#1B4F8E 100%);}
     .login-card{width:100%;max-width:380px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.15);border-radius:24px;padding:2.5rem 2rem;backdrop-filter:blur(10px);}
     .login-logo{text-align:center;margin-bottom:2rem;}
-    .login-logo img{width:160px;height:auto;display:block;margin:0 auto 14px;}
+    .login-logo img{width:160px;height:auto;display:block;margin:0 auto 14px;background:#fff;border-radius:12px;padding:10px 16px;}
     .login-logo .app-name{font-size:20px;font-weight:900;color:#fff;letter-spacing:1px;}
     .login-logo .app-sub{font-size:12px;color:rgba(255,255,255,0.6);margin-top:4px;}
     .field{margin-bottom:14px;}
@@ -59,7 +59,7 @@
 
     /* ── TOPBAR ── */
     .topbar{background:var(--navy);padding:0 1.25rem;height:52px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;}
-    .topbar img{height:28px;width:auto;}
+    .topbar img{height:26px;width:auto;background:#fff;border-radius:6px;padding:3px 8px;}
     .topbar-right{display:flex;align-items:center;gap:10px;}
     .topbar-name{font-size:13px;color:rgba(255,255,255,0.7);}
     .topbar-name strong{color:#fff;font-weight:700;}
@@ -1081,12 +1081,13 @@ async function loadQuizAdminPage() {
   if(!quizzes.length){el.innerHTML='<div class="rank-empty" style="background:var(--card);border-radius:12px;border:1px solid var(--border);">이번 달 등록된 문제가 없습니다</div>';return;}
   el.innerHTML=quizzes.map(q=>{
     const isThisWeek=q.week_key===getWeekKey();
-    return `<div style="background:var(--card);border-radius:12px;border:1.5px solid ${isThisWeek?'#7B5EA7':' var(--border)'};padding:1rem;margin-bottom:8px;">
+    return `<div style="background:var(--card);border-radius:12px;border:1.5px solid ${isThisWeek?'#7B5EA7':'var(--border)'};padding:1rem;margin-bottom:8px;">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
         <span style="font-size:11px;font-weight:700;color:${isThisWeek?'#7B5EA7':'var(--text-hint)'};">${isThisWeek?'📍 이번 주':'지난 주'} · ${q.week_key||''}</span>
+        <span style="font-size:11px;color:var(--text-hint);">✍️ ${q.created_by}</span>
       </div>
       <div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:4px;">${q.question}</div>
-      <div style="font-size:12px;color:var(--green);">정답: ${q.answer}</div>
+      <div style="font-size:12px;color:var(--green);margin-bottom:2px;">정답: ${q.answer}</div>
       ${q.hint?`<div style="font-size:11px;color:var(--text-hint);">힌트: ${q.hint}</div>`:''}
     </div>`;
   }).join('');
