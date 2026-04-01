@@ -1,4 +1,4 @@
-const CACHE = 'contec-pedometer-v2';
+const CACHE = 'contec-challenge-v3';
 const ASSETS = [
   '/pdeometer/',
   '/pdeometer/index.html',
@@ -23,7 +23,14 @@ self.addEventListener('activate', e => {
 });
 
 self.addEventListener('fetch', e => {
+  // 네트워크 우선 → 실패 시 캐시
   e.respondWith(
-    caches.match(e.request).then(r => r || fetch(e.request).catch(() => caches.match('/pdeometer/index.html')))
+    fetch(e.request)
+      .then(r => {
+        const clone = r.clone();
+        caches.open(CACHE).then(c => c.put(e.request, clone));
+        return r;
+      })
+      .catch(() => caches.match(e.request))
   );
 });
