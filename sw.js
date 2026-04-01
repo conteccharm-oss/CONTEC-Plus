@@ -1,9 +1,11 @@
-const CACHE = 'contec-pedometer-v1';
+const CACHE = 'contec-pedometer-v2';
 const ASSETS = [
   '/pdeometer/',
   '/pdeometer/index.html',
   '/pdeometer/logo.png',
-  '/pdeometer/manifest.json'
+  '/pdeometer/manifest.json',
+  '/pdeometer/icon-192.png',
+  '/pdeometer/icon-512.png'
 ];
 
 self.addEventListener('install', e => {
