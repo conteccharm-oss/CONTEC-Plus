@@ -41,7 +41,7 @@
     #screen-login{align-items:center;justify-content:center;padding:2rem 1.25rem;background:linear-gradient(160deg,var(--navy) 0%,var(--navy2) 60%,#1B4F8E 100%);}
     .login-card{width:100%;max-width:380px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.15);border-radius:24px;padding:2.5rem 2rem;backdrop-filter:blur(10px);}
     .login-logo{text-align:center;margin-bottom:2rem;}
-    .login-logo img{width:140px;height:auto;display:block;margin:0 auto 14px;filter:brightness(10) invert(0);}
+    .login-logo img{width:140px;height:auto;display:block;margin:0 auto 14px;filter:brightness(0) invert(1);}
     .login-logo .app-name{font-size:20px;font-weight:900;color:#fff;letter-spacing:1px;}
     .login-logo .app-sub{font-size:12px;color:rgba(255,255,255,0.6);margin-top:4px;}
     .field{margin-bottom:14px;}
@@ -212,6 +212,10 @@
       <img src="logo.png" alt="CONTEC"/>
       <div class="app-name">CONTEC 챌린지</div>
       <div class="app-sub">임직원 전용 월간 챌린지 프로그램</div>
+    </div>
+    <div style="display:flex;gap:6px;margin-bottom:1.25rem;">
+      <button id="tab-user" onclick="switchLoginTab('user')" style="flex:1;padding:8px;border-radius:8px;border:1px solid rgba(255,255,255,0.3);background:rgba(255,255,255,0.15);color:#fff;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer;">👤 직원</button>
+      <button id="tab-admin" onclick="switchLoginTab('admin')" style="flex:1;padding:8px;border-radius:8px;border:1px solid rgba(255,255,255,0.1);background:transparent;color:rgba(255,255,255,0.5);font-size:13px;font-weight:700;font-family:inherit;cursor:pointer;">⚙️ 관리자</button>
     </div>
     <div class="field">
       <label>이름</label>
@@ -440,8 +444,9 @@
 //  설정
 // ═══════════════════════════════════════
 const CONFIG = {
-  password: 'contec2024',
-  adminName: '이슬',  // ← 관리자 이름
+  password: 'contec2024',       // 일반 직원 암호
+  adminPassword: 'contec@admin', // 관리자 암호 ← 변경 가능
+  adminName: '이슬',              // 관리자 이름 ← 변경 가능
   supabaseUrl: 'https://ifytanvhskqmbvmjoohi.supabase.co',
   supabaseKey: 'sb_publishable_jRme4n_S6tw5U3HBmv4Rgw_hKOfDXIy',
 };
@@ -493,10 +498,16 @@ async function doLogin() {
   const pw=document.getElementById('inp-pw').value;
   const err=document.getElementById('login-err');
   if(!name){err.textContent='이름을 입력해주세요';err.style.display='block';return;}
-  if(pw!==CONFIG.password){err.textContent='암호가 올바르지 않습니다';err.style.display='block';return;}
+  const isAdminTab = document.getElementById('tab-admin').style.background === 'rgba(255,255,255,0.15)';
+  if(isAdminTab) {
+    if(pw!==CONFIG.adminPassword){err.textContent='관리자 암호가 올바르지 않습니다';err.style.display='block';return;}
+    app.isAdmin=true;
+  } else {
+    if(pw!==CONFIG.password){err.textContent='암호가 올바르지 않습니다';err.style.display='block';return;}
+    app.isAdmin=false;
+  }
   err.style.display='none';
   app.name=name;
-  app.isAdmin=(name===CONFIG.adminName);
   localStorage.setItem('contec_session',JSON.stringify({name}));
   document.getElementById('disp-name').textContent=name;
   document.getElementById('mb-title').textContent=getYMLabel();
@@ -965,6 +976,29 @@ function getWeekKey() {
   const startOfYear = new Date(d.getFullYear(), 0, 1);
   const week = Math.ceil(((d - startOfYear) / 86400000 + startOfYear.getDay() + 1) / 7);
   return d.getFullYear() + '-W' + String(week).padStart(2, '0');
+}
+
+// 로그인 탭 전환
+function switchLoginTab(type) {
+  const userBtn = document.getElementById('tab-user');
+  const adminBtn = document.getElementById('tab-admin');
+  if(type === 'user') {
+    userBtn.style.background = 'rgba(255,255,255,0.15)';
+    userBtn.style.color = '#fff';
+    userBtn.style.borderColor = 'rgba(255,255,255,0.3)';
+    adminBtn.style.background = 'transparent';
+    adminBtn.style.color = 'rgba(255,255,255,0.5)';
+    adminBtn.style.borderColor = 'rgba(255,255,255,0.1)';
+    document.querySelector('.login-hint').textContent = '암호를 모르시면 담당자에게 문의하세요';
+  } else {
+    adminBtn.style.background = 'rgba(255,255,255,0.15)';
+    adminBtn.style.color = '#fff';
+    adminBtn.style.borderColor = 'rgba(255,255,255,0.3)';
+    userBtn.style.background = 'transparent';
+    userBtn.style.color = 'rgba(255,255,255,0.5)';
+    userBtn.style.borderColor = 'rgba(255,255,255,0.1)';
+    document.querySelector('.login-hint').textContent = '관리자 전용 페이지입니다';
+  }
 }
 
 if('serviceWorker' in navigator) window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
