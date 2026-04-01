@@ -468,25 +468,79 @@
 // ═══════════════════════════════════════════
 //  설정 — 이 부분만 수정하면 됩니다
 // ═══════════════════════════════════════════
+//  설정
+// ═══════════════════════════════════════════
 const CONFIG = {
-  password: 'contec2024',   // ← 암호 변경
-  goal: 10000,              // ← 목표 걸음 수
+  password: 'contec2024',
+  goal: 10000,
+  supabaseUrl: 'https://ifytanvhskqmbvmjoohi.supabase.co',
+  supabaseKey: 'sb_publishable_jRme4n_S6tw5U3HBmv4Rgw_hKOfDXIy',
 };
 
-// ═══════════════════════════════════════════
-//  샘플 랭킹 데이터 (실제 서버 연동 전까지 사용)
-//  배포 후 서버 연동 시 이 부분을 API 호출로 교체
-// ═══════════════════════════════════════════
-let mockRanking = [
-  { name: '김지민', steps: 13450 },
-  { name: '이수현', steps: 11200 },
-  { name: '박민준', steps: 9800 },
-  { name: '최찬우', steps: 8430 },
-  { name: '정유진', steps: 7100 },
-];
-
-const weeklyHistory = [3200, 8500, 11200, 7600, 9900, 5400, 0]; // 월~일
 const DAYS = ['월', '화', '수', '목', '금', '토', '일'];
+
+// ═══════════════════════════════════════════
+//  Supabase API 헬퍼
+// ═══════════════════════════════════════════
+const SB = {
+  headers: {
+    'Content-Type': 'application/json',
+    'apikey': CONFIG.supabaseKey,
+    'Authorization': 'Bearer ' + CONFIG.supabaseKey,
+  },
+
+  // 이번 달 전체 랭킹 가져오기
+  async getRanking() {
+    const ym = getYearMonth();
+    const res = await fetch(
+      CONFIG.supabaseUrl + '/rest/v1/steps?year_month=eq.' + ym + '&order=steps.desc',
+      { headers: this.headers }
+    );
+    return res.ok ? res.json() : [];
+  },
+
+  // 내 기록 가져오기 (이번 달)
+  async getMyRecord(name) {
+    const ym = getYearMonth();
+    const res = await fetch(
+      CONFIG.supabaseUrl + '/rest/v1/steps?name=eq.' + encodeURIComponent(name) + '&year_month=eq.' + ym,
+      { headers: this.headers }
+    );
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data[0] || null;
+  },
+
+  // 걸음 수 저장 (없으면 insert, 있으면 update)
+  async saveSteps(name, steps) {
+    const ym = getYearMonth();
+    const existing = await this.getMyRecord(name);
+    if (existing) {
+      await fetch(
+        CONFIG.supabaseUrl + '/rest/v1/steps?id=eq.' + existing.id,
+        {
+          method: 'PATCH',
+          headers: { ...this.headers, 'Prefer': 'return=minimal' },
+          body: JSON.stringify({ steps, updated_at: new Date().toISOString() })
+        }
+      );
+    } else {
+      await fetch(
+        CONFIG.supabaseUrl + '/rest/v1/steps',
+        {
+          method: 'POST',
+          headers: { ...this.headers, 'Prefer': 'return=minimal' },
+          body: JSON.stringify({ name, steps, year_month: ym })
+        }
+      );
+    }
+  }
+};
+
+function getYearMonth() {
+  const d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+}
 
 // ═══════════════════════════════════════════
 //  앱 상태
@@ -532,19 +586,26 @@ function doLogin() {
   app.activeMin = 0;
   document.getElementById('disp-name').textContent = name;
 
-  // 오늘 저장된 걸음 수 불러오기
+  // 로컬 캐시 먼저 불러오기
   try {
-    const today = new Date().toISOString().slice(0,10);
     const saved = JSON.parse(localStorage.getItem('contec_steps'));
-    if (saved && saved.date === today && saved.name === name) {
+    if (saved && saved.ym === getYearMonth() && saved.name === name) {
       app.steps = saved.steps;
     }
   } catch(e) {}
 
   updateUI();
-  renderRanking();
   renderWeekly();
   showScreen('screen-main');
+
+  // Supabase에서 이번 달 내 기록 불러오기
+  SB.getMyRecord(name).then(rec => {
+    if (rec && rec.steps > app.steps) {
+      app.steps = rec.steps;
+      updateUI();
+    }
+    loadRanking();
+  });
 }
 
 document.getElementById('btn-login').addEventListener('click', doLogin);
@@ -643,12 +704,16 @@ function onMotion(e) {
 function addSteps(n) {
   app.steps += n;
   updateUI();
-  renderRanking();
-  // 로컬 저장
+  // 로컬 저장 (즉시)
   try {
-    const today = new Date().toISOString().slice(0,10);
-    localStorage.setItem('contec_steps', JSON.stringify({ date: today, steps: app.steps, name: app.name }));
+    localStorage.setItem('contec_steps', JSON.stringify({
+      ym: getYearMonth(), steps: app.steps, name: app.name
+    }));
   } catch(e) {}
+  // Supabase 저장 (5걸음마다 또는 수동입력시)
+  if (n >= 100 || app.steps % 5 === 0) {
+    SB.saveSteps(app.name, app.steps).then(() => loadRanking());
+  }
 }
 
 // ═══════════════════════════════════════════
@@ -667,46 +732,46 @@ function updateUI() {
 }
 
 // ═══════════════════════════════════════════
-//  랭킹 렌더
+//  랭킹 (Supabase 연동)
 // ═══════════════════════════════════════════
-function renderRanking() {
-  const list = [...mockRanking];
-  const myIdx = list.findIndex(r => r.name === app.name);
-  if (myIdx >= 0) list[myIdx] = { ...list[myIdx], steps: app.steps };
-  else list.push({ name: app.name, steps: app.steps });
-  list.sort((a, b) => b.steps - a.steps);
-
-  const maxSteps = list[0]?.steps || 1;
+async function loadRanking() {
   const el = document.getElementById('rank-list');
-
-  if (!list.length) {
-    el.innerHTML = '<div class="rank-empty">아직 참가자가 없습니다</div>';
-    return;
+  try {
+    const list = await SB.getRanking();
+    if (!list.length) {
+      el.innerHTML = '<div class="rank-empty">이번 달 아직 참가자가 없습니다</div>';
+      return;
+    }
+    const maxSteps = list[0]?.steps || 1;
+    const ym = getYearMonth();
+    const [y, m] = ym.split('-');
+    el.innerHTML = list.map((r, i) => {
+      const rank = i + 1;
+      const isMe = r.name === app.name;
+      const numCls = rank <= 3 ? 'r' + rank : '';
+      const medal = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : rank;
+      const barPct = Math.round(r.steps / maxSteps * 100);
+      const init = r.name.slice(0, 1) + '○';
+      return `
+      <div class="rank-row ${isMe ? 'is-me' : ''}">
+        <div class="rank-num ${numCls}">${typeof medal === 'string' ? medal : rank}</div>
+        <div class="rank-avatar">${init}</div>
+        <div class="rank-info">
+          <div class="rank-name">${r.name}${isMe ? ' (나)' : ''}</div>
+          <div class="rank-bar-bg"><div class="rank-bar-fill" style="width:${barPct}%"></div></div>
+        </div>
+        <div class="rank-steps">
+          <div class="rank-steps-num">${r.steps.toLocaleString('ko-KR')}</div>
+          <div class="rank-steps-lbl">걸음</div>
+        </div>
+      </div>`;
+    }).join('') + `<div style="text-align:center;padding:10px;font-size:12px;color:var(--text-hint)">${y}년 ${m}월 누적 랭킹</div>`;
+  } catch(e) {
+    el.innerHTML = '<div class="rank-empty">랭킹을 불러오는 중...</div>';
   }
-
-  el.innerHTML = list.map((r, i) => {
-    const rank = i + 1;
-    const isMe = r.name === app.name;
-    const numCls = rank <= 3 ? 'r' + rank : '';
-    const medal = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : rank;
-    const barPct = Math.round(r.steps / maxSteps * 100);
-    const init = r.name.slice(0, 1) + '○';
-
-    return `
-    <div class="rank-row ${isMe ? 'is-me' : ''}">
-      <div class="rank-num ${numCls}">${typeof medal === 'string' ? medal : rank}</div>
-      <div class="rank-avatar">${init}</div>
-      <div class="rank-info">
-        <div class="rank-name">${r.name}${isMe ? ' (나)' : ''}</div>
-        <div class="rank-bar-bg"><div class="rank-bar-fill" style="width:${barPct}%"></div></div>
-      </div>
-      <div class="rank-steps">
-        <div class="rank-steps-num">${r.steps.toLocaleString('ko-KR')}</div>
-        <div class="rank-steps-lbl">걸음</div>
-      </div>
-    </div>`;
-  }).join('');
 }
+
+function renderRanking() { loadRanking(); }
 
 // ═══════════════════════════════════════════
 //  주간 차트 렌더
