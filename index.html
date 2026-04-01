@@ -393,7 +393,13 @@
         <div class="qs-title">🚀 우주 퀴즈 릴레이</div>
         <div class="qs-alive">생존자 <span id="quiz-alive-count">-</span>명</div>
       </div>
-      <div style="font-size:12px;opacity:0.7;">정답을 맞히면 다음 문제를 등록할 수 있어요.<br>틀리면 즉시 탈락! 마지막 생존자가 1위입니다.</div>
+      <div style="font-size:12px;opacity:0.8;line-height:1.8;">
+        📌 관리자가 <strong>매주 1문제</strong> 등록<br>
+        ⏱️ <strong>1분 이내</strong> 정답 입력<br>
+        ✅ 정답 → 생존 계속<br>
+        💥 오답 또는 시간 초과 → <strong>즉시 탈락</strong><br>
+        🏆 이달의 <strong>최후 1인</strong>이 퀴즈 1위!
+      </div>
     </div>
     <div id="quiz-content"></div>
   </div>
@@ -413,6 +419,21 @@
     <div id="rank-content"><div class="rank-list"><div class="rank-empty">불러오는 중...</div></div></div>
   </div>
 
+  <!-- 관리자 퀴즈 등록 전용 -->
+  <div class="page" id="page-quiz-admin">
+    <div style="font-size:18px;font-weight:900;color:var(--navy);margin-bottom:1.25rem;">🚀 퀴즈 등록</div>
+    <div class="quiz-register-card" style="margin-bottom:1rem;">
+      <div class="quiz-register-title">이번 주 문제 등록</div>
+      <div style="font-size:12px;color:var(--text-hint);margin-bottom:1rem;">주 1회 등록 · 우주/위성 관련 문제를 출제해주세요</div>
+      <div class="q-field"><label>문제</label><textarea id="q-question-admin" placeholder="예: 인류 최초로 달에 착륙한 우주선의 이름은?"></textarea></div>
+      <div class="q-field"><label>정답 (정확히 입력)</label><input type="text" id="q-answer-admin" placeholder="예: 아폴로 11호"/></div>
+      <div class="q-field"><label>힌트 (선택)</label><input type="text" id="q-hint-admin" placeholder="예: 1969년 NASA 미션"/></div>
+      <button class="btn-register-quiz" onclick="registerQuizAdmin()">이번 주 문제 등록하기</button>
+    </div>
+    <div class="sec-title">이번 달 등록된 문제</div>
+    <div id="quiz-admin-list"><div class="rank-empty" style="background:var(--card);border-radius:12px;border:1px solid var(--border);">불러오는 중...</div></div>
+  </div>
+
   <!-- 관리자 -->
   <div class="page" id="page-admin">
     <div style="font-size:18px;font-weight:900;color:var(--navy);margin-bottom:1.25rem;">⚙️ 관리자</div>
@@ -426,14 +447,20 @@
     </div>
   </div>
 
-  <div class="bottom-nav" id="bottom-nav">
+  <!-- 직원용 네비 -->
+  <div class="bottom-nav" id="bottom-nav-user">
     <button class="nav-btn active" onclick="switchPage('home')"><div class="nav-icon">🏠</div><div class="nav-label">홈</div></button>
     <button class="nav-btn" onclick="switchPage('steps')"><div class="nav-icon">🚶</div><div class="nav-label">걸음</div></button>
     <button class="nav-btn" onclick="switchPage('carpool')"><div class="nav-icon">🚗</div><div class="nav-label">카풀</div></button>
     <button class="nav-btn" onclick="switchPage('meal')"><div class="nav-icon">🍱</div><div class="nav-label">식판</div></button>
     <button class="nav-btn" onclick="switchPage('quiz')"><div class="nav-icon">🚀</div><div class="nav-label">퀴즈</div></button>
     <button class="nav-btn" onclick="switchPage('ranking')"><div class="nav-icon">🏆</div><div class="nav-label">랭킹</div></button>
-    <button class="nav-btn" id="admin-nav-btn" style="display:none;" onclick="switchPage('admin')"><div class="nav-icon">⚙️</div><div class="nav-label">관리</div></button>
+  </div>
+  <!-- 관리자용 네비 -->
+  <div class="bottom-nav" id="bottom-nav-admin" style="display:none;">
+    <button class="nav-btn active" onclick="switchPage('admin')"><div class="nav-icon">⚙️</div><div class="nav-label">승인관리</div></button>
+    <button class="nav-btn" onclick="switchPage('quiz-admin')"><div class="nav-icon">🚀</div><div class="nav-label">퀴즈등록</div></button>
+    <button class="nav-btn" onclick="switchPage('ranking')"><div class="nav-icon">🏆</div><div class="nav-label">랭킹</div></button>
   </div>
 </div>
 
@@ -512,7 +539,11 @@ async function doLogin() {
   document.getElementById('disp-name').textContent=name;
   document.getElementById('mb-title').textContent=getYMLabel();
   document.getElementById('ranking-ym').textContent=getYMLabel()+' 기준';
-  if(app.isAdmin) document.getElementById('admin-nav-btn').style.display='flex';
+  if(app.isAdmin) {
+    document.getElementById('bottom-nav-user').style.display='none';
+    document.getElementById('bottom-nav-admin').style.display='flex';
+    switchPage('admin');
+  }
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.getElementById('screen-main').classList.add('active');
   loadHomeData();
@@ -526,7 +557,8 @@ document.getElementById('btn-logout').addEventListener('click', ()=>{
   localStorage.removeItem('contec_session');
   app.name=''; app.isAdmin=false;
   document.getElementById('inp-pw').value='';
-  document.getElementById('admin-nav-btn').style.display='none';
+  document.getElementById('bottom-nav-user').style.display='flex';
+  document.getElementById('bottom-nav-admin').style.display='none';
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.getElementById('screen-login').classList.add('active');
 });
@@ -564,6 +596,7 @@ function switchPage(page) {
   if(page==='meal') loadMealRanking();
   if(page==='quiz') loadQuizPage();
   if(page==='admin') loadAdminPage();
+  if(page==='quiz-admin') loadQuizAdminPage();
 }
 
 // ═══════════════════════════════════════
@@ -991,6 +1024,42 @@ function getWeekKey() {
   const startOfYear = new Date(d.getFullYear(), 0, 1);
   const week = Math.ceil(((d - startOfYear) / 86400000 + startOfYear.getDay() + 1) / 7);
   return d.getFullYear() + '-W' + String(week).padStart(2, '0');
+}
+
+// 관리자 퀴즈 등록
+async function registerQuizAdmin() {
+  const question=document.getElementById('q-question-admin').value.trim();
+  const answer=document.getElementById('q-answer-admin').value.trim();
+  const hint=document.getElementById('q-hint-admin').value.trim();
+  if(!question||!answer){showToast('❌ 문제와 정답을 입력해주세요');return;}
+  // 이번 주에 이미 등록했는지 확인
+  const existing=await SB.get('quiz_relay','year_month=eq.'+getYM()+'&week_key=eq.'+getWeekKey());
+  if(existing.length>0){showToast('❌ 이번 주 문제가 이미 등록되어 있습니다');return;}
+  const ok=await SB.post('quiz_relay',{year_month:getYM(),week_key:getWeekKey(),question,answer,hint,created_by:app.name,is_active:true});
+  if(ok){
+    showToast('✅ 이번 주 문제 등록 완료!');
+    document.getElementById('q-question-admin').value='';
+    document.getElementById('q-answer-admin').value='';
+    document.getElementById('q-hint-admin').value='';
+    loadQuizAdminPage();
+  } else { showToast('❌ 등록 실패'); }
+}
+
+async function loadQuizAdminPage() {
+  const el=document.getElementById('quiz-admin-list');
+  const quizzes=await SB.get('quiz_relay','year_month=eq.'+getYM()+'&order=created_at.desc');
+  if(!quizzes.length){el.innerHTML='<div class="rank-empty" style="background:var(--card);border-radius:12px;border:1px solid var(--border);">이번 달 등록된 문제가 없습니다</div>';return;}
+  el.innerHTML=quizzes.map(q=>{
+    const isThisWeek=q.week_key===getWeekKey();
+    return `<div style="background:var(--card);border-radius:12px;border:1.5px solid ${isThisWeek?'#7B5EA7':' var(--border)'};padding:1rem;margin-bottom:8px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+        <span style="font-size:11px;font-weight:700;color:${isThisWeek?'#7B5EA7':'var(--text-hint)'};">${isThisWeek?'📍 이번 주':'지난 주'} · ${q.week_key||''}</span>
+      </div>
+      <div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:4px;">${q.question}</div>
+      <div style="font-size:12px;color:var(--green);">정답: ${q.answer}</div>
+      ${q.hint?`<div style="font-size:11px;color:var(--text-hint);">힌트: ${q.hint}</div>`:''}
+    </div>`;
+  }).join('');
 }
 
 // 로그인 탭 전환
