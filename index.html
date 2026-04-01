@@ -438,14 +438,50 @@
 
   <!-- 관리자 -->
   <div class="page" id="page-admin">
-    <div style="font-size:18px;font-weight:900;color:var(--navy);margin-bottom:1.25rem;">⚙️ 관리자</div>
-    <div class="admin-section">
-      <div class="sec-title">카풀 승인 대기 (<span id="carpool-pending-count">0</span>)</div>
-      <div id="carpool-pending-list"><div class="rank-empty" style="background:var(--card);border-radius:12px;border:1px solid var(--border);">대기 중인 항목이 없습니다</div></div>
+    <div style="font-size:18px;font-weight:900;color:var(--navy);margin-bottom:1rem;">⚙️ 승인 관리</div>
+    <!-- 관리자 탭 -->
+    <div class="rank-tabs" style="margin-bottom:1rem;">
+      <button class="rank-tab active" onclick="switchAdminTab(this,'pending')">⏳ 승인 대기</button>
+      <button class="rank-tab" onclick="switchAdminTab(this,'carpool-all')">🚗 카풀 내역</button>
+      <button class="rank-tab" onclick="switchAdminTab(this,'meal-all')">🍱 식판 내역</button>
+      <button class="rank-tab" onclick="switchAdminTab(this,'steps-all')">🚶 걸음 내역</button>
+      <button class="rank-tab" onclick="switchAdminTab(this,'quiz-all')">🚀 퀴즈 내역</button>
     </div>
-    <div class="admin-section">
-      <div class="sec-title">식판 승인 대기 (<span id="meal-pending-count">0</span>)</div>
-      <div id="meal-pending-list"><div class="rank-empty" style="background:var(--card);border-radius:12px;border:1px solid var(--border);">대기 중인 항목이 없습니다</div></div>
+
+    <!-- 승인 대기 -->
+    <div id="admin-tab-pending">
+      <div class="admin-section">
+        <div class="sec-title">카풀 승인 대기 (<span id="carpool-pending-count">0</span>)</div>
+        <div id="carpool-pending-list"><div class="rank-empty" style="background:var(--card);border-radius:12px;border:1px solid var(--border);">대기 중인 항목이 없습니다</div></div>
+      </div>
+      <div class="admin-section">
+        <div class="sec-title">식판 승인 대기 (<span id="meal-pending-count">0</span>)</div>
+        <div id="meal-pending-list"><div class="rank-empty" style="background:var(--card);border-radius:12px;border:1px solid var(--border);">대기 중인 항목이 없습니다</div></div>
+      </div>
+    </div>
+
+    <!-- 카풀 전체 내역 -->
+    <div id="admin-tab-carpool-all" style="display:none;">
+      <div class="sec-title">이번 달 카풀 전체 내역</div>
+      <div id="admin-carpool-all-list"></div>
+    </div>
+
+    <!-- 식판 전체 내역 -->
+    <div id="admin-tab-meal-all" style="display:none;">
+      <div class="sec-title">이번 달 식판 전체 내역</div>
+      <div id="admin-meal-all-list"></div>
+    </div>
+
+    <!-- 걸음 전체 내역 -->
+    <div id="admin-tab-steps-all" style="display:none;">
+      <div class="sec-title">이번 달 걸음 수 업로드 내역</div>
+      <div id="admin-steps-all-list"></div>
+    </div>
+
+    <!-- 퀴즈 내역 -->
+    <div id="admin-tab-quiz-all" style="display:none;">
+      <div class="sec-title">이번 달 퀴즈 참여 내역</div>
+      <div id="admin-quiz-all-list"></div>
     </div>
   </div>
 
@@ -935,41 +971,155 @@ async function loadRankingPage(type) {
 // ═══════════════════════════════════════
 async function loadAdminPage() {
   if(!app.isAdmin) return;
+  switchAdminTab(document.querySelector('.rank-tab.active[onclick*="pending"]') || document.querySelector('#page-admin .rank-tab'), 'pending');
+}
+
+function switchAdminTab(btn, tab) {
+  document.querySelectorAll('#page-admin .rank-tab').forEach(t=>t.classList.remove('active'));
+  if(btn) btn.classList.add('active');
+  document.querySelectorAll('[id^="admin-tab-"]').forEach(t=>t.style.display='none');
+  const el = document.getElementById('admin-tab-'+tab);
+  if(el) el.style.display='block';
+  if(tab==='pending') loadAdminPending();
+  if(tab==='carpool-all') loadAdminCarpoolAll();
+  if(tab==='meal-all') loadAdminMealAll();
+  if(tab==='steps-all') loadAdminStepsAll();
+  if(tab==='quiz-all') loadAdminQuizAll();
+}
+
+async function loadAdminPending() {
   const ym=getYM();
-  // 카풀 대기
   const cp=await SB.get('carpools','year_month=eq.'+ym+'&status=eq.pending&order=created_at.asc');
   document.getElementById('carpool-pending-count').textContent=cp.length;
   const cpEl=document.getElementById('carpool-pending-list');
-  if(!cp.length){cpEl.innerHTML='<div class="rank-empty" style="background:var(--card);border-radius:12px;border:1px solid var(--border);">대기 중인 항목이 없습니다</div>';} else {
-    cpEl.innerHTML=cp.map(r=>`<div class="pending-card">
-      <div class="pending-info">
-        <div class="pending-title">🚗 ${r.driver} → ${r.passenger}</div>
-        <div class="pending-sub">${r.origin} 카풀 · ${new Date(r.created_at).toLocaleDateString('ko-KR')}</div>
-      </div>
-      ${r.image_url?`<img class="pending-img" src="${r.image_url}" alt="인증샷"/>`:''}
-      <div class="pending-btns">
-        <button class="btn-approve" onclick="approveItem('carpools','${r.id}',true)">✅ 승인</button>
-        <button class="btn-reject" onclick="approveItem('carpools','${r.id}',false)">❌ 거절</button>
-      </div>
-    </div>`).join('');
-  }
-  // 식판 대기
+  cpEl.innerHTML=cp.length?cp.map(r=>`<div class="pending-card">
+    <div class="pending-info">
+      <div class="pending-title">🚗 ${r.driver} → ${r.passenger}</div>
+      <div class="pending-sub">${r.origin} 카풀 · ${new Date(r.created_at).toLocaleDateString('ko-KR')}</div>
+    </div>
+    ${r.image_url?`<img class="pending-img" src="${r.image_url}" alt="인증샷" onclick="window.open('${r.image_url}')"/>`:''}
+    <div class="pending-btns">
+      <button class="btn-approve" onclick="approveItem('carpools','${r.id}',true)">✅ 승인</button>
+      <button class="btn-reject" onclick="approveItem('carpools','${r.id}',false)">❌ 거절</button>
+    </div>
+  </div>`).join(''):'<div class="rank-empty" style="background:var(--card);border-radius:12px;border:1px solid var(--border);">대기 중인 항목이 없습니다</div>';
+
   const ml=await SB.get('meal_certs','year_month=eq.'+ym+'&status=eq.pending&order=created_at.asc');
   document.getElementById('meal-pending-count').textContent=ml.length;
   const mlEl=document.getElementById('meal-pending-list');
-  if(!ml.length){mlEl.innerHTML='<div class="rank-empty" style="background:var(--card);border-radius:12px;border:1px solid var(--border);">대기 중인 항목이 없습니다</div>';} else {
-    mlEl.innerHTML=ml.map(r=>`<div class="pending-card">
-      <div class="pending-info">
-        <div class="pending-title">🍱 ${r.name}</div>
-        <div class="pending-sub">${new Date(r.created_at).toLocaleDateString('ko-KR')} 신청</div>
+  mlEl.innerHTML=ml.length?ml.map(r=>`<div class="pending-card">
+    <div class="pending-info">
+      <div class="pending-title">🍱 ${r.name}</div>
+      <div class="pending-sub">${new Date(r.created_at).toLocaleDateString('ko-KR')} 신청</div>
+    </div>
+    ${r.image_url?`<img class="pending-img" src="${r.image_url}" alt="인증샷" onclick="window.open('${r.image_url}')"/>`:''}
+    <div class="pending-btns">
+      <button class="btn-approve" onclick="approveItem('meal_certs','${r.id}',true)">✅ 승인</button>
+      <button class="btn-reject" onclick="approveItem('meal_certs','${r.id}',false)">❌ 거절</button>
+    </div>
+  </div>`).join(''):'<div class="rank-empty" style="background:var(--card);border-radius:12px;border:1px solid var(--border);">대기 중인 항목이 없습니다</div>';
+}
+
+async function loadAdminCarpoolAll() {
+  const rows=await SB.get('carpools','year_month=eq.'+getYM()+'&order=created_at.desc');
+  const el=document.getElementById('admin-carpool-all-list');
+  el.innerHTML=rows.length?rows.map(r=>{
+    const statusMap={'pending':'⏳ 대기','approved':'✅ 승인','rejected':'❌ 거절'};
+    const colorMap={'pending':'#e65100','approved':'#1b5e20','rejected':'#b71c1c'};
+    return `<div class="pending-card">
+      <div class="pending-info" style="display:flex;justify-content:space-between;align-items:start;">
+        <div>
+          <div class="pending-title">🚗 ${r.driver} → ${r.passenger}</div>
+          <div class="pending-sub">${r.origin} 카풀 · ${new Date(r.created_at).toLocaleDateString('ko-KR')}</div>
+        </div>
+        <span style="font-size:11px;font-weight:700;color:${colorMap[r.status]||'#999'}">${statusMap[r.status]||r.status}</span>
       </div>
-      ${r.image_url?`<img class="pending-img" src="${r.image_url}" alt="인증샷"/>`:''}
+      ${r.image_url?`<img class="pending-img" src="${r.image_url}" alt="인증샷" onclick="window.open('${r.image_url}')"/>`:''}
       <div class="pending-btns">
-        <button class="btn-approve" onclick="approveItem('meal_certs','${r.id}',true)">✅ 승인</button>
-        <button class="btn-reject" onclick="approveItem('meal_certs','${r.id}',false)">❌ 거절</button>
+        ${r.status==='approved'?`<button class="btn-reject" onclick="approveItem('carpools','${r.id}',false)">승인 취소</button>`:''}
+        ${r.status==='rejected'?`<button class="btn-approve" onclick="approveItem('carpools','${r.id}',true)">재승인</button>`:''}
+        ${r.status==='pending'?`<button class="btn-approve" onclick="approveItem('carpools','${r.id}',true)">✅ 승인</button><button class="btn-reject" onclick="approveItem('carpools','${r.id}',false)">❌ 거절</button>`:''}
+        <button style="flex:1;padding:9px;background:#666;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer;" onclick="deleteItem('carpools','${r.id}')">🗑️ 삭제</button>
       </div>
-    </div>`).join('');
+    </div>`;
+  }).join(''):'<div class="rank-empty" style="background:var(--card);border-radius:12px;border:1px solid var(--border);">내역이 없습니다</div>';
+}
+
+async function loadAdminMealAll() {
+  const rows=await SB.get('meal_certs','year_month=eq.'+getYM()+'&order=created_at.desc');
+  const el=document.getElementById('admin-meal-all-list');
+  el.innerHTML=rows.length?rows.map(r=>{
+    const statusMap={'pending':'⏳ 대기','approved':'✅ 승인','rejected':'❌ 거절'};
+    const colorMap={'pending':'#e65100','approved':'#1b5e20','rejected':'#b71c1c'};
+    return `<div class="pending-card">
+      <div class="pending-info" style="display:flex;justify-content:space-between;align-items:start;">
+        <div>
+          <div class="pending-title">🍱 ${r.name}</div>
+          <div class="pending-sub">${new Date(r.created_at).toLocaleDateString('ko-KR')} 신청</div>
+        </div>
+        <span style="font-size:11px;font-weight:700;color:${colorMap[r.status]||'#999'}">${statusMap[r.status]||r.status}</span>
+      </div>
+      ${r.image_url?`<img class="pending-img" src="${r.image_url}" alt="인증샷" onclick="window.open('${r.image_url}')"/>`:''}
+      <div class="pending-btns">
+        ${r.status==='approved'?`<button class="btn-reject" onclick="approveItem('meal_certs','${r.id}',false)">승인 취소</button>`:''}
+        ${r.status==='rejected'?`<button class="btn-approve" onclick="approveItem('meal_certs','${r.id}',true)">재승인</button>`:''}
+        ${r.status==='pending'?`<button class="btn-approve" onclick="approveItem('meal_certs','${r.id}',true)">✅ 승인</button><button class="btn-reject" onclick="approveItem('meal_certs','${r.id}',false)">❌ 거절</button>`:''}
+        <button style="flex:1;padding:9px;background:#666;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer;" onclick="deleteItem('meal_certs','${r.id}')">🗑️ 삭제</button>
+      </div>
+    </div>`;
+  }).join(''):'<div class="rank-empty" style="background:var(--card);border-radius:12px;border:1px solid var(--border);">내역이 없습니다</div>';
+}
+
+async function loadAdminStepsAll() {
+  const rows=await SB.get('steps_history','year_month=eq.'+getYM()+'&order=created_at.desc');
+  const el=document.getElementById('admin-steps-all-list');
+  el.innerHTML=rows.length?rows.map(r=>`
+    <div style="background:var(--card);border-radius:12px;border:1px solid var(--border);padding:12px 14px;margin-bottom:8px;">
+      <div style="display:flex;align-items:center;gap:12px;">
+        ${r.image_url?`<img src="${r.image_url}" style="width:60px;height:60px;border-radius:8px;object-fit:cover;flex-shrink:0;cursor:pointer;" onclick="window.open('${r.image_url}')"/>`:''}
+        <div style="flex:1;">
+          <div style="font-size:13px;font-weight:700;color:var(--navy);">${r.name}</div>
+          <div style="font-size:14px;font-weight:700;color:var(--text);">+${r.steps.toLocaleString('ko-KR')} 걸음</div>
+          <div style="font-size:11px;color:var(--text-hint);">${r.date}</div>
+        </div>
+        <button style="padding:7px 12px;background:#666;color:#fff;border:none;border-radius:8px;font-size:12px;font-family:inherit;cursor:pointer;" onclick="deleteStepsHistory('${r.id}','${r.name}',${r.steps})">🗑️</button>
+      </div>
+    </div>`).join(''):'<div class="rank-empty" style="background:var(--card);border-radius:12px;border:1px solid var(--border);">내역이 없습니다</div>';
+}
+
+async function loadAdminQuizAll() {
+  const rows=await SB.get('quiz_attempts','year_month=eq.'+getYM()+'&order=created_at.desc');
+  const el=document.getElementById('admin-quiz-all-list');
+  el.innerHTML=rows.length?rows.map(r=>`
+    <div style="background:var(--card);border-radius:12px;border:1px solid var(--border);padding:12px 14px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;">
+      <div>
+        <div style="font-size:13px;font-weight:700;color:var(--navy);">${r.name}</div>
+        <div style="font-size:12px;margin-top:2px;">${r.is_correct?'✅ 정답':'💥 탈락'}</div>
+        <div style="font-size:11px;color:var(--text-hint);">${new Date(r.created_at).toLocaleDateString('ko-KR')}</div>
+      </div>
+      <button style="padding:7px 12px;background:#666;color:#fff;border:none;border-radius:8px;font-size:12px;font-family:inherit;cursor:pointer;" onclick="deleteItem('quiz_attempts','${r.id}')">🗑️ 삭제</button>
+    </div>`).join(''):'<div class="rank-empty" style="background:var(--card);border-radius:12px;border:1px solid var(--border);">내역이 없습니다</div>';
+}
+
+async function deleteItem(table, id) {
+  if(!confirm('정말 삭제하시겠습니까?')) return;
+  const r=await fetch(CONFIG.supabaseUrl+'/rest/v1/'+table+'?id=eq.'+id, {method:'DELETE', headers:SB.h});
+  if(r.ok){showToast('🗑️ 삭제 완료');loadAdminPage();} else {showToast('❌ 삭제 실패');}
+}
+
+async function deleteStepsHistory(id, name, steps) {
+  if(!confirm('이 기록을 삭제하면 해당 직원의 걸음 수에서 '+steps.toLocaleString('ko-KR')+'걸음이 차감됩니다. 삭제하시겠습니까?')) return;
+  // 내역 삭제
+  await fetch(CONFIG.supabaseUrl+'/rest/v1/steps_history?id=eq.'+id, {method:'DELETE', headers:SB.h});
+  // 걸음수 차감
+  const ym=getYM();
+  const existing=await SB.get('steps','name=eq.'+encodeURIComponent(name)+'&year_month=eq.'+ym);
+  if(existing[0]){
+    const newSteps=Math.max(0,(existing[0].steps||0)-steps);
+    await SB.patch('steps',existing[0].id,{steps:newSteps,updated_at:new Date().toISOString()});
   }
+  showToast('🗑️ 삭제 및 걸음수 차감 완료');
+  loadAdminStepsAll();
 }
 
 async function approveItem(table, id, approve) {
