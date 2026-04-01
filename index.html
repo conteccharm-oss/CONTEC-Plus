@@ -304,9 +304,9 @@
     </div>
     <div class="sec-title">걸음 수 추가</div>
     <div style="background:var(--card);border-radius:16px;border:1.5px solid var(--border);padding:1.25rem;margin-bottom:1rem;">
-      <p style="font-size:13px;color:var(--text-sub);margin-bottom:1rem;">삼성헬스 또는 애플건강 스크린샷을 업로드하고 걸음 수를 입력하세요.</p>
+      <p style="font-size:13px;color:var(--text-sub);margin-bottom:1rem;">📸 삼성헬스/애플건강 스크린샷을 <strong>반드시</strong> 업로드하고 걸음 수를 입력하세요.</p>
       <input type="file" id="steps-file" accept="image/*"/>
-      <button class="upload-btn" onclick="document.getElementById('steps-file').click()">📸 스크린샷 업로드</button>
+      <button class="upload-btn" id="steps-upload-btn" onclick="document.getElementById('steps-file').click()">📸 스크린샷 업로드 (필수)</button>
       <div class="step-preview" id="steps-preview">
         <img id="steps-preview-img" src="" alt=""/>
         <div class="step-hint">위 화면에서 걸음 수를 확인하여 아래에 입력하세요</div>
@@ -317,6 +317,8 @@
       </div>
       <button style="width:100%;padding:12px;background:var(--navy);color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;font-family:inherit;cursor:pointer;margin-top:4px;" onclick="submitSteps()">추가하기</button>
     </div>
+    <div class="sec-title">내 업로드 내역</div>
+    <div id="steps-history" style="margin-bottom:1rem;"></div>
     <div class="sec-title">이번 달 랭킹</div>
     <div id="steps-ranking"></div>
   </div>
@@ -591,7 +593,7 @@ function switchPage(page) {
     if(b.getAttribute('onclick')&&b.getAttribute('onclick').includes("'"+page+"'")) b.classList.add('active');
   });
   if(page==='ranking') loadRankingPage('steps');
-  if(page==='steps') loadStepsRanking();
+  if(page==='steps') { loadStepsRanking(); loadStepsHistory(); }
   if(page==='carpool') loadCarpoolRanking();
   if(page==='meal') loadMealRanking();
   if(page==='quiz') loadQuizPage();
@@ -636,14 +638,23 @@ document.getElementById('steps-file').addEventListener('change', function(){
   reader.onload=e=>{
     document.getElementById('steps-preview-img').src=e.target.result;
     document.getElementById('steps-preview').style.display='block';
+    document.getElementById('steps-upload-btn').textContent='✅ 사진 업로드 완료';
   };
   reader.readAsDataURL(this.files[0]);
 });
 
 async function submitSteps() {
   const val=parseInt(document.getElementById('steps-input').value)||0;
+  const file=document.getElementById('steps-file').files[0];
+  if(!file){showToast('❌ 스크린샷을 먼저 업로드해주세요');return;}
   if(val<=0){showToast('❌ 걸음 수를 입력해주세요');return;}
+  showToast('📤 저장 중...');
+  // 이미지 업로드
+  const imgUrl=await SB.upload(file);
+  if(!imgUrl){showToast('❌ 이미지 업로드 실패');return;}
   const ym=getYM();
+  const today=new Date().toISOString().slice(0,10);
+  // 걸음수 누적 업데이트
   const existing=await SB.get('steps','name=eq.'+encodeURIComponent(app.name)+'&year_month=eq.'+ym);
   let ok;
   if(existing[0]) {
@@ -652,12 +663,31 @@ async function submitSteps() {
   } else {
     ok=await SB.post('steps',{name:app.name,year_month:ym,steps:val});
   }
+  // 업로드 내역 저장
+  await SB.post('steps_history',{name:app.name,year_month:ym,date:today,steps:val,image_url:imgUrl});
   if(ok){
     showToast('✅ '+val.toLocaleString('ko-KR')+'걸음 추가!');
     document.getElementById('steps-input').value='';
     document.getElementById('steps-preview').style.display='none';
-    loadHomeData(); loadStepsRanking();
+    document.getElementById('steps-file').value='';
+    document.getElementById('steps-upload-btn').textContent='📸 스크린샷 업로드 (필수)';
+    loadHomeData(); loadStepsRanking(); loadStepsHistory();
   } else { showToast('❌ 저장 실패'); }
+}
+
+async function loadStepsHistory() {
+  const el=document.getElementById('steps-history');
+  if(!el) return;
+  const rows=await SB.get('steps_history','name=eq.'+encodeURIComponent(app.name)+'&year_month=eq.'+getYM()+'&order=created_at.desc');
+  if(!rows.length){el.innerHTML='<div style="background:var(--card);border-radius:12px;border:1px solid var(--border);padding:1rem;text-align:center;font-size:13px;color:var(--text-hint);">업로드 내역이 없습니다</div>';return;}
+  el.innerHTML=rows.map(r=>`
+    <div style="background:var(--card);border-radius:12px;border:1px solid var(--border);padding:12px 14px;margin-bottom:8px;display:flex;align-items:center;gap:12px;">
+      ${r.image_url?`<img src="${r.image_url}" style="width:56px;height:56px;border-radius:8px;object-fit:cover;flex-shrink:0;" onclick="window.open('${r.image_url}')"/>`:''}
+      <div style="flex:1;">
+        <div style="font-size:13px;font-weight:700;color:var(--navy);">+${r.steps.toLocaleString('ko-KR')} 걸음</div>
+        <div style="font-size:11px;color:var(--text-hint);margin-top:2px;">${r.date}</div>
+      </div>
+    </div>`).join('');
 }
 
 async function loadStepsRanking() {
