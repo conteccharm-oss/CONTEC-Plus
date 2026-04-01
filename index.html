@@ -801,39 +801,6 @@ function renderWeekly() {
 updateUI();
 
 // ═══════════════════════════════════════════
-//  로컬 저장 (앱 종료 후에도 오늘 걸음 수 유지)
-// ═══════════════════════════════════════════
-const TODAY = new Date().toISOString().slice(0, 10);
-
-function saveSteps() {
-  localStorage.setItem("contec_steps", JSON.stringify({ date: TODAY, steps: app.steps, name: app.name }));
-}
-
-function loadSavedSteps() {
-  try {
-    const saved = JSON.parse(localStorage.getItem("contec_steps"));
-    if (saved && saved.date === TODAY && saved.name === app.name) {
-      app.steps = saved.steps;
-      updateUI();
-      renderRanking();
-    }
-  } catch(e) {}
-}
-
-const _origAdd = addSteps;
-function addStepsWithSave(n) {
-  app.steps += n;
-  updateUI();
-  renderRanking();
-  saveSteps();
-}
-
-document.getElementById("btn-sensor").addEventListener("click", () => {});
-
-// 로그인 버튼 재등록 (저장 데이터 불러오기 포함)
-document.getElementById("btn-login").addEventListener("click", () => {}, true);
-
-// ═══════════════════════════════════════════
 //  PWA 서비스워커 등록
 // ═══════════════════════════════════════════
 if ("serviceWorker" in navigator) {
