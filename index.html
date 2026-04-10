@@ -421,6 +421,106 @@
     <div id="rank-content"><div class="rank-list"><div class="rank-empty">불러오는 중...</div></div></div>
   </div>
 
+  <!-- 🎱 구슬 추첨 -->
+  <div class="page" id="page-lottery">
+    <div style="font-size:18px;font-weight:900;color:var(--navy);margin-bottom:1rem;">🎱 구슬 추첨기</div>
+    <div style="background:var(--card);border-radius:16px;border:1.5px solid var(--border);padding:1.25rem;margin-bottom:1rem;">
+      <div class="sec-title" style="margin-bottom:8px;">직원 명단 입력</div>
+      <textarea id="lottery-names" placeholder="이름을 한 줄에 한 명씩 입력하세요&#10;홍길동&#10;김철수&#10;이영희" style="width:100%;height:120px;padding:10px 12px;font-size:14px;font-family:inherit;border:1.5px solid var(--border);border-radius:10px;outline:none;background:var(--bg);color:var(--text);resize:none;margin-bottom:10px;"></textarea>
+      <button onclick="startLottery()" style="width:100%;padding:13px;background:var(--navy);color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:700;font-family:inherit;cursor:pointer;">🎱 추첨 시작!</button>
+    </div>
+    <div id="lottery-bowl" style="display:none;background:var(--card);border-radius:16px;border:1.5px solid var(--border);padding:1.5rem;text-align:center;">
+      <div id="lottery-marbles" style="display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin-bottom:1.5rem;min-height:80px;align-items:center;"></div>
+      <div id="lottery-result" style="display:none;">
+        <div style="font-size:40px;margin-bottom:8px;">🎉</div>
+        <div style="font-size:22px;font-weight:900;color:var(--navy);" id="lottery-winner"></div>
+        <div style="font-size:13px;color:var(--text-hint);margin-top:4px;">당첨!</div>
+      </div>
+      <button id="lottery-pick-btn" onclick="pickMarble()" style="padding:12px 32px;background:#7B5EA7;color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:700;font-family:inherit;cursor:pointer;">구슬 뽑기 🎱</button>
+    </div>
+  </div>
+
+  <!-- 😂 웃수저 (직원) -->
+  <div class="page" id="page-funny">
+    <div class="month-banner" style="background:linear-gradient(135deg,#7a1a1a,#E24B4A);">
+      <div class="mb-left">
+        <div class="mb-sub">😂 이달의 웃수저</div>
+        <div class="mb-title">재밌는 순간 공유</div>
+      </div>
+      <div class="mb-reset">매월 리셋</div>
+    </div>
+    <div style="background:var(--card);border-radius:16px;border:1.5px solid var(--border);padding:1.25rem;margin-bottom:1rem;">
+      <p style="font-size:13px;color:var(--text-sub);margin-bottom:1rem;">회사에서 있었던 재밌는 순간을 공유해주세요! 😄</p>
+      <div class="m-field">
+        <label>제목</label>
+        <input type="text" id="funny-title" placeholder="예: 회식날 팀장님 댄스"/>
+      </div>
+      <div class="m-field">
+        <label>사진/영상</label>
+        <input type="file" id="funny-file" accept="image/*,video/*"/>
+        <button class="upload-btn" onclick="document.getElementById('funny-file').click()" id="funny-upload-btn">📸 사진/영상 업로드</button>
+        <img id="funny-preview" class="upload-preview" src="" alt=""/>
+      </div>
+      <button style="width:100%;padding:12px;background:#E24B4A;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;font-family:inherit;cursor:pointer;" onclick="submitFunny()">제출하기</button>
+    </div>
+    <div class="sec-title">이번 달 제출 내역</div>
+    <div id="funny-list"></div>
+  </div>
+
+  <!-- 😂 웃수저 관리자 -->
+  <div class="page" id="page-funny-admin">
+    <div style="font-size:18px;font-weight:900;color:var(--navy);margin-bottom:1rem;">😂 웃수저 관리</div>
+    <div style="background:var(--card);border-radius:16px;border:1.5px solid var(--border);padding:1.25rem;margin-bottom:1rem;">
+      <p style="font-size:13px;color:var(--text-sub);margin-bottom:1rem;">이번 달 제출된 항목 중 1명을 추첨으로 선정해주세요.</p>
+      <button onclick="pickFunnyWinner()" style="width:100%;padding:12px;background:#E24B4A;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;font-family:inherit;cursor:pointer;">🎱 이달의 웃수저 추첨!</button>
+      <div id="funny-winner-result" style="margin-top:1rem;"></div>
+    </div>
+    <div class="sec-title">이번 달 제출 내역</div>
+    <div id="funny-admin-list"></div>
+  </div>
+
+  <!-- 💡 아이디어 (직원) -->
+  <div class="page" id="page-idea">
+    <div class="month-banner" style="background:linear-gradient(135deg,#1a5c1a,#1D9E75);">
+      <div class="mb-left">
+        <div class="mb-sub">💡 이달의 아이디어</div>
+        <div class="mb-title">업무혁신 제안</div>
+      </div>
+      <div class="mb-reset">매월 리셋</div>
+    </div>
+    <div style="background:var(--card);border-radius:16px;border:1.5px solid var(--border);padding:1.25rem;margin-bottom:1rem;">
+      <p style="font-size:13px;color:var(--text-sub);margin-bottom:1rem;">업무자동화, BM 개선 등 혁신 아이디어를 제안해주세요! 💡</p>
+      <div class="m-field">
+        <label>제목</label>
+        <input type="text" id="idea-title" placeholder="예: 견적서 자동화 시스템"/>
+      </div>
+      <div class="m-field">
+        <label>내용</label>
+        <textarea id="idea-content" style="width:100%;height:100px;padding:10px 12px;font-size:14px;font-family:inherit;border:1.5px solid var(--border);border-radius:10px;outline:none;background:var(--bg);color:var(--text);resize:none;" placeholder="아이디어를 자세히 설명해주세요"></textarea>
+      </div>
+      <div class="m-field">
+        <label>첨부파일 (선택)</label>
+        <input type="file" id="idea-file" accept="image/*,.pdf,.ppt,.pptx,.doc,.docx,.xls,.xlsx"/>
+        <button class="upload-btn" onclick="document.getElementById('idea-file').click()" id="idea-upload-btn">📎 파일 첨부</button>
+      </div>
+      <button style="width:100%;padding:12px;background:#1D9E75;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;font-family:inherit;cursor:pointer;" onclick="submitIdea()">아이디어 제출</button>
+    </div>
+    <div class="sec-title">이번 달 내 제출 내역</div>
+    <div id="idea-my-list"></div>
+  </div>
+
+  <!-- 💡 아이디어 관리자 -->
+  <div class="page" id="page-idea-admin">
+    <div style="font-size:18px;font-weight:900;color:var(--navy);margin-bottom:1rem;">💡 아이디어 관리</div>
+    <div style="background:var(--card);border-radius:16px;border:1.5px solid var(--border);padding:1.25rem;margin-bottom:1rem;">
+      <p style="font-size:13px;color:var(--text-sub);margin-bottom:1rem;">이번 달 제출된 아이디어 중 1명을 선정해주세요.</p>
+      <button onclick="pickIdeaWinner()" style="width:100%;padding:12px;background:#1D9E75;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;font-family:inherit;cursor:pointer;">🏆 이달의 아이디어 선정!</button>
+      <div id="idea-winner-result" style="margin-top:1rem;"></div>
+    </div>
+    <div class="sec-title">이번 달 전체 제출 내역</div>
+    <div id="idea-admin-list"></div>
+  </div>
+
   <!-- 관리자 퀴즈 등록 전용 -->
   <div class="page" id="page-quiz-admin">
     <div style="font-size:18px;font-weight:900;color:var(--navy);margin-bottom:1.25rem;">🚀 퀴즈 등록</div>
@@ -486,19 +586,25 @@
   </div>
 
   <!-- 직원용 네비 -->
-  <div class="bottom-nav" id="bottom-nav-user">
-    <button class="nav-btn active" onclick="switchPage('home')"><div class="nav-icon">🏠</div><div class="nav-label">홈</div></button>
-    <button class="nav-btn" onclick="switchPage('steps')"><div class="nav-icon">🚶</div><div class="nav-label">걸음</div></button>
-    <button class="nav-btn" onclick="switchPage('carpool')"><div class="nav-icon">🚗</div><div class="nav-label">카풀</div></button>
-    <button class="nav-btn" onclick="switchPage('meal')"><div class="nav-icon">🍱</div><div class="nav-label">식판</div></button>
-    <button class="nav-btn" onclick="switchPage('quiz')"><div class="nav-icon">🚀</div><div class="nav-label">퀴즈</div></button>
-    <button class="nav-btn" onclick="switchPage('ranking')"><div class="nav-icon">🏆</div><div class="nav-label">랭킹</div></button>
+  <div class="bottom-nav" id="bottom-nav-user" style="overflow-x:auto;justify-content:flex-start;padding-left:4px;">
+    <button class="nav-btn active" onclick="switchPage('home')" style="min-width:52px;"><div class="nav-icon">🏠</div><div class="nav-label">홈</div></button>
+    <button class="nav-btn" onclick="switchPage('steps')" style="min-width:52px;"><div class="nav-icon">🚶</div><div class="nav-label">걸음</div></button>
+    <button class="nav-btn" onclick="switchPage('carpool')" style="min-width:52px;"><div class="nav-icon">🚗</div><div class="nav-label">카풀</div></button>
+    <button class="nav-btn" onclick="switchPage('meal')" style="min-width:52px;"><div class="nav-icon">🍱</div><div class="nav-label">식판</div></button>
+    <button class="nav-btn" onclick="switchPage('quiz')" style="min-width:52px;"><div class="nav-icon">🚀</div><div class="nav-label">퀴즈</div></button>
+    <button class="nav-btn" onclick="switchPage('ranking')" style="min-width:52px;"><div class="nav-icon">🏆</div><div class="nav-label">랭킹</div></button>
+    <button class="nav-btn" onclick="switchPage('lottery')" style="min-width:52px;"><div class="nav-icon">🎱</div><div class="nav-label">추첨</div></button>
+    <button class="nav-btn" onclick="switchPage('funny')" style="min-width:52px;"><div class="nav-icon">😂</div><div class="nav-label">웃수저</div></button>
+    <button class="nav-btn" onclick="switchPage('idea')" style="min-width:52px;"><div class="nav-icon">💡</div><div class="nav-label">아이디어</div></button>
   </div>
   <!-- 관리자용 네비 -->
-  <div class="bottom-nav" id="bottom-nav-admin" style="display:none;">
-    <button class="nav-btn active" onclick="switchPage('admin')"><div class="nav-icon">⚙️</div><div class="nav-label">승인관리</div></button>
-    <button class="nav-btn" onclick="switchPage('quiz-admin')"><div class="nav-icon">🚀</div><div class="nav-label">퀴즈등록</div></button>
-    <button class="nav-btn" onclick="switchPage('ranking')"><div class="nav-icon">🏆</div><div class="nav-label">랭킹</div></button>
+  <div class="bottom-nav" id="bottom-nav-admin" style="display:none;overflow-x:auto;justify-content:flex-start;padding-left:4px;">
+    <button class="nav-btn active" onclick="switchPage('admin')" style="min-width:56px;"><div class="nav-icon">⚙️</div><div class="nav-label">승인관리</div></button>
+    <button class="nav-btn" onclick="switchPage('quiz-admin')" style="min-width:56px;"><div class="nav-icon">🚀</div><div class="nav-label">퀴즈등록</div></button>
+    <button class="nav-btn" onclick="switchPage('lottery')" style="min-width:56px;"><div class="nav-icon">🎱</div><div class="nav-label">추첨</div></button>
+    <button class="nav-btn" onclick="switchPage('funny-admin')" style="min-width:56px;"><div class="nav-icon">😂</div><div class="nav-label">웃수저</div></button>
+    <button class="nav-btn" onclick="switchPage('idea-admin')" style="min-width:56px;"><div class="nav-icon">💡</div><div class="nav-label">아이디어</div></button>
+    <button class="nav-btn" onclick="switchPage('ranking')" style="min-width:56px;"><div class="nav-icon">🏆</div><div class="nav-label">랭킹</div></button>
   </div>
 </div>
 
@@ -635,6 +741,11 @@ function switchPage(page) {
   if(page==='quiz') loadQuizPage();
   if(page==='admin') loadAdminPage();
   if(page==='quiz-admin') loadQuizAdminPage();
+  if(page==='lottery') initLottery();
+  if(page==='funny') loadFunnyList();
+  if(page==='funny-admin') loadFunnyAdmin();
+  if(page==='idea') loadIdeaMyList();
+  if(page==='idea-admin') loadIdeaAdmin();
 }
 
 // ═══════════════════════════════════════
@@ -1241,6 +1352,218 @@ async function loadQuizAdminPage() {
       ${q.hint?`<div style="font-size:11px;color:var(--text-hint);">힌트: ${q.hint}</div>`:''}
     </div>`;
   }).join('');
+}
+
+// ═══ 구슬 추첨기 ═══
+let lotteryNames = [];
+let lotteryPicked = [];
+
+function initLottery() {
+  document.getElementById('lottery-bowl').style.display = 'none';
+  document.getElementById('lottery-result').style.display = 'none';
+}
+
+function startLottery() {
+  const raw = document.getElementById('lottery-names').value.trim();
+  if(!raw) { showToast('❌ 직원 명단을 입력해주세요'); return; }
+  lotteryNames = raw.split('\n').map(n=>n.trim()).filter(n=>n);
+  lotteryPicked = [];
+  if(lotteryNames.length < 2) { showToast('❌ 최소 2명 이상 입력해주세요'); return; }
+  renderMarbles();
+  document.getElementById('lottery-bowl').style.display = 'block';
+  document.getElementById('lottery-result').style.display = 'none';
+  document.getElementById('lottery-pick-btn').style.display = 'inline-block';
+  document.getElementById('lottery-pick-btn').textContent = '구슬 뽑기 🎱';
+}
+
+const MARBLE_COLORS = ['#E24B4A','#1B4F8E','#1D9E75','#F07C2A','#7B5EA7','#F5C842','#4A90D9','#CD7F32'];
+
+function renderMarbles() {
+  const remaining = lotteryNames.filter(n => !lotteryPicked.includes(n));
+  document.getElementById('lottery-marbles').innerHTML = remaining.map((name, i) => {
+    const color = MARBLE_COLORS[i % MARBLE_COLORS.length];
+    return `<div style="width:52px;height:52px;border-radius:50%;background:${color};display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;text-align:center;cursor:pointer;box-shadow:0 3px 8px rgba(0,0,0,0.2);transition:transform 0.15s;" onclick="pickSpecific('${name}')">${name.slice(0,3)}</div>`;
+  }).join('');
+}
+
+function pickMarble() {
+  const remaining = lotteryNames.filter(n => !lotteryPicked.includes(n));
+  if(!remaining.length) { showToast('모든 구슬이 뽑혔습니다'); return; }
+  const winner = remaining[Math.floor(Math.random() * remaining.length)];
+  showWinner(winner);
+}
+
+function pickSpecific(name) {
+  showWinner(name);
+}
+
+function showWinner(winner) {
+  lotteryPicked.push(winner);
+  const marbles = document.getElementById('lottery-marbles');
+  marbles.style.animation = 'none';
+  document.getElementById('lottery-winner').textContent = winner + ' 🎉';
+  document.getElementById('lottery-result').style.display = 'block';
+  const remaining = lotteryNames.filter(n => !lotteryPicked.includes(n));
+  document.getElementById('lottery-pick-btn').textContent = remaining.length > 0 ? '다시 뽑기 🎱' : '추첨 완료!';
+  if(!remaining.length) document.getElementById('lottery-pick-btn').disabled = true;
+  setTimeout(() => renderMarbles(), 300);
+}
+
+// ═══ 웃수저 ═══
+document.getElementById('funny-file').addEventListener('change', function(){
+  previewFile(this, 'funny-preview', 'funny-upload-btn');
+});
+
+async function submitFunny() {
+  const title = document.getElementById('funny-title').value.trim();
+  const file = document.getElementById('funny-file').files[0];
+  if(!title) { showToast('❌ 제목을 입력해주세요'); return; }
+  if(!file) { showToast('❌ 사진/영상을 업로드해주세요'); return; }
+  showToast('📤 업로드 중...');
+  const imgUrl = await SB.upload(file);
+  if(!imgUrl) { showToast('❌ 업로드 실패'); return; }
+  const isVideo = file.type.startsWith('video/');
+  const ok = await SB.post('funny_submissions', {name: app.name, year_month: getYM(), title, media_url: imgUrl, is_video: isVideo, status: 'submitted'});
+  if(ok) {
+    showToast('✅ 제출 완료!');
+    document.getElementById('funny-title').value = '';
+    document.getElementById('funny-preview').style.display = 'none';
+    loadFunnyList();
+  } else { showToast('❌ 제출 실패'); }
+}
+
+async function loadFunnyList() {
+  const el = document.getElementById('funny-list');
+  const rows = await SB.get('funny_submissions', 'year_month=eq.'+getYM()+'&order=created_at.desc');
+  el.innerHTML = rows.length ? rows.map(r => `
+    <div style="background:var(--card);border-radius:12px;border:1px solid var(--border);padding:12px 14px;margin-bottom:8px;">
+      <div style="display:flex;align-items:center;gap:10px;">
+        ${r.media_url ? (r.is_video
+          ? `<video src="${r.media_url}" style="width:60px;height:60px;border-radius:8px;object-fit:cover;flex-shrink:0;" onclick="window.open('${r.media_url}')"></video>`
+          : `<img src="${r.media_url}" style="width:60px;height:60px;border-radius:8px;object-fit:cover;flex-shrink:0;cursor:pointer;" onclick="window.open('${r.media_url}')"/>`) : ''}
+        <div style="flex:1;">
+          <div style="font-size:13px;font-weight:700;color:var(--navy);">${r.title}</div>
+          <div style="font-size:11px;color:var(--text-hint);">by ${r.name} · ${new Date(r.created_at).toLocaleDateString('ko-KR')}</div>
+          ${r.status==='winner'?'<div style="font-size:12px;color:#F5C842;font-weight:700;margin-top:2px;">🏆 이달의 웃수저!</div>':''}
+        </div>
+      </div>
+    </div>`).join('') : '<div style="background:var(--card);border-radius:12px;border:1px solid var(--border);padding:1.5rem;text-align:center;font-size:13px;color:var(--text-hint);">아직 제출된 내역이 없습니다</div>';
+}
+
+async function loadFunnyAdmin() {
+  await loadFunnyList();
+  const rows = await SB.get('funny_submissions', 'year_month=eq.'+getYM()+'&order=created_at.desc');
+  const el = document.getElementById('funny-admin-list');
+  el.innerHTML = rows.length ? rows.map(r => `
+    <div style="background:var(--card);border-radius:12px;border:1.5px solid ${r.status==='winner'?'#F5C842':'var(--border)'};padding:12px 14px;margin-bottom:8px;">
+      <div style="display:flex;align-items:center;gap:10px;">
+        ${r.media_url ? (r.is_video
+          ? `<video src="${r.media_url}" style="width:60px;height:60px;border-radius:8px;object-fit:cover;flex-shrink:0;" controls></video>`
+          : `<img src="${r.media_url}" style="width:60px;height:60px;border-radius:8px;object-fit:cover;flex-shrink:0;cursor:pointer;" onclick="window.open('${r.media_url}')"/>`) : ''}
+        <div style="flex:1;">
+          <div style="font-size:13px;font-weight:700;">${r.title}</div>
+          <div style="font-size:11px;color:var(--text-hint);">by ${r.name}</div>
+          ${r.status==='winner'?'<div style="font-size:11px;color:#F5C842;font-weight:700;">🏆 당첨!</div>':''}
+        </div>
+        <button style="padding:6px 10px;background:#666;color:#fff;border:none;border-radius:8px;font-size:12px;font-family:inherit;cursor:pointer;" onclick="deleteItem('funny_submissions','${r.id}')">🗑️</button>
+      </div>
+    </div>`).join('') : '<div style="background:var(--card);border-radius:12px;border:1px solid var(--border);padding:1rem;text-align:center;font-size:13px;color:var(--text-hint);">제출 내역 없음</div>';
+}
+
+async function pickFunnyWinner() {
+  const rows = await SB.get('funny_submissions', 'year_month=eq.'+getYM()+'&status=eq.submitted');
+  if(!rows.length) { showToast('❌ 제출된 항목이 없습니다'); return; }
+  const winner = rows[Math.floor(Math.random() * rows.length)];
+  await SB.patch('funny_submissions', winner.id, {status: 'winner'});
+  document.getElementById('funny-winner-result').innerHTML = `
+    <div style="background:#fff8e1;border:2px solid #F5C842;border-radius:12px;padding:1.25rem;text-align:center;">
+      <div style="font-size:32px;margin-bottom:8px;">🏆</div>
+      <div style="font-size:18px;font-weight:900;color:var(--navy);">${winner.name}</div>
+      <div style="font-size:13px;color:var(--text-sub);margin-top:4px;">"${winner.title}"</div>
+      <div style="font-size:12px;color:var(--text-hint);margin-top:4px;">이달의 웃수저 선정!</div>
+    </div>`;
+  showToast('🎉 이달의 웃수저 선정 완료!');
+  loadFunnyAdmin();
+}
+
+// ═══ 아이디어 ═══
+document.getElementById('idea-file').addEventListener('change', function(){
+  if(this.files[0]) document.getElementById('idea-upload-btn').textContent = '✅ ' + this.files[0].name;
+});
+
+async function submitIdea() {
+  const title = document.getElementById('idea-title').value.trim();
+  const content_text = document.getElementById('idea-content').value.trim();
+  const file = document.getElementById('idea-file').files[0];
+  if(!title) { showToast('❌ 제목을 입력해주세요'); return; }
+  if(!content_text) { showToast('❌ 내용을 입력해주세요'); return; }
+  showToast('📤 제출 중...');
+  let fileUrl = null;
+  if(file) {
+    fileUrl = await SB.upload(file);
+    if(!fileUrl) { showToast('❌ 파일 업로드 실패'); return; }
+  }
+  const ok = await SB.post('idea_submissions', {name: app.name, year_month: getYM(), title, content: content_text, file_url: fileUrl, status: 'submitted'});
+  if(ok) {
+    showToast('✅ 아이디어 제출 완료!');
+    document.getElementById('idea-title').value = '';
+    document.getElementById('idea-content').value = '';
+    document.getElementById('idea-upload-btn').textContent = '📎 파일 첨부';
+    loadIdeaMyList();
+  } else { showToast('❌ 제출 실패'); }
+}
+
+async function loadIdeaMyList() {
+  const el = document.getElementById('idea-my-list');
+  const rows = await SB.get('idea_submissions', 'name=eq.'+encodeURIComponent(app.name)+'&year_month=eq.'+getYM()+'&order=created_at.desc');
+  el.innerHTML = rows.length ? rows.map(r => `
+    <div style="background:var(--card);border-radius:12px;border:1.5px solid ${r.status==='winner'?'#1D9E75':'var(--border)'};padding:12px 14px;margin-bottom:8px;">
+      <div style="font-size:13px;font-weight:700;color:var(--navy);">${r.title}</div>
+      <div style="font-size:12px;color:var(--text-sub);margin-top:4px;line-height:1.5;">${r.content}</div>
+      ${r.file_url?`<a href="${r.file_url}" target="_blank" style="font-size:11px;color:var(--sky);">📎 첨부파일 보기</a>`:''}
+      ${r.status==='winner'?'<div style="font-size:12px;color:#1D9E75;font-weight:700;margin-top:6px;">🏆 이달의 아이디어 선정!</div>':''}
+      <div style="font-size:11px;color:var(--text-hint);margin-top:4px;">${new Date(r.created_at).toLocaleDateString('ko-KR')}</div>
+    </div>`).join('') : '<div style="background:var(--card);border-radius:12px;border:1px solid var(--border);padding:1.5rem;text-align:center;font-size:13px;color:var(--text-hint);">제출한 아이디어가 없습니다</div>';
+}
+
+async function loadIdeaAdmin() {
+  const rows = await SB.get('idea_submissions', 'year_month=eq.'+getYM()+'&order=created_at.desc');
+  const el = document.getElementById('idea-admin-list');
+  el.innerHTML = rows.length ? rows.map(r => `
+    <div style="background:var(--card);border-radius:12px;border:1.5px solid ${r.status==='winner'?'#1D9E75':'var(--border)'};padding:12px 14px;margin-bottom:8px;">
+      <div style="display:flex;justify-content:space-between;align-items:start;">
+        <div style="flex:1;">
+          <div style="font-size:13px;font-weight:700;color:var(--navy);">${r.title}</div>
+          <div style="font-size:11px;color:var(--text-hint);">by ${r.name} · ${new Date(r.created_at).toLocaleDateString('ko-KR')}</div>
+          <div style="font-size:12px;color:var(--text-sub);margin-top:4px;line-height:1.5;">${r.content}</div>
+          ${r.file_url?`<a href="${r.file_url}" target="_blank" style="font-size:11px;color:var(--sky);">📎 첨부파일</a>`:''}
+          ${r.status==='winner'?'<div style="font-size:11px;color:#1D9E75;font-weight:700;margin-top:4px;">🏆 선정됨</div>':''}
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px;margin-left:10px;">
+          ${r.status!=='winner'?`<button style="padding:6px 10px;background:#1D9E75;color:#fff;border:none;border-radius:8px;font-size:11px;font-family:inherit;cursor:pointer;" onclick="selectIdeaWinner('${r.id}','${r.name}')">🏆 선정</button>`:''}
+          <button style="padding:6px 10px;background:#666;color:#fff;border:none;border-radius:8px;font-size:11px;font-family:inherit;cursor:pointer;" onclick="deleteItem('idea_submissions','${r.id}')">🗑️</button>
+        </div>
+      </div>
+    </div>`).join('') : '<div style="background:var(--card);border-radius:12px;border:1px solid var(--border);padding:1rem;text-align:center;font-size:13px;color:var(--text-hint);">제출된 아이디어가 없습니다</div>';
+}
+
+async function pickIdeaWinner() {
+  const rows = await SB.get('idea_submissions', 'year_month=eq.'+getYM()+'&status=eq.submitted');
+  if(!rows.length) { showToast('❌ 제출된 아이디어가 없습니다'); return; }
+  const winner = rows[Math.floor(Math.random() * rows.length)];
+  await selectIdeaWinner(winner.id, winner.name);
+}
+
+async function selectIdeaWinner(id, name) {
+  await SB.patch('idea_submissions', id, {status: 'winner'});
+  document.getElementById('idea-winner-result').innerHTML = `
+    <div style="background:#e8f5e9;border:2px solid #1D9E75;border-radius:12px;padding:1.25rem;text-align:center;">
+      <div style="font-size:32px;margin-bottom:8px;">🏆</div>
+      <div style="font-size:18px;font-weight:900;color:var(--navy);">${name}</div>
+      <div style="font-size:12px;color:var(--text-hint);margin-top:4px;">이달의 아이디어 선정!</div>
+    </div>`;
+  showToast('🎉 이달의 아이디어 선정 완료!');
+  loadIdeaAdmin();
 }
 
 // 로그인 탭 전환
