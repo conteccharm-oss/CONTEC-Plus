@@ -653,6 +653,53 @@ async function joinRace(){
   if(ok){showToast('🚀 레이스 참여 완료!');document.getElementById('race-join-section').style.display='none';document.getElementById('race-joined-badge').style.display='block';}
 }
 
+// ── ADMIN ──
+async function loadAdminPage(){
+  switchAdminTab(document.querySelector('.admin-tab.active')||document.querySelector('.admin-tab'),'pending');
+}
+
+function switchAdminTab(btn,tab){
+  document.querySelectorAll('.admin-tab').forEach(t=>t.classList.remove('active'));
+  if(btn)btn.classList.add('active');
+  ['pending','funny-all','idea-all','quiz-mgmt','race-mgmt'].forEach(t=>{
+    const el=document.getElementById('admin-tab-'+t);
+    if(el)el.style.display=t===tab?'block':'none';
+  });
+  if(tab==='pending')loadAdminPending();
+  if(tab==='funny-all')loadAdminFunnyAll();
+  if(tab==='idea-all')loadAdminIdeaAll();
+  if(tab==='quiz-mgmt')loadQuizAdminList();
+  if(tab==='race-mgmt'){loadAdminRewardList();SB.get('race_entries','year_month=eq.'+getYM()).then(r=>document.getElementById('race-entry-count').textContent=r.length);}
+}
+
+async function loadAdminPending(){
+  const ym=getYM();
+  const fp=await SB.get('funny_submissions','year_month=eq.'+ym+'&status=eq.pending&order=created_at.asc');
+  document.getElementById('funny-pending-cnt').textContent=fp.length;
+  document.getElementById('funny-pending-list').innerHTML=fp.length?fp.map(r=>pendingCard(r,'funny_submissions',r.name,r.title,r.media_url,r.is_video)).join(''):'<div class="rank-empty" style="background:var(--card);border-radius:12px;">없음</div>';
+  const ip=await SB.get('idea_submissions','year_month=eq.'+ym+'&status=eq.submitted&order=created_at.asc');
+  document.getElementById('idea-pending-cnt').textContent=ip.length;
+  document.getElementById('idea-pending-list').innerHTML=ip.length?ip.map(r=>`<div class="pending-card"><div class="pending-info"><div class="pending-title">💡 ${r.title}</div><div class="pending-sub">by ${r.name} · ${r.content.slice(0,50)}...</div></div><div class="pending-btns"><button class="btn-approve" onclick="approveIdea('${r.id}')">✅ 선정</button><button class="btn-del" onclick="SB.del('idea_submissions','${r.id}').then(()=>{showToast('삭제됨');loadAdminPending();})">🗑️</button></div></div>`).join(''):'<div class="rank-empty" style="background:var(--card);border-radius:12px;">없음</div>';
+}
+
+function pendingCard(r,table,name,title,mediaUrl,isVideo){
+  return `<div class="pending-card"><div class="pending-info"><div class="pending-title">${title}</div><div class="pending-sub">by ${name}</div></div>${mediaUrl?(isVideo?`<video class="pending-img" src="${mediaUrl}" controls></video>`:`<img class="pending-img" src="${mediaUrl}" onclick="window.open('${mediaUrl}')"/>`):''}<div class="pending-btns"><button class="btn-approve" onclick="SB.patch('${table}','${r.id}',{status:'approved'}).then(()=>{showToast('✅ 승인');loadAdminPending();})">✅ 승인</button><button class="btn-reject" onclick="SB.patch('${table}','${r.id}',{status:'rejected'}).then(()=>{showToast('❌ 거절');loadAdminPending();})">❌ 거절</button><button class="btn-del" onclick="SB.del('${table}','${r.id}').then(()=>{showToast('🗑️ 삭제');loadAdminPending();})">🗑️</button></div></div>`;
+}
+
+async function approveIdea(id){await SB.patch('idea_submissions',id,{status:'winner'});showToast('🏆 선정 완료!');loadAdminPending();}
+
+async function loadAdminFunnyAll(){
+  const rows=await SB.get('funny_submissions','year_month=eq.'+getYM()+'&order=created_at.desc');
+  const el=document.getElementById('admin-tab-funny-all');
+  el.innerHTML='<div class="sec-title">이번 달 웃수저 전체</div>'+(rows.length?rows.map(r=>`<div class="pending-card"><div class="pending-info" style="display:flex;justify-content:space-between;"><div><div class="pending-title">${r.title}</div><div class="pending-sub">by ${r.name}</div></div><span class="status-pill ${r.status==='winner'?'pill-winner':r.status==='approved'?'pill-approved':r.status==='rejected'?'pill-rejected':'pill-pending'}">${r.status==='winner'?'🏆':r.status==='approved'?'✅':r.status==='rejected'?'❌':'⏳'}</span></div>${r.media_url?(r.is_video?`<video class="pending-img" src="${r.media_url}" controls></video>`:`<img class="pending-img" src="${r.media_url}" onclick="window.open('${r.media_url}')"/>`):''}<div class="pending-btns">${r.status!=='winner'?`<button class="btn-approve" onclick="SB.patch('funny_submissions','${r.id}',{status:'winner'}).then(()=>{showToast('🏆 당첨!');loadAdminFunnyAll();})">🏆 당첨</button>`:''}${r.status==='pending'?`<button class="btn-approve" onclick="SB.patch('funny_submissions','${r.id}',{status:'approved'}).then(()=>{showToast('✅');loadAdminFunnyAll();})">✅</button><button class="btn-reject" onclick="SB.patch('funny_submissions','${r.id}',{status:'rejected'}).then(()=>{showToast('❌');loadAdminFunnyAll();})">❌</button>`:''}<button class="btn-del" onclick="SB.del('funny_submissions','${r.id}').then(()=>{showToast('🗑️');loadAdminFunnyAll();})">🗑️</button></div></div>`).join(''):'<div class="rank-empty" style="background:var(--card);border-radius:12px;">없음</div>');
+}
+
+async function loadAdminIdeaAll(){
+  const rows=await SB.get('idea_submissions','year_month=eq.'+getYM()+'&order=created_at.desc');
+  const el=document.getElementById('admin-tab-idea-all');
+  el.innerHTML='<div class="sec-title">이번 달 아이디어 전체</div>'+(rows.length?rows.map(r=>`<div class="pending-card"><div class="pending-info"><div class="pending-title">${r.title}</div><div class="pending-sub">by ${r.name}</div><div style="font-size:12px;color:var(--text-sub);margin-top:4px;">${r.content}</div>${r.file_url?`<a href="${r.file_url}" target="_blank" style="font-size:11px;color:var(--sky);">📎 첨부</a>`:''}</div><div class="pending-btns">${r.status!=='winner'?`<button class="btn-approve" onclick="approveIdea('${r.id}')">🏆 선정</button>`:'<span class="status-pill pill-winner">🏆 선정됨</span>'}<button class="btn-del" onclick="SB.del('idea_submissions','${r.id}').then(()=>{showToast('🗑️');loadAdminIdeaAll();})">🗑️</button></div></div>`).join(''):'<div class="rank-empty" style="background:var(--card);border-radius:12px;">없음</div>');
+}
+
 // ── RACE ADMIN ──
 async function addReward(){
   const title=document.getElementById('reward-title').value.trim();
