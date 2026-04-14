@@ -115,9 +115,15 @@
     /* QUIZ */
     .quiz-banner{background:linear-gradient(135deg,rgba(0,100,200,0.4),rgba(20,50,100,0.6));border:1px solid rgba(0,200,255,0.3);border-radius:16px;padding:1.25rem;margin-bottom:1rem;color:#fff;}
     .quiz-card{background:var(--card);backdrop-filter:blur(10px);border-radius:16px;border:1px solid var(--border);padding:1.25rem;margin-bottom:1rem;box-shadow:0 6px 16px rgba(0,0,0,0.3);}
-    .quiz-timer{font-size:40px;font-weight:900;color:var(--red);text-align:center;margin:0.75rem 0;font-variant-numeric:tabular-nums;text-shadow:0 0 15px rgba(226,75,74,0.6);}
-    .quiz-timer.warn{animation:blink 0.5s infinite;}
-    @keyframes blink{0%,100%{opacity:1;}50%{opacity:0.3;}}
+    .quiz-timer{font-size:40px;font-weight:900;color:var(--green);text-align:center;margin:0.75rem 0;font-variant-numeric:tabular-nums;text-shadow:0 0 15px rgba(29,158,117,0.6);transition: color 0.3s, text-shadow 0.3s;}
+    .quiz-timer.warn{color:var(--gold);text-shadow:0 0 15px rgba(245,200,66,0.6);animation:tension-pulse 0.8s infinite;}
+    .quiz-timer.danger{color:var(--red);text-shadow:0 0 15px rgba(226,75,74,0.6);animation:tension-pulse 0.4s infinite, tension-shake 0.3s infinite;}
+    @keyframes tension-pulse {0%{transform:scale(1);}50%{transform:scale(1.15);}100%{transform:scale(1);}}
+    @keyframes tension-shake {0%,100%{transform:translateX(0);}25%{transform:translateX(-5px) rotate(-2deg);}75%{transform:translateX(5px) rotate(2deg);}}
+    .tension-bar{width:100%;height:8px;background:rgba(255,255,255,0.1);border-radius:4px;overflow:hidden;margin-bottom:14px;box-shadow:inset 0 0 4px rgba(0,0,0,0.5);}
+    .tension-fill{height:100%;width:100%;background:var(--green);box-shadow:0 0 10px var(--green);transition:width 0.1s linear, background-color 0.3s;}
+    .tension-fill.warn{background:var(--gold);box-shadow:0 0 10px var(--gold);}
+    .tension-fill.danger{background:var(--red);box-shadow:0 0 10px var(--red);}
     .quiz-input-wrap{display:flex;gap:8px;margin-top:0.75rem;}
     .quiz-input{flex:1;padding:11px 14px;font-size:15px;font-family:inherit;border:1px solid var(--border);border-radius:10px;outline:none;background:rgba(0,0,0,0.3);color:#fff;}
     .quiz-input:focus{border-color:var(--sky);box-shadow:0 0 10px rgba(0,200,255,0.2);}
@@ -133,6 +139,22 @@
     .reward-votes{font-size:13px;font-weight:700;color:var(--sky);text-shadow:0 0 8px rgba(0,200,255,0.4);}
     .vote-bar{height:4px;background:rgba(255,255,255,0.1);border-radius:2px;margin-top:6px;}
     .vote-bar-fill{height:4px;background:var(--sky);border-radius:2px;transition:width 0.4s;box-shadow:0 0 10px var(--sky);}
+
+    /* FUNNY VOTE */
+    .funny-card{background:var(--card);backdrop-filter:blur(10px);border-radius:14px;border:1px solid var(--border);margin-bottom:10px;overflow:hidden;transition:all 0.2s;}
+    .funny-card.rank1{border-color:rgba(255,200,0,0.6);box-shadow:0 0 18px rgba(255,180,0,0.18);}
+    .funny-card.my-voted{border-color:rgba(226,75,74,0.5);background:rgba(226,75,74,0.07);}
+    .funny-card-body{padding:12px 14px;}
+    .funny-rank-badge{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;padding:2px 9px;border-radius:10px;margin-bottom:6px;}
+    .rank-gold{background:rgba(255,200,0,0.2);color:#FFD700;border:1px solid rgba(255,200,0,0.4);}
+    .rank-silver{background:rgba(200,200,200,0.15);color:#ccc;border:1px solid rgba(200,200,200,0.3);}
+    .rank-bronze{background:rgba(200,120,60,0.15);color:#cd7f32;border:1px solid rgba(200,120,60,0.3);}
+    .funny-vote-row{display:flex;align-items:center;justify-content:space-between;margin-top:10px;}
+    .funny-vote-count{font-size:13px;font-weight:700;color:var(--red);}
+    .btn-funny-vote{padding:6px 16px;background:var(--red);color:#fff;border:none;border-radius:20px;font-size:12px;font-weight:700;font-family:inherit;cursor:pointer;box-shadow:0 0 8px rgba(226,75,74,0.4);}
+    .btn-funny-vote.voted{background:rgba(226,75,74,0.2);color:var(--red);border:1px solid rgba(226,75,74,0.4);box-shadow:none;cursor:default;}
+    .funny-vote-bar{height:4px;background:rgba(255,255,255,0.1);border-radius:2px;margin-top:6px;}
+    .funny-vote-bar-fill{height:4px;background:var(--red);border-radius:2px;transition:width 0.4s;box-shadow:0 0 8px rgba(226,75,74,0.5);}
 
     /* RACE CANVAS */
     #race-canvas{display:block;width:100%;border-radius:16px;}
@@ -300,7 +322,7 @@
       </div>
       <button class="btn-main" style="background:var(--red);" onclick="submitFunny()">제출하기</button>
     </div>
-    <div class="sec-title">이번 달 제출 내역</div>
+    <div class="sec-title">이달의 웃수저 투표 <span id="funny-vote-info" style="font-size:11px;font-weight:400;color:var(--text-hint);"></span></div>
     <div id="funny-list"></div>
   </div>
 
@@ -366,6 +388,23 @@
       </div>
     </div>
 
+    <!-- 관리자 레이스 시작 (관리자 전용) -->
+    <div id="race-admin-start-section" style="display:none;margin-top:1rem;">
+      <div class="sec-title">관리자 레이스 제어</div>
+      <div class="card" style="text-align:center;background:linear-gradient(135deg,#0a0010,#0a0020);border:1px solid rgba(0,200,255,0.25);">
+        <div style="font-size:13px;color:var(--text-sub);margin-bottom:1rem;">참여자: <strong id="race-entry-count">0</strong>명</div>
+        <button class="btn-main" style="background:linear-gradient(135deg,#000820,#0D1B3E);" onclick="startOrbitalRace()">🚀 궤도 레이스 시작!</button>
+      </div>
+      <canvas id="race-canvas" style="display:none;margin-top:1rem;border-radius:16px;"></canvas>
+      <div id="race-status" style="text-align:center;margin-top:8px;font-size:13px;color:var(--text-hint);"></div>
+      <div id="race-winner-announce" style="display:none;background:var(--card);border-radius:16px;border:2px solid var(--gold);padding:1.5rem;text-align:center;margin-top:1rem;">
+        <div style="font-size:36px;margin-bottom:8px;">🏆</div>
+        <div style="font-size:24px;font-weight:900;color:var(--navy);" id="race-admin-winner"></div>
+        <div style="font-size:13px;color:var(--text-sub);margin-top:4px;margin-bottom:1rem;">궤도 레이스 우승!</div>
+        <button class="btn-main" style="background:var(--green);width:auto;padding:10px 24px;" onclick="saveRaceWinner()">결과 저장 & 발표</button>
+      </div>
+    </div>
+
     <!-- 레이스 결과 -->
     <div id="race-result-section" style="display:none;margin-top:1rem;">
       <div class="sec-title">이달의 레이스 결과</div>
@@ -408,6 +447,15 @@
         <div id="prize-tier-list"></div>
         <button class="btn-main" style="background:var(--green);margin-top:10px;" onclick="savePrizeTiers()">경품 설정 저장</button>
       </div>
+      <div class="card" style="margin-bottom:1rem;">
+        <div style="font-size:14px;font-weight:700;margin-bottom:1rem;">⏱ 퀴즈 제한 시간 설정</div>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <input type="number" id="quiz-time-input" min="5" max="300" step="5" style="width:90px;padding:9px 12px;font-size:15px;font-family:inherit;border:1px solid var(--border);border-radius:10px;outline:none;background:rgba(0,0,0,0.3);color:#fff;text-align:center;" placeholder="10"/>
+          <span style="font-size:13px;color:var(--text-sub);">초</span>
+          <button class="btn-main" style="flex:1;margin:0;" onclick="saveQuizTime()">저장</button>
+        </div>
+        <div style="font-size:11px;color:var(--text-hint);margin-top:8px;">현재 설정: <strong id="quiz-time-display" style="color:var(--sky);">10초</strong> · 5~300초 사이로 입력하세요</div>
+      </div>
       <div class="card">
         <div style="font-size:14px;font-weight:700;margin-bottom:1rem;">📝 이번 주 퀴즈 등록</div>
         <div class="m-field"><label>문제</label><textarea id="q-question" placeholder="우주/위성 관련 퀴즈를 출제해주세요"></textarea></div>
@@ -417,6 +465,12 @@
       </div>
       <div class="sec-title" style="margin-top:1rem;">이번 달 등록된 문제</div>
       <div id="quiz-admin-list"></div>
+      <!-- 탈락자 관리 -->
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-top:1.25rem;margin-bottom:0.5rem;">
+        <div class="sec-title" style="margin:0;">💥 탈락자 관리 (<span id="elim-count">0</span>명)</div>
+        <button onclick="resetAllElim()" style="padding:7px 14px;background:rgba(226,75,74,0.2);color:var(--red);border:1px solid rgba(226,75,74,0.4);border-radius:8px;font-size:12px;font-weight:700;font-family:inherit;cursor:pointer;">🔄 전체 리셋</button>
+      </div>
+      <div id="elim-list"></div>
     </div>
     <!-- 직원 관리 탭 -->
     <div id="admin-tab-emp-mgmt" style="display:none;">
@@ -446,16 +500,8 @@
       <div class="sec-title">이달의 경품 목록</div>
       <div id="admin-reward-list" style="margin-bottom:1rem;"></div>
       <div class="card" style="text-align:center;">
-        <div style="font-size:13px;color:var(--text-sub);margin-bottom:1rem;">참여자: <strong id="race-entry-count">0</strong>명</div>
-        <button class="btn-main" style="background:linear-gradient(135deg,#000820,#0D1B3E);" onclick="startOrbitalRace()">🚀 궤도 레이스 시작!</button>
-      </div>
-      <canvas id="race-canvas" style="display:none;margin-top:1rem;border-radius:16px;"></canvas>
-      <div id="race-status" style="text-align:center;margin-top:8px;font-size:13px;color:var(--text-hint);"></div>
-      <div id="race-winner-announce" style="display:none;background:var(--card);border-radius:16px;border:2px solid var(--gold);padding:1.5rem;text-align:center;margin-top:1rem;">
-        <div style="font-size:36px;margin-bottom:8px;">🏆</div>
-        <div style="font-size:24px;font-weight:900;color:var(--navy);" id="race-admin-winner"></div>
-        <div style="font-size:13px;color:var(--text-sub);margin-top:4px;margin-bottom:1rem;">궤도 레이스 우승!</div>
-        <button class="btn-main" style="background:var(--green);width:auto;padding:10px 24px;" onclick="saveRaceWinner()">결과 저장 & 발표</button>
+        <div style="font-size:13px;color:var(--text-sub);margin-bottom:0.5rem;">참여자: <strong id="race-entry-count-admin">0</strong>명</div>
+        <button class="btn-main" style="background:linear-gradient(135deg,#000820,#0D1B3E);" onclick="switchPage('race')">🛸 레이스 페이지로 이동 (시작하기)</button>
       </div>
     </div>
   </div>
@@ -494,6 +540,7 @@ const SB = {
   async post(table,data){const r=await fetch(CONFIG.supabaseUrl+'/rest/v1/'+table,{method:'POST',headers:{...this.h,'Prefer':'return=minimal'},body:JSON.stringify(data)});return r.ok;},
   async patch(table,id,data){const r=await fetch(CONFIG.supabaseUrl+'/rest/v1/'+table+'?id=eq.'+id,{method:'PATCH',headers:{...this.h,'Prefer':'return=minimal'},body:JSON.stringify(data)});return r.ok;},
   async del(table,id){const r=await fetch(CONFIG.supabaseUrl+'/rest/v1/'+table+'?id=eq.'+id,{method:'DELETE',headers:this.h});return r.ok;},
+  async delWhere(table,filter){const r=await fetch(CONFIG.supabaseUrl+'/rest/v1/'+table+'?'+filter,{method:'DELETE',headers:this.h});return r.ok;},
   async upload(file){const ext=file.name.split('.').pop();const path=Date.now()+'.'+ext;const r=await fetch(CONFIG.supabaseUrl+'/storage/v1/object/challenge-images/'+path,{method:'POST',headers:{'apikey':CONFIG.supabaseKey,'Authorization':'Bearer '+CONFIG.supabaseKey,'Content-Type':file.type},body:file});return r.ok?CONFIG.supabaseUrl+'/storage/v1/object/public/challenge-images/'+path:null;}
 };
 
@@ -575,6 +622,7 @@ document.getElementById('btn-logout').addEventListener('click',()=>{
 
 // ── PAGE SWITCH ──
 function switchPage(page){
+  if(quizActive&&page!=='quiz'){showToast('⚠️ 퀴즈 진행 중! 먼저 답을 제출하세요');return;}
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   const el=document.getElementById('page-'+page);if(el)el.classList.add('active');
   document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
@@ -592,6 +640,28 @@ function switchPage(page){
 
 // ── QUIZ ──
 let quizTimer=null;
+let quizActive=false;
+
+function lockQuizScreen(){
+  quizActive=true;
+  document.getElementById('nav-user').style.pointerEvents='none';
+  document.getElementById('nav-user').style.opacity='0.3';
+  document.getElementById('nav-admin').style.pointerEvents='none';
+  document.getElementById('nav-admin').style.opacity='0.3';
+  history.pushState(null,'',location.href);
+  window.addEventListener('popstate',_quizPopBlock);
+}
+function unlockQuizScreen(){
+  quizActive=false;
+  document.getElementById('nav-user').style.pointerEvents='';
+  document.getElementById('nav-user').style.opacity='';
+  document.getElementById('nav-admin').style.pointerEvents='';
+  document.getElementById('nav-admin').style.opacity='';
+  window.removeEventListener('popstate',_quizPopBlock);
+}
+function _quizPopBlock(){
+  history.pushState(null,'',location.href);
+}
 
 async function loadQuizPage(){
   const el=document.getElementById('quiz-content');
@@ -630,7 +700,8 @@ async function loadQuizPage(){
       const bg=myCorrect?'#e8f5e9':'#ffebee';const bc=myCorrect?'#a5d6a7':'#ffcdd2';const msg=myCorrect?'✅ 정답! 생존 중입니다 🎉':'💥 이번 주 탈락했습니다';const color=myCorrect?'#1b5e20':'#b71c1c';
       html+=`<div style="background:${bg};border:1.5px solid ${bc};border-radius:16px;padding:1.25rem;text-align:center;"><div style="font-size:14px;font-weight:700;color:${color};">${msg}</div><div style="font-size:12px;color:var(--text-hint);margin-top:4px;">다음 주 문제를 기다려주세요</div></div>`;
     } else {
-      html+=`<div class="quiz-card"><div style="font-size:12px;color:var(--text-hint);margin-bottom:4px;">⏱ 1분 안에 답하세요!</div><div class="quiz-timer" id="quiz-timer">60</div><div class="quiz-input-wrap"><input type="text" class="quiz-input" id="quiz-ans" placeholder="정답 입력..." onkeydown="if(event.key==='Enter')submitAnswer('${quiz.id}','${quiz.answer}')"/><button class="btn-answer" onclick="submitAnswer('${quiz.id}','${quiz.answer}')">제출</button></div></div>`;
+      const qt=getQuizTime();
+      html+=`<div class="quiz-card" id="quiz-card-container"><div style="font-size:12px;color:var(--text-hint);margin-bottom:4px;text-align:center;">⏱ ${qt}초 안에 답하세요!</div><div class="quiz-timer" id="quiz-timer">${qt}.0</div><div class="tension-bar"><div class="tension-fill" id="quiz-tension-fill"></div></div><div class="quiz-input-wrap"><input type="text" class="quiz-input" id="quiz-ans" placeholder="정답 입력..." onkeydown="if(event.key==='Enter')submitAnswer('${quiz.id}','${quiz.answer}')"/><button class="btn-answer" onclick="submitAnswer('${quiz.id}','${quiz.answer}')">제출</button></div></div>`;
       setTimeout(()=>startTimer(quiz.id,quiz.answer),100);
     }
   } else {
@@ -639,20 +710,63 @@ async function loadQuizPage(){
   el.innerHTML=html;
 }
 
+function getQuizTime(){return Math.max(5,Math.min(300,parseInt(localStorage.getItem('quiz_time')||'10')));}
+function saveQuizTime(){
+  const v=parseInt(document.getElementById('quiz-time-input').value);
+  if(!v||v<5||v>300){showToast('❌ 5~300초 사이로 입력해주세요');return;}
+  localStorage.setItem('quiz_time',v);
+  document.getElementById('quiz-time-display').textContent=v+'초';
+  document.getElementById('quiz-time-input').value='';
+  showToast('✅ 제한 시간 '+v+'초로 저장됨');
+}
+function loadQuizTimeDisplay(){
+  const el=document.getElementById('quiz-time-display');
+  if(el)el.textContent=getQuizTime()+'초';
+}
+
 function startTimer(qid,ans){
   if(quizTimer)clearInterval(quizTimer);
-  let t=60;
+  lockQuizScreen();
+  const maxTime=getQuizTime();
+  let startTime=Date.now();
   quizTimer=setInterval(async()=>{
-    t--;const el=document.getElementById('quiz-timer');if(!el){clearInterval(quizTimer);return;}
-    el.textContent=t;if(t<=10)el.classList.add('warn');
-    if(t<=0){clearInterval(quizTimer);await SB.post('quiz_attempts',{year_month:getYM(),name:app.name,quiz_id:qid,is_correct:false,eliminated_at:new Date().toISOString()});showToast('⏰ 시간 초과! 탈락...');setTimeout(()=>loadQuizPage(),1500);}
-  },1000);
+    let elapsed = (Date.now() - startTime) / 1000;
+    let remain = Math.max(0, maxTime - elapsed);
+    const el=document.getElementById('quiz-timer');
+    const fill=document.getElementById('quiz-tension-fill');
+    if(!el){clearInterval(quizTimer);unlockQuizScreen();return;}
+
+    el.textContent=remain.toFixed(1);
+    const pct=(remain/maxTime)*100;
+    if(fill) fill.style.width=pct+'%';
+
+    const warnAt=Math.min(maxTime*0.5, 30);
+    const dangerAt=Math.min(maxTime*0.2, 10);
+    if(remain<=dangerAt) {
+      el.classList.add('danger'); el.classList.remove('warn');
+      if(fill) {fill.classList.add('danger'); fill.classList.remove('warn');}
+    } else if(remain<=warnAt) {
+      el.classList.add('warn'); el.classList.remove('danger');
+      if(fill) {fill.classList.add('warn'); fill.classList.remove('danger');}
+    } else {
+      el.classList.remove('warn', 'danger');
+      if(fill) fill.classList.remove('warn', 'danger');
+    }
+
+    if(remain<=0){
+      clearInterval(quizTimer);unlockQuizScreen();
+      await SB.post('quiz_attempts',{year_month:getYM(),name:app.name,quiz_id:qid,is_correct:false,eliminated_at:new Date().toISOString()});
+      showToast('⏰ 시간 초과! 탈락...');
+      setTimeout(()=>loadQuizPage(),1500);
+    }
+  },50);
 }
 
 async function submitAnswer(qid,correct){
   const ans=document.getElementById('quiz-ans')?.value.trim();
   if(!ans){showToast('❌ 정답을 입력해주세요');return;}
   if(quizTimer)clearInterval(quizTimer);
+  unlockQuizScreen();
   const ok=ans.replace(/\s/g,'').toLowerCase()===correct.replace(/\s/g,'').toLowerCase();
   await SB.post('quiz_attempts',{year_month:getYM(),name:app.name,quiz_id:qid,is_correct:ok,eliminated_at:ok?null:new Date().toISOString()});
   showToast(ok?'🎉 정답입니다! 생존!':'💥 틀렸습니다! 탈락...');
@@ -677,6 +791,42 @@ async function loadQuizAdminList(){
   el.innerHTML=rows.length?rows.map(q=>`<div style="background:var(--card);border-radius:12px;border:1.5px solid ${q.week_key===wk?'var(--purple)':'var(--border)'};padding:1rem;margin-bottom:8px;"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;"><span style="font-size:11px;font-weight:700;color:${q.week_key===wk?'var(--purple)':'var(--text-hint)'};">${q.week_key===wk?'📍 이번 주':'지난 주'} · ${q.week_key||''}</span><div style="display:flex;align-items:center;gap:8px;"><span style="font-size:11px;color:var(--text-hint);">✍️ ${q.created_by}</span><button onclick="SB.del('quiz_relay','${q.id}').then(()=>{showToast('🗑️ 삭제됨');loadQuizAdminList();})" style="padding:3px 8px;background:#888;color:#fff;border:none;border-radius:6px;font-size:11px;font-family:inherit;cursor:pointer;">🗑️</button></div></div><div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:4px;">${q.question}</div><div style="font-size:12px;color:var(--green);">정답: ${q.answer}</div>${q.hint?`<div style="font-size:11px;color:var(--text-hint);">힌트: ${q.hint}</div>`:''}</div>`).join(''):'<div class="rank-empty" style="background:var(--card);border-radius:12px;">등록된 문제 없음</div>';
 }
 
+// ── QUIZ ELIM MANAGE ──
+async function loadElimList(){
+  const ym=getYM();
+  const all=await SB.get('quiz_attempts','year_month=eq.'+ym+'&is_correct=eq.false&order=eliminated_at.desc');
+  // 이름 기준 중복 제거 (최초 탈락 기록만)
+  const seen=new Set();
+  const elims=all.filter(a=>{if(seen.has(a.name))return false;seen.add(a.name);return true;});
+  document.getElementById('elim-count').textContent=elims.length;
+  const el=document.getElementById('elim-list');
+  if(!elims.length){el.innerHTML='<div class="rank-empty" style="background:var(--card);border-radius:12px;">탈락자 없음 🎉</div>';return;}
+  el.innerHTML=elims.map(a=>`<div style="display:flex;align-items:center;justify-content:space-between;background:var(--card);border-radius:10px;border:1px solid var(--border);padding:10px 14px;margin-bottom:8px;">
+    <div>
+      <div style="font-size:13px;font-weight:700;color:#fff;">💥 ${a.name}</div>
+      <div style="font-size:11px;color:var(--text-hint);margin-top:2px;">${a.eliminated_at?new Date(a.eliminated_at).toLocaleString('ko-KR'):'-'}</div>
+    </div>
+    <button onclick="resetOneElim('${encodeURIComponent(a.name)}')" style="padding:6px 13px;background:rgba(0,200,100,0.15);color:#00cc66;border:1px solid rgba(0,200,100,0.35);border-radius:8px;font-size:12px;font-weight:700;font-family:inherit;cursor:pointer;">복구</button>
+  </div>`).join('');
+}
+
+async function resetOneElim(encodedName){
+  const ym=getYM();
+  const ok=await SB.delWhere('quiz_attempts','year_month=eq.'+ym+'&name=eq.'+encodedName+'&is_correct=eq.false');
+  if(ok){showToast('✅ 복구 완료!');loadElimList();}
+  else showToast('❌ 복구 실패');
+}
+
+async function resetAllElim(){
+  const ym=getYM();
+  const elims=await SB.get('quiz_attempts','year_month=eq.'+ym+'&is_correct=eq.false');
+  if(!elims.length){showToast('탈락자가 없습니다');return;}
+  if(!confirm('이번 달 탈락자 '+elims.length+'명을 전부 복구하시겠습니까?'))return;
+  const ok=await SB.delWhere('quiz_attempts','year_month=eq.'+ym+'&is_correct=eq.false');
+  if(ok){showToast('🔄 전체 리셋 완료!');loadElimList();}
+  else showToast('❌ 리셋 실패');
+}
+
 // ── FUNNY ──
 document.getElementById('funny-file').addEventListener('change',function(){previewImg(this,'funny-preview','funny-btn');});
 async function submitFunny(){
@@ -691,9 +841,83 @@ async function submitFunny(){
   if(ok){showToast('✅ 제출 완료! 관리자 승인 후 공개됩니다');document.getElementById('funny-title').value='';document.getElementById('funny-preview').style.display='none';loadFunnyList();}
 }
 async function loadFunnyList(){
-  const rows=await SB.get('funny_submissions','year_month=eq.'+getYM()+'&status=neq.rejected&order=created_at.desc');
+  const ym=getYM();
+  const [rows, myVoteArr] = await Promise.all([
+    SB.get('funny_submissions','year_month=eq.'+ym+'&status=neq.rejected&order=votes.desc,created_at.asc'),
+    SB.get('funny_votes','year_month=eq.'+ym+'&voter_name=eq.'+encodeURIComponent(app.name))
+  ]);
+  const myVotedId = myVoteArr[0]?.submission_id || null;
   const el=document.getElementById('funny-list');
-  el.innerHTML=rows.length?rows.map(r=>`<div class="card" style="margin-bottom:8px;">${r.media_url?(r.is_video?`<video src="${r.media_url}" style="width:100%;border-radius:10px;margin-bottom:8px;" controls></video>`:`<img src="${r.media_url}" style="width:100%;border-radius:10px;margin-bottom:8px;cursor:pointer;" onclick="window.open('${r.media_url}')"/>`):''}<div style="display:flex;justify-content:space-between;align-items:center;"><div><div style="font-size:13px;font-weight:700;">${r.title}</div><div style="font-size:11px;color:var(--text-hint);">by ${r.name} · ${new Date(r.created_at).toLocaleDateString('ko-KR')}</div></div><span class="status-pill ${r.status==='winner'?'pill-winner':r.status==='approved'?'pill-approved':'pill-pending'}">${r.status==='winner'?'🏆 당첨':r.status==='approved'?'✅ 승인':'⏳ 검토중'}</span></div></div>`).join(''):'<div class="rank-empty" style="background:var(--card);border-radius:12px;">아직 제출된 내역이 없습니다</div>';
+  const infoEl=document.getElementById('funny-vote-info');
+
+  // 승인된 항목들만 투표 대상
+  const votable=rows.filter(r=>r.status==='approved'||r.status==='winner');
+  const totalVotes=votable.reduce((a,b)=>a+(b.votes||0),0);
+
+  if(myVotedId) infoEl.textContent='· 투표 완료 ✅';
+  else if(votable.length>0) infoEl.textContent='· 1인 1표';
+  else infoEl.textContent='';
+
+  const rankBadge=(idx)=>{
+    if(idx===0&&votable.length>0) return '<span class="funny-rank-badge rank-gold">🥇 1위</span>';
+    if(idx===1) return '<span class="funny-rank-badge rank-silver">🥈 2위</span>';
+    if(idx===2) return '<span class="funny-rank-badge rank-bronze">🥉 3위</span>';
+    return '';
+  };
+
+  // 승인/winner 항목 먼저, 검토중 나중
+  const approved=rows.filter(r=>r.status==='approved'||r.status==='winner');
+  const pending=rows.filter(r=>r.status==='pending');
+
+  const renderCard=(r,rank)=>{
+    const isVotable=r.status==='approved'||r.status==='winner';
+    const isMine=myVotedId===r.id;
+    const pct=totalVotes>0?Math.round((r.votes||0)/totalVotes*100):0;
+    const cardClass='funny-card'+(rank===0&&isVotable?' rank1':'')+(isMine?' my-voted':'');
+    return `<div class="${cardClass}">
+      ${r.media_url?(r.is_video
+        ?`<video src="${r.media_url}" style="width:100%;max-height:260px;object-fit:cover;" controls></video>`
+        :`<img src="${r.media_url}" style="width:100%;max-height:260px;object-fit:cover;cursor:pointer;" onclick="window.open('${r.media_url}')"/>`
+      ):''}
+      <div class="funny-card-body">
+        ${isVotable?rankBadge(rank):''}
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+          <div>
+            <div style="font-size:13px;font-weight:700;">${r.title}</div>
+            <div style="font-size:11px;color:var(--text-hint);margin-top:2px;">by ${r.name} · ${new Date(r.created_at).toLocaleDateString('ko-KR')}</div>
+          </div>
+          ${!isVotable?`<span class="status-pill pill-pending">⏳ 검토중</span>`:''}
+        </div>
+        ${isVotable?`
+        <div class="funny-vote-row">
+          <div class="funny-vote-count">❤️ ${r.votes||0}표</div>
+          ${!myVotedId
+            ?`<button class="btn-funny-vote" onclick="voteFunny('${r.id}')">투표하기</button>`
+            :(isMine
+              ?`<button class="btn-funny-vote voted">내가 투표함 ✅</button>`
+              :`<button class="btn-funny-vote voted">투표 완료</button>`)
+          }
+        </div>
+        <div class="funny-vote-bar"><div class="funny-vote-bar-fill" style="width:${pct}%"></div></div>
+        `:''}
+      </div>
+    </div>`;
+  };
+
+  if(!rows.length){el.innerHTML='<div class="rank-empty" style="background:var(--card);border-radius:12px;">아직 제출된 내역이 없습니다</div>';return;}
+  el.innerHTML=approved.map((r,i)=>renderCard(r,i)).join('')+(pending.length?'<div class="sec-title" style="margin-top:1rem;font-size:12px;">검토 대기중</div>'+pending.map(r=>renderCard(r,-1)).join(''):'');
+}
+
+async function voteFunny(submissionId){
+  const ym=getYM();
+  const existing=await SB.get('funny_votes','year_month=eq.'+ym+'&voter_name=eq.'+encodeURIComponent(app.name));
+  if(existing.length>0){showToast('❌ 이미 투표하셨습니다');return;}
+  const ok=await SB.post('funny_votes',{year_month:ym,submission_id:submissionId,voter_name:app.name});
+  if(!ok){showToast('❌ 투표 실패');return;}
+  const sub=await SB.get('funny_submissions','id=eq.'+submissionId);
+  if(sub[0])await SB.patch('funny_submissions',submissionId,{votes:(sub[0].votes||0)+1});
+  showToast('❤️ 투표 완료!');
+  loadFunnyList();
 }
 
 // ── IDEA ──
@@ -742,6 +966,17 @@ async function loadRacePage(){
   if(entry.length>0){document.getElementById('race-join-section').style.display='none';document.getElementById('race-joined-badge').style.display='block';}
   else{document.getElementById('race-joined-badge').style.display='none';}
 
+  // 관리자 레이스 시작 섹션
+  if(app.isAdmin){
+    const entries=await SB.get('race_entries','year_month=eq.'+ym);
+    document.getElementById('race-entry-count').textContent=entries.length;
+    document.getElementById('race-admin-start-section').style.display='block';
+    document.getElementById('race-vote-section').style.display='none';
+  } else {
+    document.getElementById('race-admin-start-section').style.display='none';
+    document.getElementById('race-vote-section').style.display='block';
+  }
+
   // 결과 확인
   const result=await SB.get('race_results','year_month=eq.'+ym+'&order=created_at.desc&limit=1');
   if(result.length>0){
@@ -788,8 +1023,8 @@ function switchAdminTab(btn,tab){
   if(tab==='pending')loadAdminPending();
   if(tab==='funny-all')loadAdminFunnyAll();
   if(tab==='idea-all')loadAdminIdeaAll();
-  if(tab==='quiz-mgmt'){loadQuizAdminList();renderPrizeTiers();}
-  if(tab==='race-mgmt'){loadAdminRewardList();SB.get('race_entries','year_month=eq.'+getYM()).then(r=>document.getElementById('race-entry-count').textContent=r.length);}
+  if(tab==='quiz-mgmt'){loadQuizAdminList();renderPrizeTiers();loadElimList();loadQuizTimeDisplay();}
+  if(tab==='race-mgmt'){loadAdminRewardList();SB.get('race_entries','year_month=eq.'+getYM()).then(r=>document.getElementById('race-entry-count-admin').textContent=r.length);}
   if(tab==='emp-mgmt')loadEmployeeList();
 }
 
@@ -810,9 +1045,10 @@ function pendingCard(r,table,name,title,mediaUrl,isVideo){
 async function approveIdea(id){await SB.patch('idea_submissions',id,{status:'winner'});showToast('🏆 선정 완료!');loadAdminPending();}
 
 async function loadAdminFunnyAll(){
-  const rows=await SB.get('funny_submissions','year_month=eq.'+getYM()+'&order=created_at.desc');
+  const rows=await SB.get('funny_submissions','year_month=eq.'+getYM()+'&order=votes.desc,created_at.asc');
   const el=document.getElementById('admin-tab-funny-all');
-  el.innerHTML='<div class="sec-title">이번 달 웃수저 전체</div>'+(rows.length?rows.map(r=>`<div class="pending-card"><div class="pending-info" style="display:flex;justify-content:space-between;"><div><div class="pending-title">${r.title}</div><div class="pending-sub">by ${r.name}</div></div><span class="status-pill ${r.status==='winner'?'pill-winner':r.status==='approved'?'pill-approved':r.status==='rejected'?'pill-rejected':'pill-pending'}">${r.status==='winner'?'🏆':r.status==='approved'?'✅':r.status==='rejected'?'❌':'⏳'}</span></div>${r.media_url?(r.is_video?`<video class="pending-img" src="${r.media_url}" controls></video>`:`<img class="pending-img" src="${r.media_url}" onclick="window.open('${r.media_url}')"/>`):''}<div class="pending-btns">${r.status!=='winner'?`<button class="btn-approve" onclick="SB.patch('funny_submissions','${r.id}',{status:'winner'}).then(()=>{showToast('🏆 당첨!');loadAdminFunnyAll();})">🏆 당첨</button>`:''}${r.status==='pending'?`<button class="btn-approve" onclick="SB.patch('funny_submissions','${r.id}',{status:'approved'}).then(()=>{showToast('✅');loadAdminFunnyAll();})">✅</button><button class="btn-reject" onclick="SB.patch('funny_submissions','${r.id}',{status:'rejected'}).then(()=>{showToast('❌');loadAdminFunnyAll();})">❌</button>`:''}<button class="btn-del" onclick="SB.del('funny_submissions','${r.id}').then(()=>{showToast('🗑️');loadAdminFunnyAll();})">🗑️</button></div></div>`).join(''):'<div class="rank-empty" style="background:var(--card);border-radius:12px;">없음</div>');
+  const totalVotes=rows.reduce((a,b)=>a+(b.votes||0),0);
+  el.innerHTML='<div class="sec-title">이번 달 웃수저 투표 현황 (총 '+totalVotes+'표)</div>'+(rows.length?rows.map(r=>`<div class="pending-card"><div class="pending-info" style="display:flex;justify-content:space-between;"><div><div class="pending-title">${r.title}</div><div class="pending-sub">by ${r.name} · ❤️ ${r.votes||0}표</div></div><span class="status-pill ${r.status==='winner'?'pill-winner':r.status==='approved'?'pill-approved':r.status==='rejected'?'pill-rejected':'pill-pending'}">${r.status==='winner'?'🏆':r.status==='approved'?'✅':r.status==='rejected'?'❌':'⏳'}</span></div>${r.media_url?(r.is_video?`<video class="pending-img" src="${r.media_url}" controls></video>`:`<img class="pending-img" src="${r.media_url}" onclick="window.open('${r.media_url}')"/>`):''}<div class="pending-btns">${r.status!=='winner'?`<button class="btn-approve" onclick="SB.patch('funny_submissions','${r.id}',{status:'winner'}).then(()=>{showToast('🏆 당첨!');loadAdminFunnyAll();})">🏆 당첨</button>`:'<span class="status-pill pill-winner" style="margin:auto 0;">🏆 당첨</span>'}${r.status==='pending'?`<button class="btn-approve" onclick="SB.patch('funny_submissions','${r.id}',{status:'approved'}).then(()=>{showToast('✅ 승인됨');loadAdminFunnyAll();})">✅ 승인</button><button class="btn-reject" onclick="SB.patch('funny_submissions','${r.id}',{status:'rejected'}).then(()=>{showToast('❌');loadAdminFunnyAll();})">❌</button>`:''}<button class="btn-del" onclick="SB.del('funny_submissions','${r.id}').then(()=>{showToast('🗑️');loadAdminFunnyAll();})">🗑️</button></div></div>`).join(''):'<div class="rank-empty" style="background:var(--card);border-radius:12px;">없음</div>');
 }
 
 async function loadAdminIdeaAll(){
