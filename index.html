@@ -252,12 +252,12 @@
         <div class="hc-desc">업무혁신 아이디어</div>
         <div class="hc-action" style="color:var(--green)">제출하기 →</div>
       </div>
-      <div class="home-card" onclick="switchPage('race')">
-        <div class="hc-accent" style="background:var(--cyan)"></div>
-        <div class="hc-icon">🎱</div>
-        <div class="hc-label">궤도 레이스</div>
-        <div class="hc-desc">상품 투표 후 추첨</div>
-        <div class="hc-action" style="color:#0099aa">참여하기 →</div>
+      <div class="home-card" onclick="switchPage('race')" style="background:linear-gradient(135deg,#080820,#0d0d2e);border-color:rgba(0,200,255,0.2);">
+        <div class="hc-accent" style="background:linear-gradient(90deg,#00eeff,#7b5ea7)"></div>
+        <div class="hc-icon">🛸</div>
+        <div class="hc-label" style="color:rgba(180,230,255,0.8);">궤도 레이스</div>
+        <div class="hc-desc" style="color:rgba(150,200,255,0.6);">상품 투표 후 추첨</div>
+        <div class="hc-action" style="color:#00eeff;text-shadow:0 0 6px rgba(0,200,255,0.6)">참여하기 →</div>
       </div>
     </div>
   </div>
@@ -323,19 +323,22 @@
 
   <!-- 궤도 레이스 -->
   <div class="page" id="page-race">
-    <div class="month-banner" style="background:linear-gradient(135deg,#000820,#0D1B3E);">
-      <div><div class="mb-sub">🎱 궤도 레이스</div><div class="mb-title">이달의 경품 추첨</div></div>
-      <div class="mb-tag">매월 1회</div>
+    <div class="month-banner" style="background:linear-gradient(135deg,#000820 0%,#0a0a2e 50%,#0D1B3E 100%);border:1px solid rgba(0,200,255,0.2);box-shadow:0 0 20px rgba(0,150,255,0.15);">
+      <div>
+        <div class="mb-sub" style="color:rgba(0,220,255,0.8);letter-spacing:1px;">🛸 ORBITAL RACE</div>
+        <div class="mb-title" style="color:#fff;text-shadow:0 0 12px rgba(0,200,255,0.5);">이달의 경품 추첨</div>
+      </div>
+      <div class="mb-tag" style="background:rgba(0,200,255,0.15);border:1px solid rgba(0,200,255,0.3);color:#00eeff;">매월 1회</div>
     </div>
 
     <!-- 미리보기 시뮬레이션 -->
-    <div class="card" style="margin-bottom:1rem;padding:0;overflow:hidden;">
-      <div style="padding:12px 14px;background:linear-gradient(135deg,#000820,#0D1B3E);display:flex;align-items:center;justify-content:space-between;">
+    <div class="card" style="margin-bottom:1rem;padding:0;overflow:hidden;border:1px solid rgba(0,200,255,0.2);box-shadow:0 0 16px rgba(0,100,255,0.1);">
+      <div style="padding:12px 14px;background:linear-gradient(135deg,#000820,#0a0a2e,#0D1B3E);display:flex;align-items:center;justify-content:space-between;">
         <div>
-          <div style="font-size:13px;font-weight:700;color:#fff;">🎱 궤도 레이스란?</div>
-          <div style="font-size:11px;color:rgba(255,255,255,0.6);margin-top:2px;">위성들이 궤도를 돌다가 이벤트로 하나씩 탈락! 마지막 생존자 당첨!</div>
+          <div style="font-size:13px;font-weight:700;color:#fff;text-shadow:0 0 8px rgba(0,200,255,0.6);">🌌 궤도 레이스란?</div>
+          <div style="font-size:11px;color:rgba(180,230,255,0.7);margin-top:2px;">위성들이 궤도를 돌다가 이벤트로 하나씩 탈락! 마지막 생존자 당첨!</div>
         </div>
-        <button onclick="runDemoRace()" id="demo-btn" style="padding:7px 14px;background:rgba(255,255,255,0.15);color:#fff;border:1px solid rgba(255,255,255,0.3);border-radius:8px;font-size:12px;font-weight:700;font-family:inherit;cursor:pointer;">▶ 데모</button>
+        <button onclick="runDemoRace()" id="demo-btn" style="padding:7px 14px;background:rgba(0,200,255,0.12);color:#00eeff;border:1px solid rgba(0,200,255,0.4);border-radius:8px;font-size:12px;font-weight:700;font-family:inherit;cursor:pointer;text-shadow:0 0 6px rgba(0,200,255,0.6);">▶ 데모</button>
       </div>
       <canvas id="demo-canvas" style="display:none;width:100%;"></canvas>
     </div>
@@ -352,22 +355,22 @@
           <button id="join-btn" class="btn-main" style="background:var(--navy);width:auto;padding:10px 28px;" onclick="joinRace()">참여하기</button>
         </div>
       </div>
-      <div id="race-joined-badge" style="display:none;background:#e8f5e9;border:1.5px solid #a5d6a7;border-radius:12px;padding:1rem;text-align:center;margin-top:1rem;">
-        <div style="font-size:20px;margin-bottom:4px;">✅</div>
-        <div style="font-size:13px;font-weight:700;color:#1b5e20;">이번 달 레이스 참여 완료!</div>
-        <div style="font-size:11px;color:var(--text-hint);margin-top:2px;">관리자가 레이스를 시작하면 알려드려요</div>
+      <div id="race-joined-badge" style="display:none;background:linear-gradient(135deg,#001a10,#002a18);border:1.5px solid rgba(0,220,120,0.4);border-radius:12px;padding:1rem;text-align:center;margin-top:1rem;box-shadow:0 0 14px rgba(0,200,100,0.1);">
+        <div style="font-size:20px;margin-bottom:4px;">🛸</div>
+        <div style="font-size:13px;font-weight:700;color:#00ff88;text-shadow:0 0 8px rgba(0,255,136,0.5);">이번 달 레이스 참여 완료!</div>
+        <div style="font-size:11px;color:rgba(180,255,200,0.6);margin-top:2px;">관리자가 레이스를 시작하면 알려드려요</div>
       </div>
     </div>
 
     <!-- 레이스 결과 -->
     <div id="race-result-section" style="display:none;margin-top:1rem;">
       <div class="sec-title">이달의 레이스 결과</div>
-      <div id="race-result-box" style="background:var(--card);border-radius:16px;border:2px solid var(--gold);padding:1.5rem;text-align:center;margin-bottom:1rem;">
-        <div style="font-size:36px;margin-bottom:8px;">🏆</div>
-        <div style="font-size:11px;color:var(--text-hint);letter-spacing:2px;margin-bottom:4px;">MISSION COMPLETE</div>
-        <div style="font-size:24px;font-weight:900;color:var(--navy);" id="race-winner-name"></div>
-        <div style="font-size:13px;color:var(--text-sub);margin-top:4px;">궤도 레이스 우승!</div>
-        <button class="btn-main" style="background:linear-gradient(135deg,#000820,#0D1B3E);width:auto;padding:10px 24px;margin-top:1rem;" onclick="playUserRace()">🛸 레이스 다시보기</button>
+      <div id="race-result-box" style="background:linear-gradient(135deg,#0a0820,#12082a,#0a1030);border-radius:16px;border:2px solid rgba(255,200,0,0.5);padding:1.5rem;text-align:center;margin-bottom:1rem;box-shadow:0 0 30px rgba(255,180,0,0.15),inset 0 0 30px rgba(100,0,200,0.08);">
+        <div style="font-size:42px;margin-bottom:8px;filter:drop-shadow(0 0 12px gold);">🏆</div>
+        <div style="font-size:10px;color:rgba(255,200,0,0.7);letter-spacing:3px;margin-bottom:6px;font-weight:700;">✦ MISSION COMPLETE ✦</div>
+        <div style="font-size:26px;font-weight:900;color:#FFD700;text-shadow:0 0 16px rgba(255,200,0,0.7);" id="race-winner-name"></div>
+        <div style="font-size:12px;color:rgba(255,220,100,0.6);margin-top:6px;letter-spacing:1px;">궤도 레이스 최후 생존자</div>
+        <button class="btn-main" style="background:linear-gradient(135deg,#0a0820,#1a0a3a);border:1px solid rgba(0,200,255,0.3);width:auto;padding:10px 24px;margin-top:1rem;color:#00eeff;box-shadow:0 0 10px rgba(0,200,255,0.2);" onclick="playUserRace()">🛸 레이스 다시보기</button>
       </div>
       <canvas id="user-race-canvas" style="display:none;width:100%;border-radius:16px;margin-bottom:8px;"></canvas>
       <div id="user-race-status" style="text-align:center;font-size:13px;color:var(--text-hint);margin-bottom:8px;"></div>
@@ -833,7 +836,7 @@ async function loadAdminRewardList(){
 const RC=['#00FFFF','#FF6B6B','#FFD700','#B06AFF','#00FF88','#FF8C00','#FF69B4','#88FFFF','#FF4444','#FFAA00','#AA88FF','#44FF88','#FF1493','#00CED1'];
 let raceSeed=0,raceSatNames=[];
 let raceAnimId=null,raceSats=[],raceStars=[],raceNebula=[],raceDone=false,raceWinner=null,raceT=0,raceW=0,raceH=0,raceCX=0,raceCY=0,raceParticles=[],racePhase='ready',raceCd=3,raceCdTimer=0;
-let raceEvents={meteor:null,solarWind:null,blackHole:null,eventMsg:{text:'',alpha:0,timer:0}};
+let raceEvents={meteor:null,solarWind:null,blackHole:null,eventMsg:{text:'',alpha:0,timer:0},shake:0};
 let raceEventQueue=[],raceEventsDone=new Set();
 const EARTH_R=42;
 
@@ -852,7 +855,7 @@ async function startOrbitalRace(){
   raceDone=false; raceWinner=null; raceT=0;
   raceParticles=[];
   racePhase='countdown'; raceCd=3; raceCdTimer=0;
-  raceEvents={meteor:null,solarWind:null,blackHole:null,eventMsg:{text:'',alpha:0,timer:0}};
+  raceEvents={meteor:null,solarWind:null,blackHole:null,eventMsg:{text:'',alpha:0,timer:0},shake:0};
   raceEventsDone=new Set();
   // 이벤트 순서 큐 (시간 기준)
   raceEventQueue=[
@@ -863,13 +866,15 @@ async function startOrbitalRace(){
   ];
 
   // 별
-  raceStars=Array.from({length:120},()=>({
+  const SC=[[255,255,255],[180,210,255],[255,240,180],[160,200,255],[255,200,200]];
+  raceStars=Array.from({length:200},()=>{
+    const c=SC[Math.floor(Math.random()*SC.length)];
+    return{x:Math.random()*raceW,y:Math.random()*raceH,
+      r:Math.random()*2+0.3,a:Math.random()*0.9+0.2,tw:Math.random()*Math.PI*2,c,big:Math.random()<0.1};
+  });
+  raceNebula=Array.from({length:5},(_,i)=>({
     x:Math.random()*raceW,y:Math.random()*raceH,
-    r:Math.random()*1.4+0.2,a:Math.random()*0.7+0.1,tw:Math.random()*Math.PI*2
-  }));
-  raceNebula=Array.from({length:4},(_,i)=>({
-    x:Math.random()*raceW,y:Math.random()*raceH,
-    r:50+Math.random()*50,hue:[200,260,180,300][i],a:0.025+Math.random()*0.02
+    r:80+Math.random()*80,hue:[200,260,180,300,170][i],a:0.07+Math.random()*0.05
   }));
 
   raceSeed=Date.now();
@@ -920,13 +925,13 @@ function triggerRaceEvent(type){
   if(alive.length<2)return;
   if(type==='meteor'){
     const angle=Math.random()*Math.PI*2;
-    raceEvents.meteor={x:raceCX+Math.cos(angle)*(raceW*0.8),y:raceCY+Math.sin(angle)*(raceH*0.8),vx:-Math.cos(angle)*7,vy:-Math.sin(angle)*7,r:9,trail:[],active:true};
-    showRaceMsg('☄️ 운석 낙하!');
+    raceEvents.meteor={x:raceCX+Math.cos(angle)*(raceW*0.8),y:raceCY+Math.sin(angle)*(raceH*0.8),vx:-Math.cos(angle)*12,vy:-Math.sin(angle)*12,r:16,trail:[],active:true};
+    showRaceMsg('☄️ 거대 운석 낙하!');
   } else if(type==='collision'){
     if(alive.length>=2){
       const a=alive[Math.floor(Math.random()*alive.length)];
       const b=alive.filter(s=>s!==a)[Math.floor(Math.random()*(alive.length-1))];
-      if(a&&b){raceExplode(a);raceExplode(b);addRaceW((a.x+b.x)/2,(a.y+b.y)/2,'#FF8C00',55);addRaceP((a.x+b.x)/2,(a.y+b.y)/2,'#FF8C00',20);showRaceMsg('💥 위성 충돌!');}
+      if(a&&b){raceExplode(a);raceExplode(b);addRaceW((a.x+b.x)/2,(a.y+b.y)/2,'#FF3300',110);addRaceW((a.x+b.x)/2,(a.y+b.y)/2,'#FF8C00',75);addRaceP((a.x+b.x)/2,(a.y+b.y)/2,'#FF4400',45);addRaceP((a.x+b.x)/2,(a.y+b.y)/2,'#FFFFFF',25);raceEvents.shake=18;showRaceMsg('💥 대형 위성 충돌!');}
     }
   } else if(type==='solarWind'){
     raceEvents.solarWind={timer:0,phase:'warning'};
@@ -939,6 +944,7 @@ function triggerRaceEvent(type){
 
 function raceUpdate(){
   raceT+=1/60;
+  if(raceEvents.shake>0) raceEvents.shake=Math.max(0,raceEvents.shake*0.9-0.2);
   const em=raceEvents.eventMsg;
   if(em.alpha>0){em.timer+=1/60;em.alpha=Math.max(0,1-em.timer/2.5);}
 
@@ -954,24 +960,26 @@ function raceUpdate(){
   // 운석
   if(raceEvents.meteor?.active){
     const m=raceEvents.meteor;
-    m.trail.push({x:m.x,y:m.y});if(m.trail.length>18)m.trail.shift();
+    m.trail.push({x:m.x,y:m.y});if(m.trail.length>25)m.trail.shift();
     m.x+=m.vx;m.y+=m.vy;
-    raceSats.forEach(s=>{if(s.state!=='orbit')return;const dx=s.x-m.x,dy=s.y-m.y;if(Math.sqrt(dx*dx+dy*dy)<m.r+6){raceExplode(s);m.active=false;addRaceW(m.x,m.y,'#FF4400',60);addRaceP(m.x,m.y,'#FF6600',20);}});
+    raceEvents.shake=3;if(Math.random()<0.6)addRaceP(m.x+(Math.random()-0.5)*10,m.y+(Math.random()-0.5)*10,'#FF8C00',1);
+    raceSats.forEach(s=>{if(s.state!=='orbit')return;const dx=s.x-m.x,dy=s.y-m.y;if(Math.sqrt(dx*dx+dy*dy)<m.r+8){raceExplode(s);m.active=false;addRaceW(m.x,m.y,'#FF3300',120);addRaceP(m.x,m.y,'#FF4400',50);raceEvents.shake=25;}});
     const de=Math.sqrt((m.x-raceCX)**2+(m.y-raceCY)**2);
-    if(de<EARTH_R+m.r){m.active=false;addRaceW(m.x,m.y,'#FF4400',50);}
-    if(m.x<-50||m.x>raceW+50||m.y<-50||m.y>raceH+50)m.active=false;
-    if(!m.active)setTimeout(()=>{raceEvents.meteor=null;},300);
+    if(m.active&&de<EARTH_R+m.r){m.active=false;addRaceW(m.x,m.y,'#FF3300',100);addRaceP(m.x,m.y,'#FF8800',40);raceEvents.shake=20;}
+    if(m.x<-100||m.x>raceW+100||m.y<-100||m.y>raceH+100)m.active=false;
+    if(!m.active)setTimeout(()=>{raceEvents.meteor=null;},500);
   }
 
   // 태양풍
   if(raceEvents.solarWind){
     const sw=raceEvents.solarWind;sw.timer+=1/60;
     if(sw.phase==='warning'&&sw.timer>2){
-      sw.phase='blast';sw.blastT=0;showRaceMsg('⚡ 태양풍 강타!');
+      sw.phase='blast';sw.blastT=0;showRaceMsg('⚡ 강력한 태양풍 강타!');
       const alive=raceSats.filter(s=>s.state==='orbit'&&!s.isWinner);
       const cnt=Math.min(alive.length-1,2+Math.floor(Math.random()*2));
       for(let i=0;i<cnt;i++){const idx=Math.floor(Math.random()*alive.length);if(alive[idx]){raceExplode(alive[idx]);alive.splice(idx,1);}}
-      raceSats.filter(s=>s.state==='orbit').forEach(s=>s.wobble=1);
+      raceSats.filter(s=>s.state==='orbit').forEach(s=>s.wobble=2.5);
+      raceEvents.shake=22;
     }
     if(sw.phase==='blast'){sw.blastT=(sw.blastT||0)+1/60;if(sw.blastT>2)raceEvents.solarWind=null;}
   }
@@ -1020,23 +1028,29 @@ function raceDraw(){
   const canvas=document.getElementById('race-canvas');
   const ctx=canvas.getContext('2d');
   const W=canvas.width,H=canvas.height;
+  
+  ctx.save();
+  if(raceEvents.shake>0) ctx.translate((Math.random()-0.5)*raceEvents.shake, (Math.random()-0.5)*raceEvents.shake);
 
-  ctx.fillStyle='#000008';ctx.fillRect(0,0,W,H);
+  // 배경 (방사형 그라디언트)
+  const bgG=ctx.createRadialGradient(W*0.5,H*0.4,0,W*0.5,H*0.5,W*0.75);bgG.addColorStop(0,'#0d0d2e');bgG.addColorStop(0.5,'#07071a');bgG.addColorStop(1,'#000008');ctx.fillStyle=bgG;ctx.fillRect(0,0,W,H);
 
   // 태양풍 배경
   if(raceEvents.solarWind?.phase==='blast'){
-    const a=Math.min(0.25,(raceEvents.solarWind.blastT||0)*0.12);
-    ctx.fillStyle=`rgba(255,200,0,${a})`;ctx.fillRect(0,0,W,H);
+    const blastT = raceEvents.solarWind.blastT || 0;
+    const flash = Math.max(0, 1 - blastT*2.5);
+    const a = Math.min(0.4, blastT * 0.2);
+    ctx.fillStyle=`rgba(255,180,0,${a + flash * 0.6})`;ctx.fillRect(0,0,W,H);
   }
 
-  // 성운
-  raceNebula.forEach(n=>{const g=ctx.createRadialGradient(n.x,n.y,0,n.x,n.y,n.r);g.addColorStop(0,`hsla(${n.hue},80%,60%,${n.a*2})`);g.addColorStop(1,`hsla(${n.hue},80%,60%,0)`);ctx.fillStyle=g;ctx.beginPath();ctx.arc(n.x,n.y,n.r,0,Math.PI*2);ctx.fill();});
+  // 성운 (더 선명하게)
+  raceNebula.forEach(n=>{const g=ctx.createRadialGradient(n.x,n.y,0,n.x,n.y,n.r);g.addColorStop(0,`hsla(${n.hue},90%,65%,${n.a*3.5})`);g.addColorStop(0.4,`hsla(${n.hue},80%,55%,${n.a*1.5})`);g.addColorStop(1,`hsla(${n.hue},80%,60%,0)`);ctx.fillStyle=g;ctx.beginPath();ctx.arc(n.x,n.y,n.r,0,Math.PI*2);ctx.fill();});
 
-  // 별
-  raceStars.forEach(s=>{s.tw+=0.012;const a=s.a*(0.5+0.5*Math.sin(s.tw))*(raceEvents.solarWind?.phase==='blast'?1.8:1);ctx.fillStyle=`rgba(255,255,255,${Math.min(1,a)})`;ctx.beginPath();ctx.arc(s.x,s.y,s.r,0,Math.PI*2);ctx.fill();});
+  // 별 (색상 + 밝은 별 글로우)
+  raceStars.forEach(s=>{s.tw+=0.012;const sw=raceEvents.solarWind?.phase==='blast'?2:1;const a=Math.min(1,s.a*(0.55+0.45*Math.sin(s.tw))*sw);if(s.big){ctx.shadowColor=`rgb(${s.c})`;ctx.shadowBlur=8;}ctx.fillStyle=`rgba(${s.c[0]},${s.c[1]},${s.c[2]},${a})`;ctx.beginPath();ctx.arc(s.x,s.y,s.r,0,Math.PI*2);ctx.fill();if(s.big)ctx.shadowBlur=0;});
 
-  // 궤도링
-  raceSats.filter(s=>s.state==='orbit'||s.state==='zooming').forEach(s=>{ctx.strokeStyle='rgba(0,200,255,0.07)';ctx.lineWidth=1;ctx.setLineDash([3,7]);ctx.beginPath();ctx.arc(raceCX,raceCY,s.orbitR,0,Math.PI*2);ctx.stroke();ctx.setLineDash([]);});
+  // 궤도링 (글로우 추가)
+  raceSats.filter(s=>s.state==='orbit'||s.state==='zooming').forEach(s=>{ctx.shadowColor='rgba(0,210,255,0.5)';ctx.shadowBlur=5;ctx.strokeStyle='rgba(0,210,255,0.2)';ctx.lineWidth=1;ctx.setLineDash([4,8]);ctx.beginPath();ctx.arc(raceCX,raceCY,s.orbitR,0,Math.PI*2);ctx.stroke();ctx.setLineDash([]);ctx.shadowBlur=0;});
 
   // 블랙홀
   if(raceEvents.blackHole){
@@ -1054,13 +1068,14 @@ function raceDraw(){
   // 운석
   if(raceEvents.meteor?.active){
     const m=raceEvents.meteor;
-    for(let i=1;i<m.trail.length;i++){const a=(i/m.trail.length)*0.7;ctx.strokeStyle=`rgba(255,120,20,${a})`;ctx.lineWidth=(i/m.trail.length)*7;ctx.beginPath();ctx.moveTo(m.trail[i-1].x,m.trail[i-1].y);ctx.lineTo(m.trail[i].x,m.trail[i].y);ctx.stroke();}
-    ctx.shadowColor='#FF6600';ctx.shadowBlur=15;ctx.fillStyle='#FF4400';ctx.beginPath();ctx.arc(m.x,m.y,m.r,0,Math.PI*2);ctx.fill();ctx.fillStyle='#FFA000';ctx.beginPath();ctx.arc(m.x-2,m.y-2,m.r*0.5,0,Math.PI*2);ctx.fill();ctx.shadowBlur=0;
+    for(let i=1;i<m.trail.length;i++){const a=(i/m.trail.length)*0.85;ctx.strokeStyle=`rgba(255,80,0,${a})`;ctx.lineWidth=(i/m.trail.length)*18;ctx.beginPath();ctx.moveTo(m.trail[i-1].x,m.trail[i-1].y);ctx.lineTo(m.trail[i].x,m.trail[i].y);ctx.stroke();}
+    ctx.shadowColor='#FF3300';ctx.shadowBlur=30;ctx.fillStyle='#FF2200';ctx.beginPath();ctx.arc(m.x,m.y,m.r,0,Math.PI*2);ctx.fill();ctx.fillStyle='#FFCC00';ctx.beginPath();ctx.arc(m.x-4,m.y-4,m.r*0.4,0,Math.PI*2);ctx.fill();ctx.shadowBlur=0;
   }
 
   // 지구
-  const eg=ctx.createRadialGradient(raceCX-EARTH_R*0.3,raceCY-EARTH_R*0.3,2,raceCX,raceCY,EARTH_R);eg.addColorStop(0,'#4a9eff');eg.addColorStop(0.4,'#1a5cbf');eg.addColorStop(0.7,'#0d3a7a');eg.addColorStop(1,'#061a3a');ctx.fillStyle=eg;ctx.beginPath();ctx.arc(raceCX,raceCY,EARTH_R,0,Math.PI*2);ctx.fill();
-  const atm=ctx.createRadialGradient(raceCX,raceCY,EARTH_R-3,raceCX,raceCY,EARTH_R+8);atm.addColorStop(0,'rgba(100,180,255,0.25)');atm.addColorStop(1,'rgba(100,180,255,0)');ctx.fillStyle=atm;ctx.beginPath();ctx.arc(raceCX,raceCY,EARTH_R+8,0,Math.PI*2);ctx.fill();
+  const eg=ctx.createRadialGradient(raceCX-EARTH_R*0.3,raceCY-EARTH_R*0.3,2,raceCX,raceCY,EARTH_R);eg.addColorStop(0,'#5ab4ff');eg.addColorStop(0.4,'#1a6cd0');eg.addColorStop(0.7,'#0d3a7a');eg.addColorStop(1,'#061a3a');ctx.shadowColor='#3399ff';ctx.shadowBlur=18;ctx.fillStyle=eg;ctx.beginPath();ctx.arc(raceCX,raceCY,EARTH_R,0,Math.PI*2);ctx.fill();ctx.shadowBlur=0;
+  const atm=ctx.createRadialGradient(raceCX,raceCY,EARTH_R-3,raceCX,raceCY,EARTH_R+16);atm.addColorStop(0,'rgba(100,190,255,0.55)');atm.addColorStop(0.5,'rgba(80,160,255,0.2)');atm.addColorStop(1,'rgba(100,180,255,0)');ctx.fillStyle=atm;ctx.beginPath();ctx.arc(raceCX,raceCY,EARTH_R+16,0,Math.PI*2);ctx.fill();
+  ctx.strokeStyle='rgba(120,210,255,0.18)';ctx.lineWidth=2.5;ctx.beginPath();ctx.arc(raceCX,raceCY,EARTH_R+19,0,Math.PI*2);ctx.stroke();
   ctx.font='14px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('🌍',raceCX,raceCY);ctx.textBaseline='alphabetic';
 
   // 위성
@@ -1070,13 +1085,13 @@ function raceDraw(){
     const dx=s.x,dy=s.y;
     const alpha=isEx?s.opacity:1;
     const r=Math.max(2,6*s.scale);
-    if(s.trail&&s.trail.length>1){for(let i=1;i<s.trail.length;i++){const a=(i/s.trail.length)*0.25;ctx.strokeStyle=s.color+Math.floor(a*255).toString(16).padStart(2,'0');ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(s.trail[i-1].x,s.trail[i-1].y);ctx.lineTo(s.trail[i].x,s.trail[i].y);ctx.stroke();}}
-    if(s.state==='zooming'&&s.scale>1.5){ctx.shadowColor=s.color;ctx.shadowBlur=15*s.flash;for(let i=0;i<6;i++){const ang=(Math.PI*2/6)*i+raceT*2;ctx.strokeStyle=s.color+Math.floor(0.3*255).toString(16).padStart(2,'0');ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(dx+Math.cos(ang)*r,dy+Math.sin(ang)*r);ctx.lineTo(dx+Math.cos(ang)*(r+r*1.8*s.flash),dy+Math.sin(ang)*(r+r*1.8*s.flash));ctx.stroke();}}
+    if(s.trail&&s.trail.length>1){ctx.shadowColor=s.color;ctx.shadowBlur=5;for(let i=1;i<s.trail.length;i++){const a=(i/s.trail.length)*0.55;ctx.strokeStyle=s.color+Math.floor(a*255).toString(16).padStart(2,'0');ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(s.trail[i-1].x,s.trail[i-1].y);ctx.lineTo(s.trail[i].x,s.trail[i].y);ctx.stroke();}ctx.shadowBlur=0;}
+    if(s.state==='zooming'&&s.scale>1.5){ctx.shadowColor=s.color;ctx.shadowBlur=20*s.flash;for(let i=0;i<6;i++){const ang=(Math.PI*2/6)*i+raceT*2;ctx.strokeStyle=s.color+Math.floor(0.4*255).toString(16).padStart(2,'0');ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(dx+Math.cos(ang)*r,dy+Math.sin(ang)*r);ctx.lineTo(dx+Math.cos(ang)*(r+r*2.2*s.flash),dy+Math.sin(ang)*(r+r*2.2*s.flash));ctx.stroke();}}
     ctx.globalAlpha=alpha;
-    if(s.flash>0){ctx.shadowColor=s.color;ctx.shadowBlur=10*s.flash;}
+    ctx.shadowColor=s.color;ctx.shadowBlur=s.flash>0?16*s.flash:6;
     ctx.fillStyle=s.color;ctx.beginPath();ctx.arc(dx,dy,r,0,Math.PI*2);ctx.fill();
-    ctx.fillStyle='rgba(255,255,255,0.35)';ctx.beginPath();ctx.arc(dx-r*0.3,dy-r*0.3,r*0.28,0,Math.PI*2);ctx.fill();
     ctx.shadowBlur=0;ctx.shadowColor='transparent';
+    ctx.fillStyle='rgba(255,255,255,0.45)';ctx.beginPath();ctx.arc(dx-r*0.3,dy-r*0.3,r*0.3,0,Math.PI*2);ctx.fill();
     ctx.fillStyle='rgba(0,0,0,0.85)';ctx.font=`bold ${Math.min(7,r*0.7)}px sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(s.name.slice(0,2),dx,dy);ctx.textBaseline='alphabetic';ctx.globalAlpha=1;
     if(s.state==='zooming'&&s.scale>2){ctx.fillStyle='#FFD700';ctx.font=`bold ${Math.round(10*s.scale/2)}px sans-serif`;ctx.textAlign='center';ctx.fillText(s.name,dx,dy-r-7);}
   });
@@ -1123,6 +1138,7 @@ function raceDraw(){
     ctx.fillStyle='rgba(255,255,255,0.8)';ctx.font='bold 11px sans-serif';ctx.textAlign='left';ctx.fillText('생존: '+alive+'기',8,17);
     ctx.fillStyle='rgba(255,255,255,0.5)';ctx.textAlign='right';ctx.fillText('탈락: '+(total-alive)+'기',W-8,17);
   }
+  ctx.restore();
 }
 
 function raceDrawWinner(){raceDraw();}
@@ -1290,8 +1306,9 @@ function runDemoRace(){
   const minR=ER+20,maxR=Math.min(W,H)*0.44;
   let dT=0,dPhase='countdown',dCd=3,dCdTimer=0,dParticles=[];
   let dEventQ=[{type:'meteor',at:4},{type:'collision',at:9},{type:'solarWind',at:14},{type:'blackHole',at:20}];
-  let dEvents={meteor:null,solarWind:null,blackHole:null,msg:{text:'',alpha:0,timer:0}};
-  const dStars=Array.from({length:100},()=>({x:Math.random()*W,y:Math.random()*H,r:Math.random()*1.2+0.2,a:Math.random()*0.6+0.1,tw:Math.random()*Math.PI*2}));
+  let dEvents={meteor:null,solarWind:null,blackHole:null,msg:{text:'',alpha:0,timer:0},shake:0};
+  const DSC=[[255,255,255],[180,210,255],[255,240,180],[160,200,255],[255,200,200]];
+  const dStars=Array.from({length:180},()=>{const c=DSC[Math.floor(Math.random()*DSC.length)];return{x:Math.random()*W,y:Math.random()*H,r:Math.random()*1.8+0.3,a:Math.random()*0.9+0.2,tw:Math.random()*Math.PI*2,c,big:Math.random()<0.1};});
   const dSats=Array.from({length:n},(_,i)=>{
     const orbitR=minR+(maxR-minR)*(i/(n-1))*(0.65+Math.random()*0.35);
     const spd=(0.022+Math.random()*0.016)*(Math.random()>0.5?1:-1);
@@ -1305,19 +1322,20 @@ function runDemoRace(){
   function dMsg(t){dEvents.msg={text:t,alpha:1,timer:0};}
   function dTrigger(type){
     const alive=dSats.filter(s=>s.state==='orbit'&&!s.isWinner);if(alive.length<2)return;
-    if(type==='meteor'){const a=Math.random()*Math.PI*2;dEvents.meteor={x:CX+Math.cos(a)*(W*0.8),y:CY+Math.sin(a)*(H*0.8),vx:-Math.cos(a)*7,vy:-Math.sin(a)*7,r:8,trail:[],active:true};dMsg('☄️ 운석 낙하!');}
-    else if(type==='collision'&&alive.length>=2){const a=alive[0],b=alive[1];dExplode(a);dExplode(b);dAddW((a.x+b.x)/2,(a.y+b.y)/2,'#FF8C00',50);dMsg('💥 위성 충돌!');}
+    if(type==='meteor'){const a=Math.random()*Math.PI*2;dEvents.meteor={x:CX+Math.cos(a)*(W*0.8),y:CY+Math.sin(a)*(H*0.8),vx:-Math.cos(a)*10,vy:-Math.sin(a)*10,r:14,trail:[],active:true};dMsg('☄️ 거대 운석 낙하!');}
+    else if(type==='collision'&&alive.length>=2){const a=alive[0],b=alive[1];dExplode(a);dExplode(b);dAddW((a.x+b.x)/2,(a.y+b.y)/2,'#FF3300',100);dAddW((a.x+b.x)/2,(a.y+b.y)/2,'#FF8C00',70);dAddP((a.x+b.x)/2,(a.y+b.y)/2,'#FF4400',45);dAddP((a.x+b.x)/2,(a.y+b.y)/2,'#FFFFFF',25);dEvents.shake=18;dMsg('💥 대형 위성 충돌!');}
     else if(type==='solarWind'){dEvents.solarWind={timer:0,phase:'warning'};dMsg('⚡ 태양풍 경보!');}
     else if(type==='blackHole'){dEvents.blackHole={x:CX+(Math.random()-0.5)*W*0.35,y:CY+(Math.random()-0.5)*H*0.35,r:0,maxR:28,phase:'grow',timer:0,angle:0};dMsg('🌀 블랙홀 출현!');}
   }
 
   function dUpdate(){
-    dT+=1/60;const em=dEvents.msg;if(em.alpha>0){em.timer+=1/60;em.alpha=Math.max(0,1-em.timer/2.5);}
+    dT+=1/60;if(dEvents.shake>0)dEvents.shake=Math.max(0,dEvents.shake*0.9-0.2);
+    const em=dEvents.msg;if(em.alpha>0){em.timer+=1/60;em.alpha=Math.max(0,1-em.timer/2.5);}
     if(dPhase==='countdown'){dCdTimer+=1/60;if(dCdTimer>=1){dCd--;dCdTimer=0;if(dCd<=0)dPhase='race';}return;}
     if(dEventQ.length>0&&dT>=dEventQ[0].at){dTrigger(dEventQ.shift().type);}
     for(let i=dParticles.length-1;i>=0;i--){const p=dParticles[i];if(p.type==='wave'){p.r+=2;p.life-=0.07;}else{p.x+=p.vx;p.y+=p.vy;p.vy+=0.07;p.vx*=0.97;p.life-=0.035;}if(p.life<=0)dParticles.splice(i,1);}
-    if(dEvents.meteor?.active){const m=dEvents.meteor;m.trail.push({x:m.x,y:m.y});if(m.trail.length>15)m.trail.shift();m.x+=m.vx;m.y+=m.vy;dSats.forEach(s=>{if(s.state!=='orbit')return;const dx=s.x-m.x,dy=s.y-m.y;if(Math.sqrt(dx*dx+dy*dy)<m.r+5){dExplode(s);m.active=false;}});if(m.x<-40||m.x>W+40||m.y<-40||m.y>H+40)m.active=false;if(!m.active)setTimeout(()=>dEvents.meteor=null,200);}
-    if(dEvents.solarWind){const sw=dEvents.solarWind;sw.timer+=1/60;if(sw.phase==='warning'&&sw.timer>2){sw.phase='blast';dMsg('⚡ 태양풍 강타!');const alive=dSats.filter(s=>s.state==='orbit'&&!s.isWinner);const cnt=Math.min(alive.length-1,2);for(let i=0;i<cnt;i++){const idx=Math.floor(Math.random()*alive.length);if(alive[idx]){dExplode(alive[idx]);alive.splice(idx,1);}}dSats.filter(s=>s.state==='orbit').forEach(s=>s.wobble=1);}if(sw.phase==='blast'){sw.blastT=(sw.blastT||0)+1/60;if(sw.blastT>2)dEvents.solarWind=null;}}
+    if(dEvents.meteor?.active){const m=dEvents.meteor;m.trail.push({x:m.x,y:m.y});if(m.trail.length>22)m.trail.shift();m.x+=m.vx;m.y+=m.vy;dEvents.shake=3;if(Math.random()<0.6)dAddP(m.x+(Math.random()-0.5)*10,m.y+(Math.random()-0.5)*10,'#FF8C00',1);dSats.forEach(s=>{if(s.state!=='orbit')return;const dx=s.x-m.x,dy=s.y-m.y;if(Math.sqrt(dx*dx+dy*dy)<m.r+8){dExplode(s);m.active=false;dAddW(m.x,m.y,'#FF3300',100);dAddP(m.x,m.y,'#FF5500',40);dEvents.shake=20;}});const de=Math.sqrt((m.x-CX)**2+(m.y-CY)**2);if(m.active&&de<ER+m.r){m.active=false;dAddW(m.x,m.y,'#FF3300',80);dAddP(m.x,m.y,'#FF8800',30);dEvents.shake=15;}if(m.x<-100||m.x>W+100||m.y<-100||m.y>H+100)m.active=false;if(!m.active)setTimeout(()=>dEvents.meteor=null,400);}
+    if(dEvents.solarWind){const sw=dEvents.solarWind;sw.timer+=1/60;if(sw.phase==='warning'&&sw.timer>2){sw.phase='blast';dMsg('⚡ 강력한 태양풍 강타!');const alive=dSats.filter(s=>s.state==='orbit'&&!s.isWinner);const cnt=Math.min(alive.length-1,2);for(let i=0;i<cnt;i++){const idx=Math.floor(Math.random()*alive.length);if(alive[idx]){dExplode(alive[idx]);alive.splice(idx,1);}}dSats.filter(s=>s.state==='orbit').forEach(s=>s.wobble=2.5);dEvents.shake=22;}if(sw.phase==='blast'){sw.blastT=(sw.blastT||0)+1/60;if(sw.blastT>2)dEvents.solarWind=null;}}
     if(dEvents.blackHole){const bh=dEvents.blackHole;bh.timer+=1/60;bh.angle+=0.05;if(bh.phase==='grow'){bh.r=Math.min(bh.maxR,bh.r+1);if(bh.r>=bh.maxR){bh.phase='suck';bh.timer=0;}}else if(bh.phase==='suck'){dSats.forEach(s=>{if(s.state!=='orbit')return;const dx=bh.x-s.x,dy=bh.y-s.y,dist=Math.sqrt(dx*dx+dy*dy);if(dist<bh.r+8&&!s.isWinner){dExplode(s);}else if(dist<80){s.x+=dx/dist*1.2;s.y+=dy/dist*1.2;}});if(bh.timer>3){bh.phase='shrink';dMsg('🌀 블랙홀 소멸!');}}else if(bh.phase==='shrink'){bh.r=Math.max(0,bh.r-1.2);if(bh.r<=0)dEvents.blackHole=null;}}
     dSats.forEach(s=>{
       if(s.state==='gone')return;s.flash=Math.max(0,s.flash-0.05);if(s.wobble>0)s.wobble=Math.max(0,s.wobble-0.04);
@@ -1329,24 +1347,27 @@ function runDemoRace(){
 
   function dDraw(){
     const ctx=canvas.getContext('2d');
-    ctx.fillStyle='#000008';ctx.fillRect(0,0,W,H);
-    if(dEvents.solarWind?.phase==='blast'){const a=Math.min(0.2,(dEvents.solarWind.blastT||0)*0.1);ctx.fillStyle=`rgba(255,200,0,${a})`;ctx.fillRect(0,0,W,H);}
-    dStars.forEach(s=>{s.tw+=0.01;ctx.fillStyle=`rgba(255,255,255,${s.a*(0.5+0.5*Math.sin(s.tw))})`;ctx.beginPath();ctx.arc(s.x,s.y,s.r,0,Math.PI*2);ctx.fill();});
-    dSats.filter(s=>s.state==='orbit'||s.state==='winner').forEach(s=>{ctx.strokeStyle='rgba(0,200,255,0.06)';ctx.lineWidth=0.5;ctx.setLineDash([2,8]);ctx.beginPath();ctx.arc(CX,CY,s.orbitR,0,Math.PI*2);ctx.stroke();ctx.setLineDash([]);});
+    ctx.save();
+    if(dEvents.shake>0) ctx.translate((Math.random()-0.5)*dEvents.shake, (Math.random()-0.5)*dEvents.shake);
+    const dbgG=ctx.createRadialGradient(W*0.5,H*0.4,0,W*0.5,H*0.5,W*0.75);dbgG.addColorStop(0,'#0d0d2e');dbgG.addColorStop(0.5,'#07071a');dbgG.addColorStop(1,'#000008');ctx.fillStyle=dbgG;ctx.fillRect(0,0,W,H);
+    if(dEvents.solarWind?.phase==='blast'){const bt=dEvents.solarWind.blastT||0;const fm=Math.max(0,1-bt*2.5);const am=Math.min(0.4,bt*0.2);ctx.fillStyle=`rgba(255,180,0,${am+fm*0.6})`;ctx.fillRect(0,0,W,H);}
+    dStars.forEach(s=>{s.tw+=0.01;const a=Math.min(1,s.a*(0.55+0.45*Math.sin(s.tw)));if(s.big){ctx.shadowColor=`rgb(${s.c})`;ctx.shadowBlur=8;}ctx.fillStyle=`rgba(${s.c[0]},${s.c[1]},${s.c[2]},${a})`;ctx.beginPath();ctx.arc(s.x,s.y,s.r,0,Math.PI*2);ctx.fill();if(s.big)ctx.shadowBlur=0;});
+    dSats.filter(s=>s.state==='orbit'||s.state==='winner').forEach(s=>{ctx.shadowColor='rgba(0,210,255,0.5)';ctx.shadowBlur=5;ctx.strokeStyle='rgba(0,210,255,0.2)';ctx.lineWidth=1;ctx.setLineDash([4,8]);ctx.beginPath();ctx.arc(CX,CY,s.orbitR,0,Math.PI*2);ctx.stroke();ctx.setLineDash([]);ctx.shadowBlur=0;});
     if(dEvents.blackHole){const bh=dEvents.blackHole;for(let i=3;i>=1;i--){ctx.strokeStyle=`rgba(180,100,255,${0.1*i})`;ctx.lineWidth=3*i;ctx.beginPath();ctx.arc(bh.x,bh.y,bh.r+i*8,0,Math.PI*2);ctx.stroke();}const g=ctx.createRadialGradient(bh.x,bh.y,0,bh.x,bh.y,bh.r);g.addColorStop(0,'rgba(0,0,0,1)');g.addColorStop(0.6,'rgba(60,0,100,0.9)');g.addColorStop(1,'rgba(180,0,255,0)');ctx.fillStyle=g;ctx.beginPath();ctx.arc(bh.x,bh.y,bh.r+4,0,Math.PI*2);ctx.fill();}
     dParticles.forEach(p=>{if(p.type==='wave'){ctx.strokeStyle=p.col+Math.floor(p.life*160).toString(16).padStart(2,'0');ctx.lineWidth=2;ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.stroke();}else{ctx.globalAlpha=p.life;ctx.fillStyle=p.col;ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.fill();ctx.globalAlpha=1;}});
-    if(dEvents.meteor?.active){const m=dEvents.meteor;for(let i=1;i<m.trail.length;i++){ctx.strokeStyle=`rgba(255,120,20,${i/m.trail.length*0.7})`;ctx.lineWidth=(i/m.trail.length)*6;ctx.beginPath();ctx.moveTo(m.trail[i-1].x,m.trail[i-1].y);ctx.lineTo(m.trail[i].x,m.trail[i].y);ctx.stroke();}ctx.shadowColor='#FF6600';ctx.shadowBlur=12;ctx.fillStyle='#FF4400';ctx.beginPath();ctx.arc(m.x,m.y,m.r,0,Math.PI*2);ctx.fill();ctx.shadowBlur=0;}
-    const eg=ctx.createRadialGradient(CX-ER*0.3,CY-ER*0.3,2,CX,CY,ER);eg.addColorStop(0,'#4a9eff');eg.addColorStop(0.4,'#1a5cbf');eg.addColorStop(0.7,'#0d3a7a');eg.addColorStop(1,'#061a3a');ctx.fillStyle=eg;ctx.beginPath();ctx.arc(CX,CY,ER,0,Math.PI*2);ctx.fill();
-    const atm=ctx.createRadialGradient(CX,CY,ER-2,CX,CY,ER+8);atm.addColorStop(0,'rgba(100,180,255,0.2)');atm.addColorStop(1,'rgba(100,180,255,0)');ctx.fillStyle=atm;ctx.beginPath();ctx.arc(CX,CY,ER+8,0,Math.PI*2);ctx.fill();
+    if(dEvents.meteor?.active){const m=dEvents.meteor;for(let i=1;i<m.trail.length;i++){ctx.strokeStyle=`rgba(255,80,0,${i/m.trail.length*0.85})`;ctx.lineWidth=(i/m.trail.length)*16;ctx.beginPath();ctx.moveTo(m.trail[i-1].x,m.trail[i-1].y);ctx.lineTo(m.trail[i].x,m.trail[i].y);ctx.stroke();}ctx.shadowColor='#FF3300';ctx.shadowBlur=25;ctx.fillStyle='#FF2200';ctx.beginPath();ctx.arc(m.x,m.y,m.r,0,Math.PI*2);ctx.fill();ctx.fillStyle='#FFCC00';ctx.beginPath();ctx.arc(m.x-3,m.y-3,m.r*0.4,0,Math.PI*2);ctx.fill();ctx.shadowBlur=0;}
+    const eg=ctx.createRadialGradient(CX-ER*0.3,CY-ER*0.3,2,CX,CY,ER);eg.addColorStop(0,'#5ab4ff');eg.addColorStop(0.4,'#1a6cd0');eg.addColorStop(0.7,'#0d3a7a');eg.addColorStop(1,'#061a3a');ctx.shadowColor='#3399ff';ctx.shadowBlur=18;ctx.fillStyle=eg;ctx.beginPath();ctx.arc(CX,CY,ER,0,Math.PI*2);ctx.fill();ctx.shadowBlur=0;
+    const atm=ctx.createRadialGradient(CX,CY,ER-2,CX,CY,ER+16);atm.addColorStop(0,'rgba(100,190,255,0.55)');atm.addColorStop(0.5,'rgba(80,160,255,0.2)');atm.addColorStop(1,'rgba(100,180,255,0)');ctx.fillStyle=atm;ctx.beginPath();ctx.arc(CX,CY,ER+16,0,Math.PI*2);ctx.fill();
+    ctx.strokeStyle='rgba(120,210,255,0.18)';ctx.lineWidth=2;ctx.beginPath();ctx.arc(CX,CY,ER+19,0,Math.PI*2);ctx.stroke();
     ctx.font='15px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('🌍',CX,CY);ctx.textBaseline='alphabetic';
     dSats.forEach(s=>{
       if(s.state==='gone')return;const r=Math.max(1,4*s.scale);
       ctx.globalAlpha=s.state==='exploding'?s.opacity:1;
-      if(s.flash>0||s.state==='winner'){ctx.shadowColor=s.state==='winner'?'#FFD700':s.color;ctx.shadowBlur=s.state==='winner'?16*s.flash:8*s.flash;}
-      if(s.state==='winner'&&s.scale>1.5){for(let i=0;i<6;i++){const ang=(Math.PI*2/6)*i+dT*2;ctx.strokeStyle=s.color+Math.floor(0.3*255).toString(16).padStart(2,'0');ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(s.x+Math.cos(ang)*r,s.y+Math.sin(ang)*r);ctx.lineTo(s.x+Math.cos(ang)*(r+r*2*s.flash),s.y+Math.sin(ang)*(r+r*2*s.flash));ctx.stroke();}}
+      ctx.shadowColor=s.state==='winner'?'#FFD700':s.color;ctx.shadowBlur=s.flash>0?(s.state==='winner'?20*s.flash:12*s.flash):5;
+      if(s.state==='winner'&&s.scale>1.5){for(let i=0;i<6;i++){const ang=(Math.PI*2/6)*i+dT*2;ctx.strokeStyle=s.color+Math.floor(0.4*255).toString(16).padStart(2,'0');ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(s.x+Math.cos(ang)*r,s.y+Math.sin(ang)*r);ctx.lineTo(s.x+Math.cos(ang)*(r+r*2.5*s.flash),s.y+Math.sin(ang)*(r+r*2.5*s.flash));ctx.stroke();}}
       ctx.fillStyle=s.state==='winner'&&s.scale>2?'#FFD700':s.color;ctx.beginPath();ctx.arc(s.x,s.y,r,0,Math.PI*2);ctx.fill();
-      ctx.fillStyle='rgba(255,255,255,0.3)';ctx.beginPath();ctx.arc(s.x-r*0.3,s.y-r*0.3,r*0.25,0,Math.PI*2);ctx.fill();
       ctx.shadowBlur=0;ctx.shadowColor='transparent';
+      ctx.fillStyle='rgba(255,255,255,0.45)';ctx.beginPath();ctx.arc(s.x-r*0.3,s.y-r*0.3,r*0.28,0,Math.PI*2);ctx.fill();
       if(r>=3){ctx.fillStyle='rgba(0,0,0,0.85)';ctx.font=`bold ${Math.min(6,r*0.7)}px sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(s.name.slice(0,2),s.x,s.y);ctx.textBaseline='alphabetic';}
       ctx.globalAlpha=1;
       if(s.state==='winner'&&s.scale>2){ctx.fillStyle='#FFD700';ctx.font=`bold ${Math.round(8*s.scale/2)}px sans-serif`;ctx.textAlign='center';ctx.fillText(s.name,s.x,s.y-r-6);}
@@ -1356,6 +1377,7 @@ function runDemoRace(){
     if(dEvents.solarWind?.phase==='warning'){const prog=Math.min(1,dEvents.solarWind.timer/2);ctx.fillStyle='rgba(0,0,0,0.6)';ctx.fillRect(0,H-28,W,28);ctx.fillStyle=`rgba(255,200,0,${0.3+prog*0.5})`;ctx.fillRect(0,H-28,W*prog,28);ctx.fillStyle='#fff';ctx.font='bold 11px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('⚡ 태양풍 경보 — '+Math.ceil(2-dEvents.solarWind.timer)+'초',CX,H-14);}
     if(dPhase==='countdown'){ctx.fillStyle='rgba(0,0,16,0.8)';ctx.fillRect(0,0,W,H);const num=dCd>0?dCd:'GO!',sz=dCd>0?90:70,col=dCd>0?'#FF4444':'#00FF88';const sc=1+(dCdTimer<0.3?(0.3-dCdTimer)/0.3*0.35:0);ctx.save();ctx.translate(CX,CY);ctx.scale(sc,sc);ctx.fillStyle=col;ctx.font=`bold ${sz}px sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.shadowColor=col;ctx.shadowBlur=25;ctx.fillText(num,0,0);ctx.shadowBlur=0;ctx.restore();ctx.fillStyle='rgba(255,255,255,0.35)';ctx.font='11px sans-serif';ctx.textAlign='center';ctx.fillText('DEMO',CX,CY+50);}
     if(dPhase==='race'){const alive=dSats.filter(s=>s.state==='orbit').length;ctx.fillStyle='rgba(0,0,0,0.45)';ctx.fillRect(0,0,W,24);ctx.fillStyle='#FF4444';ctx.fillRect(0,20,W*(alive/n),4);ctx.fillStyle='rgba(255,255,255,0.7)';ctx.font='bold 10px sans-serif';ctx.textAlign='left';ctx.fillText('생존: '+alive+'기',7,15);ctx.fillStyle='rgba(255,200,0,0.7)';ctx.textAlign='right';ctx.fillText('DEMO',W-7,15);}
+    ctx.restore();
   }
 
   function dLoop(){if(!demoRunning)return;dUpdate();dDraw();demoAnimId=requestAnimationFrame(dLoop);}
@@ -1385,8 +1407,9 @@ async function playUserRace(){
   let _s=seed;
   function sr(){_s=(_s*9301+49297)%233280;return _s/233280;}
 
-  const stars=Array.from({length:120},()=>({x:sr()*W,y:sr()*H,r:sr()*1.3+0.2,a:sr()*0.6+0.1,tw:sr()*Math.PI*2}));
-  const nebula=[{x:W*0.2,y:H*0.2,r:70,h:220},{x:W*0.8,y:H*0.7,r:60,h:270},{x:W*0.5,y:H*0.1,r:50,h:190}];
+  const RSC=[[255,255,255],[180,210,255],[255,240,180],[160,200,255],[255,200,200]];
+  const stars=Array.from({length:180},()=>{const c=RSC[Math.floor(sr()*RSC.length)];return{x:sr()*W,y:sr()*H,r:sr()*1.8+0.3,a:sr()*0.9+0.2,tw:sr()*Math.PI*2,c,big:sr()<0.1};});
+  const nebula=[{x:W*0.2,y:H*0.2,r:90,h:220},{x:W*0.8,y:H*0.7,r:80,h:270},{x:W*0.5,y:H*0.1,r:70,h:190},{x:W*0.1,y:H*0.8,r:65,h:300}];
 
   const minR=EARTH_R+20, maxR=Math.min(W,H)*0.44;
   const winnerIdx=names.indexOf(winnerName);
@@ -1440,24 +1463,25 @@ async function playUserRace(){
 
   function draw(){
     const ctx=canvas.getContext('2d');
-    ctx.fillStyle='#000008';ctx.fillRect(0,0,W,H);
-    nebula.forEach(n=>{const g=ctx.createRadialGradient(n.x,n.y,0,n.x,n.y,n.r);g.addColorStop(0,`hsla(${n.h},70%,55%,0.05)`);g.addColorStop(1,`hsla(${n.h},70%,55%,0)`);ctx.fillStyle=g;ctx.beginPath();ctx.arc(n.x,n.y,n.r,0,Math.PI*2);ctx.fill();});
-    stars.forEach(s=>{s.tw+=0.012;ctx.fillStyle=`rgba(255,255,255,${s.a*(0.5+0.5*Math.sin(s.tw))})`;ctx.beginPath();ctx.arc(s.x,s.y,s.r,0,Math.PI*2);ctx.fill();});
-    sats.filter(s=>s.state==='orbit'||s.state==='zooming').forEach(s=>{ctx.strokeStyle='rgba(0,200,255,0.06)';ctx.lineWidth=0.5;ctx.setLineDash([2,8]);ctx.beginPath();ctx.arc(CX,CY,s.orbitR,0,Math.PI*2);ctx.stroke();ctx.setLineDash([]);});
+    const rbgG=ctx.createRadialGradient(W*0.5,H*0.4,0,W*0.5,H*0.5,W*0.75);rbgG.addColorStop(0,'#0d0d2e');rbgG.addColorStop(0.5,'#07071a');rbgG.addColorStop(1,'#000008');ctx.fillStyle=rbgG;ctx.fillRect(0,0,W,H);
+    nebula.forEach(n=>{const g=ctx.createRadialGradient(n.x,n.y,0,n.x,n.y,n.r);g.addColorStop(0,`hsla(${n.h},90%,65%,0.18)`);g.addColorStop(0.4,`hsla(${n.h},80%,55%,0.08)`);g.addColorStop(1,`hsla(${n.h},70%,55%,0)`);ctx.fillStyle=g;ctx.beginPath();ctx.arc(n.x,n.y,n.r,0,Math.PI*2);ctx.fill();});
+    stars.forEach(s=>{s.tw+=0.012;const a=Math.min(1,s.a*(0.55+0.45*Math.sin(s.tw)));if(s.big){ctx.shadowColor=`rgb(${s.c})`;ctx.shadowBlur=8;}ctx.fillStyle=`rgba(${s.c[0]},${s.c[1]},${s.c[2]},${a})`;ctx.beginPath();ctx.arc(s.x,s.y,s.r,0,Math.PI*2);ctx.fill();if(s.big)ctx.shadowBlur=0;});
+    sats.filter(s=>s.state==='orbit'||s.state==='zooming').forEach(s=>{ctx.shadowColor='rgba(0,210,255,0.5)';ctx.shadowBlur=5;ctx.strokeStyle='rgba(0,210,255,0.2)';ctx.lineWidth=1;ctx.setLineDash([4,8]);ctx.beginPath();ctx.arc(CX,CY,s.orbitR,0,Math.PI*2);ctx.stroke();ctx.setLineDash([]);ctx.shadowBlur=0;});
     const eg=ctx.createRadialGradient(CX-EARTH_R*0.3,CY-EARTH_R*0.3,2,CX,CY,EARTH_R);
-    eg.addColorStop(0,'#4a9eff');eg.addColorStop(0.4,'#1a5cbf');eg.addColorStop(0.7,'#0d3a7a');eg.addColorStop(1,'#061a3a');
-    ctx.fillStyle=eg;ctx.beginPath();ctx.arc(CX,CY,EARTH_R,0,Math.PI*2);ctx.fill();
-    const atm=ctx.createRadialGradient(CX,CY,EARTH_R-3,CX,CY,EARTH_R+8);atm.addColorStop(0,'rgba(100,180,255,0.2)');atm.addColorStop(1,'rgba(100,180,255,0)');ctx.fillStyle=atm;ctx.beginPath();ctx.arc(CX,CY,EARTH_R+8,0,Math.PI*2);ctx.fill();
+    eg.addColorStop(0,'#5ab4ff');eg.addColorStop(0.4,'#1a6cd0');eg.addColorStop(0.7,'#0d3a7a');eg.addColorStop(1,'#061a3a');
+    ctx.shadowColor='#3399ff';ctx.shadowBlur=18;ctx.fillStyle=eg;ctx.beginPath();ctx.arc(CX,CY,EARTH_R,0,Math.PI*2);ctx.fill();ctx.shadowBlur=0;
+    const atm=ctx.createRadialGradient(CX,CY,EARTH_R-3,CX,CY,EARTH_R+16);atm.addColorStop(0,'rgba(100,190,255,0.55)');atm.addColorStop(0.5,'rgba(80,160,255,0.2)');atm.addColorStop(1,'rgba(100,180,255,0)');ctx.fillStyle=atm;ctx.beginPath();ctx.arc(CX,CY,EARTH_R+16,0,Math.PI*2);ctx.fill();
+    ctx.strokeStyle='rgba(120,210,255,0.18)';ctx.lineWidth=2.5;ctx.beginPath();ctx.arc(CX,CY,EARTH_R+19,0,Math.PI*2);ctx.stroke();
     ctx.font='14px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('🌍',CX,CY);ctx.textBaseline='alphabetic';
     sats.forEach(s=>{
       if(s.state==='done'&&!s.isWinner)return;
       const ex=s.state==='exit';const dx=ex?s.tx:s.x,dy=ex?s.ty:s.y;const alpha=ex?s.opacity:1;const r=Math.max(2,5*s.scale);
-      if(s.trail.length>1){for(let i=1;i<s.trail.length;i++){const a=(i/s.trail.length)*0.25*alpha;ctx.strokeStyle=s.color+Math.floor(a*255).toString(16).padStart(2,'0');ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(s.trail[i-1].x,s.trail[i-1].y);ctx.lineTo(s.trail[i].x,s.trail[i].y);ctx.stroke();}}
-      if(s.state==='zooming'&&s.scale>1.5){ctx.shadowColor=s.color;ctx.shadowBlur=14*s.flash;for(let i=0;i<6;i++){const ang=(Math.PI*2/6)*i+rT*2;ctx.strokeStyle=s.color+'44';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(dx+Math.cos(ang)*r,dy+Math.sin(ang)*r);ctx.lineTo(dx+Math.cos(ang)*(r+r*1.5*s.flash),dy+Math.sin(ang)*(r+r*1.5*s.flash));ctx.stroke();}}
-      ctx.globalAlpha=alpha;if(s.flash>0){ctx.shadowColor=s.color;ctx.shadowBlur=8*s.flash;}
+      if(s.trail.length>1){ctx.shadowColor=s.color;ctx.shadowBlur=5;for(let i=1;i<s.trail.length;i++){const a=(i/s.trail.length)*0.55*alpha;ctx.strokeStyle=s.color+Math.floor(a*255).toString(16).padStart(2,'0');ctx.lineWidth=1.8;ctx.beginPath();ctx.moveTo(s.trail[i-1].x,s.trail[i-1].y);ctx.lineTo(s.trail[i].x,s.trail[i].y);ctx.stroke();}ctx.shadowBlur=0;}
+      if(s.state==='zooming'&&s.scale>1.5){ctx.shadowColor=s.color;ctx.shadowBlur=20*s.flash;for(let i=0;i<6;i++){const ang=(Math.PI*2/6)*i+rT*2;ctx.strokeStyle=s.color+'66';ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(dx+Math.cos(ang)*r,dy+Math.sin(ang)*r);ctx.lineTo(dx+Math.cos(ang)*(r+r*2.2*s.flash),dy+Math.sin(ang)*(r+r*2.2*s.flash));ctx.stroke();}}
+      ctx.globalAlpha=alpha;ctx.shadowColor=s.color;ctx.shadowBlur=s.flash>0?14*s.flash:6;
       ctx.fillStyle=s.color;ctx.beginPath();ctx.arc(dx,dy,r,0,Math.PI*2);ctx.fill();
-      ctx.fillStyle='rgba(255,255,255,0.3)';ctx.beginPath();ctx.arc(dx-r*0.3,dy-r*0.3,r*0.28,0,Math.PI*2);ctx.fill();
       ctx.shadowBlur=0;ctx.shadowColor='transparent';
+      ctx.fillStyle='rgba(255,255,255,0.45)';ctx.beginPath();ctx.arc(dx-r*0.3,dy-r*0.3,r*0.3,0,Math.PI*2);ctx.fill();
       if(r>=4){ctx.fillStyle='rgba(0,0,0,0.8)';ctx.font=`bold ${Math.min(7,r*0.7)}px sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(s.name.slice(0,2),dx,dy);ctx.textBaseline='alphabetic';}
       ctx.globalAlpha=1;
       if(s.state==='zooming'&&s.scale>2){ctx.fillStyle='#FFD700';ctx.font=`bold ${Math.round(9*s.scale/2)}px sans-serif`;ctx.textAlign='center';ctx.fillText(s.name,dx,dy-r-6);}
