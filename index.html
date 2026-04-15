@@ -1023,7 +1023,7 @@ async function submitFunny(){
 async function loadFunnyList(){
   const ym=getYM();
   const [rawRows, myVoteArr] = await Promise.all([
-    SB.get('funny_submissions','year_month=eq.'+ym+'&status=neq.rejected&order=created_at.asc'),
+    SB.get('funny_submissions','year_month=eq.'+ym+'&status=in.(approved,winner)&order=created_at.asc'),
     SB.get('funny_votes','year_month=eq.'+ym+'&voter_name=eq.'+encodeURIComponent(app.name))
   ]);
   const rows=rawRows.sort((a,b)=>(b.votes||0)-(a.votes||0));
@@ -1082,8 +1082,8 @@ async function loadFunnyList(){
     </div>`;
   };
 
-  if(!rows.length){el.innerHTML='<div class="rank-empty" style="background:var(--card);border-radius:12px;">아직 제출된 내역이 없습니다</div>';return;}
-  el.innerHTML=approved.map((r,i)=>renderCard(r,i)).join('')+(pending.length?'<div class="sec-title" style="margin-top:1rem;font-size:12px;">검토 대기중</div>'+pending.map(r=>renderCard(r,-1)).join(''):'');
+  if(!rows.length){el.innerHTML='<div class="rank-empty" style="background:var(--card);border-radius:12px;">아직 승인된 내역이 없습니다</div>';return;}
+  el.innerHTML=approved.map((r,i)=>renderCard(r,i)).join('');
 }
 
 async function voteFunny(submissionId){
