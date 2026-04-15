@@ -182,8 +182,8 @@
     .bottom-nav{position:fixed;bottom:0;left:0;right:0;background:rgba(10,20,50,0.8);backdrop-filter:blur(10px);border-top:1px solid rgba(0,200,255,0.15);display:flex;padding:6px 0 max(6px,env(safe-area-inset-bottom));z-index:100;}
     .nav-btn{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;background:none;border:none;cursor:pointer;padding:4px;font-family:inherit;color:var(--text-hint);transition:all 0.2s;}
     .nav-btn.active{color:var(--sky);text-shadow:0 0 8px var(--sky);}
-    .nav-icon{font-size:22px;}
-    .nav-label{font-size:10px;font-weight:600;}
+    .nav-icon{font-size:20px;}
+    .nav-label{font-size:9px;font-weight:600;}
 
     /* TOAST */
     .toast{position:fixed;top:70px;left:50%;transform:translateX(-50%);background:#1a1a1a;color:#fff;padding:10px 20px;border-radius:20px;font-size:13px;opacity:0;transition:opacity 0.3s;z-index:300;pointer-events:none;white-space:nowrap;}
@@ -194,6 +194,30 @@
     .pill-approved{background:#e8f5e9;color:#1b5e20;}
     .pill-rejected{background:#ffebee;color:#b71c1c;}
     .pill-winner{background:#fff8e1;color:#7a4a00;}
+
+    /* IDEA WINNER ALERT (홈 화면) */
+    .idea-winner-alert{background:linear-gradient(135deg,#041a08,#0a2f12);border:1.5px solid rgba(0,220,100,0.5);border-radius:16px;padding:1rem 1.25rem;margin-bottom:1rem;box-shadow:0 0 24px rgba(0,200,80,0.2);animation:glowPulse 2.5s ease-in-out infinite;}
+    @keyframes glowPulse{0%,100%{box-shadow:0 0 24px rgba(0,200,80,0.2);}50%{box-shadow:0 0 32px rgba(0,200,80,0.4);}}
+    .idea-winner-header{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
+    .idea-winner-badge{font-size:22px;}
+    .idea-winner-title{font-size:14px;font-weight:900;color:#00ff88;text-shadow:0 0 10px rgba(0,255,136,0.5);}
+    .idea-winner-item{font-size:13px;color:rgba(200,255,215,0.9);background:rgba(0,0,0,0.3);border-radius:10px;padding:10px 12px;margin-top:6px;border-left:3px solid rgba(0,220,100,0.6);}
+    .idea-winner-item strong{display:block;margin-bottom:2px;}
+
+    /* MYPAGE */
+    .mypage-profile{background:linear-gradient(135deg,var(--navy),var(--blue));border-radius:16px;padding:1.25rem;margin-bottom:1.25rem;display:flex;align-items:center;gap:14px;border:1px solid rgba(0,200,255,0.2);}
+    .mypage-avatar{width:52px;height:52px;border-radius:50%;background:rgba(0,200,255,0.2);display:flex;align-items:center;justify-content:center;font-size:24px;border:2px solid rgba(0,200,255,0.4);flex-shrink:0;}
+    .mypage-name{font-size:18px;font-weight:900;color:#fff;}
+    .mypage-empno{font-size:12px;color:rgba(180,220,255,0.7);margin-top:2px;}
+    .mypage-stat-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:1.25rem;}
+    .mypage-stat{background:var(--card);backdrop-filter:blur(10px);border:1px solid var(--border);border-radius:14px;padding:1rem;text-align:center;}
+    .mypage-stat-num{font-size:26px;font-weight:900;color:var(--sky);}
+    .mypage-stat-label{font-size:11px;color:var(--text-sub);margin-top:2px;}
+    .mypage-section{margin-bottom:1.5rem;}
+    .mypage-history-item{background:var(--card);backdrop-filter:blur(8px);border:1px solid var(--border);border-radius:12px;padding:12px 14px;margin-bottom:8px;transition:border-color 0.2s;}
+    .mypage-history-title{font-size:13px;font-weight:700;color:#fff;}
+    .mypage-history-meta{font-size:11px;color:var(--text-hint);margin-top:3px;}
+    .mypage-empty{background:var(--card);border-radius:12px;text-align:center;padding:1.5rem;color:var(--text-hint);font-size:13px;}
   </style>
 </head>
 <body>
@@ -246,6 +270,8 @@
       <div><div class="mb-sub">이번 달 챌린지</div><div class="mb-title" id="mb-title">2025년 4월</div></div>
       <div class="mb-tag">매월 1일 리셋</div>
     </div>
+    <!-- 아이디어 선정 알림 -->
+    <div id="home-idea-winners" style="display:none;"></div>
     <div class="sec-title">챌린지 참여하기</div>
     <div style="background:var(--card);border-radius:16px;border:1.5px solid var(--border);padding:1.25rem;margin-bottom:1.25rem;">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
@@ -542,6 +568,39 @@
     </div>
   </div>
 
+  <!-- 마이페이지 -->
+  <div class="page" id="page-mypage">
+    <div class="mypage-profile">
+      <div class="mypage-avatar">👤</div>
+      <div>
+        <div class="mypage-name" id="mypage-name-disp"></div>
+        <div class="mypage-empno" id="mypage-empno-disp"></div>
+      </div>
+    </div>
+    <div class="mypage-stat-grid">
+      <div class="mypage-stat"><div class="mypage-stat-num" id="stat-idea-total">-</div><div class="mypage-stat-label">💡 아이디어 제출</div></div>
+      <div class="mypage-stat"><div class="mypage-stat-num" id="stat-idea-win" style="color:var(--green);">-</div><div class="mypage-stat-label">🏆 아이디어 선정</div></div>
+      <div class="mypage-stat"><div class="mypage-stat-num" id="stat-funny-total" style="color:var(--red);">-</div><div class="mypage-stat-label">😂 웃수저 제출</div></div>
+      <div class="mypage-stat"><div class="mypage-stat-num" id="stat-race-total" style="color:var(--purple);">-</div><div class="mypage-stat-label">🛸 레이스 참여</div></div>
+    </div>
+    <div class="mypage-section">
+      <div class="sec-title">💡 아이디어 제출 이력</div>
+      <div id="mypage-idea-list"></div>
+    </div>
+    <div class="mypage-section">
+      <div class="sec-title">😂 웃수저 제출 이력</div>
+      <div id="mypage-funny-list"></div>
+    </div>
+    <div class="mypage-section">
+      <div class="sec-title">🚀 퀴즈 참여 이력</div>
+      <div id="mypage-quiz-list"></div>
+    </div>
+    <div class="mypage-section">
+      <div class="sec-title">🛸 레이스 참여 이력</div>
+      <div id="mypage-race-list"></div>
+    </div>
+  </div>
+
   <!-- 직원 네비 -->
   <div class="bottom-nav" id="nav-user">
     <button class="nav-btn active" onclick="switchPage('home')"><div class="nav-icon">🏠</div><div class="nav-label">홈</div></button>
@@ -549,6 +608,7 @@
     <button class="nav-btn" onclick="switchPage('funny')"><div class="nav-icon">😂</div><div class="nav-label">웃수저</div></button>
     <button class="nav-btn" onclick="switchPage('idea')"><div class="nav-icon">💡</div><div class="nav-label">아이디어</div></button>
     <button class="nav-btn" onclick="switchPage('race')"><div class="nav-icon">🎱</div><div class="nav-label">레이스</div></button>
+    <button class="nav-btn" onclick="switchPage('mypage')"><div class="nav-icon">👤</div><div class="nav-label">마이페이지</div></button>
   </div>
   <!-- 관리자 네비 -->
   <div class="bottom-nav" id="nav-admin" style="display:none;">
@@ -666,12 +726,14 @@ function switchPage(page){
   if(page==='home'&&!app.isAdmin){
     const el=document.getElementById('home-empno-display');
     if(el)el.textContent='사번: '+app.empNo+' · '+app.name;
+    loadHomeWinners();
   }
   if(page==='quiz')loadQuizPage();
   if(page==='funny')loadFunnyList();
   if(page==='idea')loadIdeaMyList();
   if(page==='race')loadRacePage();
   if(page==='admin')loadAdminPage();
+  if(page==='mypage')loadMyPage();
 }
 
 // ── QUIZ ──
@@ -1096,6 +1158,78 @@ async function voteFunny(submissionId){
   if(sub[0])await SB.patch('funny_submissions',submissionId,{votes:(sub[0].votes||0)+1});
   showToast('❤️ 투표 완료!');
   loadFunnyList();
+}
+
+// ── HOME WINNERS ──
+async function loadHomeWinners(){
+  const winners=await SB.get('idea_submissions','name=eq.'+encodeURIComponent(app.name)+'&status=eq.winner&order=created_at.desc');
+  const el=document.getElementById('home-idea-winners');
+  if(!el)return;
+  if(winners.length){
+    el.innerHTML=`<div class="idea-winner-alert">
+      <div class="idea-winner-header"><div class="idea-winner-badge">🏆</div><div class="idea-winner-title">내 아이디어가 선정되었습니다!</div></div>
+      ${winners.map(r=>`<div class="idea-winner-item"><strong>${r.title}</strong><span style="font-size:11px;color:rgba(180,255,200,0.6);">${r.year_month} · ${new Date(r.created_at).toLocaleDateString('ko-KR')}</span></div>`).join('')}
+    </div>`;
+    el.style.display='block';
+  }else{el.style.display='none';}
+}
+
+// ── MYPAGE ──
+async function loadMyPage(){
+  document.getElementById('mypage-name-disp').textContent=app.name;
+  document.getElementById('mypage-empno-disp').textContent='사번: '+app.empNo;
+  const name=encodeURIComponent(app.name);
+  const [ideas,funnies,quizzes,races]=await Promise.all([
+    SB.get('idea_submissions','name=eq.'+name+'&order=created_at.desc'),
+    SB.get('funny_submissions','name=eq.'+name+'&order=created_at.desc'),
+    SB.get('quiz_attempts','name=eq.'+name+'&order=created_at.desc'),
+    SB.get('race_entries','name=eq.'+name+'&order=created_at.desc')
+  ]);
+  document.getElementById('stat-idea-total').textContent=ideas.length;
+  document.getElementById('stat-idea-win').textContent=ideas.filter(r=>r.status==='winner').length;
+  document.getElementById('stat-funny-total').textContent=funnies.length;
+  document.getElementById('stat-race-total').textContent=races.length;
+
+  // 아이디어
+  const ideaEl=document.getElementById('mypage-idea-list');
+  ideaEl.innerHTML=ideas.length?ideas.map(r=>`<div class="mypage-history-item" style="border-color:${r.status==='winner'?'rgba(0,220,100,0.4)':'var(--border)'};">
+    <div class="mypage-history-title">${r.title}</div>
+    <div class="mypage-history-meta">${r.year_month} · ${new Date(r.created_at).toLocaleDateString('ko-KR')}</div>
+    <div style="margin-top:5px;font-size:12px;color:rgba(200,200,200,0.7);line-height:1.4;">${r.content.length>60?r.content.slice(0,60)+'…':r.content}</div>
+    <div style="margin-top:6px;">${r.status==='winner'?'<span class="status-pill pill-winner">🏆 선정됨</span>':'<span class="status-pill pill-pending">⏳ 검토중</span>'}</div>
+  </div>`).join(''):'<div class="mypage-empty">아이디어 제출 내역이 없습니다</div>';
+
+  // 웃수저
+  const funnyEl=document.getElementById('mypage-funny-list');
+  funnyEl.innerHTML=funnies.length?funnies.map(r=>`<div class="mypage-history-item">
+    <div class="mypage-history-title">${r.title}</div>
+    <div class="mypage-history-meta">${r.year_month} · ${new Date(r.created_at).toLocaleDateString('ko-KR')}</div>
+    <div style="margin-top:6px;"><span class="status-pill ${r.status==='approved'||r.status==='winner'?'pill-approved':r.status==='rejected'?'pill-rejected':'pill-pending'}">${r.status==='approved'||r.status==='winner'?'✅ 승인':r.status==='rejected'?'❌ 반려':'⏳ 검토중'}</span></div>
+  </div>`).join(''):'<div class="mypage-empty">웃수저 제출 내역이 없습니다</div>';
+
+  // 퀴즈 (월별 집계)
+  const quizEl=document.getElementById('mypage-quiz-list');
+  if(quizzes.length){
+    const byMonth={};
+    quizzes.forEach(q=>{if(!byMonth[q.year_month])byMonth[q.year_month]=[];byMonth[q.year_month].push(q);});
+    quizEl.innerHTML=Object.entries(byMonth).sort((a,b)=>b[0].localeCompare(a[0])).map(([ym,qs])=>{
+      const correct=qs.filter(q=>q.is_correct).length;
+      const wrong=qs.filter(q=>!q.is_correct).length;
+      return `<div class="mypage-history-item">
+        <div class="mypage-history-title">${ym} 퀴즈 릴레이</div>
+        <div class="mypage-history-meta">정답 ${correct}회 · 오답/탈락 ${wrong}회 · 총 ${qs.length}회 참여</div>
+        <div style="margin-top:6px;"><span class="status-pill ${wrong===0?'pill-approved':'pill-pending'}">${wrong===0?'🛡️ 생존 중':'💥 탈락'}</span></div>
+      </div>`;
+    }).join('');
+  }else{quizEl.innerHTML='<div class="mypage-empty">퀴즈 참여 내역이 없습니다</div>';}
+
+  // 레이스
+  const raceEl=document.getElementById('mypage-race-list');
+  raceEl.innerHTML=races.length?races.map(r=>`<div class="mypage-history-item">
+    <div class="mypage-history-title">${r.year_month} 궤도 레이스</div>
+    <div class="mypage-history-meta">${new Date(r.created_at).toLocaleDateString('ko-KR')} 참여</div>
+    <div style="margin-top:6px;"><span class="status-pill pill-approved">🚀 참여 완료</span></div>
+  </div>`).join(''):'<div class="mypage-empty">레이스 참여 내역이 없습니다</div>';
 }
 
 // ── IDEA ──
