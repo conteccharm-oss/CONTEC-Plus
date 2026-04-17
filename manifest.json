@@ -1,7 +1,7 @@
 {
-  "name": "CONTEC 챌린지",
-  "short_name": "챌린지",
-  "description": "CONTEC 임직원 전용 월간 챌린지",
+  "name": "컨텍플러스",
+  "short_name": "컨텍플러스",
+  "description": "CONTEC 임직원 참여형 복지 프로그램",
   "start_url": "/pdeometer/",
   "scope": "/pdeometer/",
   "display": "standalone",
@@ -10,7 +10,17 @@
   "theme_color": "#0D1B3E",
   "lang": "ko",
   "icons": [
-    {"src":"icon-192.png","sizes":"192x192","type":"image/png","purpose":"any maskable"},
-    {"src":"icon-512.png","sizes":"512x512","type":"image/png","purpose":"any maskable"}
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
   ]
 }
