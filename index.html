@@ -964,10 +964,17 @@
     <div class="pw-modal-title">🔑 비밀번호 찾기<button class="pw-modal-close" onclick="closeForgotPw()">✕</button></div>
     <div class="m-field">
       <label>사번</label>
-      <input type="text" id="forgot-empno" placeholder="사번 입력" style="width:100%;padding:12px 14px;font-size:15px;font-family:inherit;border:1px solid rgba(255,255,255,0.2);border-radius:10px;background:rgba(255,255,255,0.1);color:#fff;outline:none;"/>
+      <input type="text" id="forgot-empno" placeholder="사번 입력" style="width:100%;padding:12px 14px;font-size:15px;font-family:inherit;border:1px solid rgba(255,255,255,0.2);border-radius:10px;background:rgba(255,255,255,0.1);color:#fff;outline:none;" oninput="hideForgotReset()"/>
     </div>
     <div id="forgot-result" style="display:none;margin-bottom:1rem;padding:14px;border-radius:12px;background:rgba(0,50,100,0.4);border:1px solid rgba(0,200,255,0.25);font-size:13px;line-height:1.6;color:#cde;"></div>
-    <button class="btn-main" style="background:var(--blue);width:100%;" onclick="lookupForgotPw()">확인</button>
+    <button class="btn-main" style="background:var(--blue);width:100%;margin-bottom:0;" onclick="lookupForgotPw()">사번 확인</button>
+    <!-- 비밀번호 재설정 영역 (사번 확인 후 표시) -->
+    <div id="forgot-reset-section" style="display:none;margin-top:1.25rem;padding-top:1.25rem;border-top:1px solid rgba(0,200,255,0.2);">
+      <div style="font-size:13px;font-weight:700;color:#00eeff;margin-bottom:0.85rem;">🔐 새 비밀번호 설정</div>
+      <div class="m-field"><label>새 암호</label><input type="password" id="forgot-new-pw" placeholder="새 암호 입력 (4자 이상)"/></div>
+      <div class="m-field" style="margin-bottom:1rem;"><label>새 암호 확인</label><input type="password" id="forgot-confirm-pw" placeholder="새 암호 재입력"/></div>
+      <button class="btn-main" style="background:var(--green);width:100%;" onclick="resetPasswordFromForgot()">비밀번호 변경하기</button>
+    </div>
   </div>
 </div>
 
@@ -2662,20 +2669,32 @@ async function changePassword(){
 }
 
 // ── 비밀번호 찾기 ──
+let _forgotEmpId=null;
 function openForgotPw(){
   document.getElementById('forgot-empno').value='';
   document.getElementById('forgot-result').style.display='none';
+  document.getElementById('forgot-reset-section').style.display='none';
+  document.getElementById('forgot-new-pw').value='';
+  document.getElementById('forgot-confirm-pw').value='';
+  _forgotEmpId=null;
   document.getElementById('forgot-pw-overlay').classList.add('open');
 }
 function closeForgotPw(e){
   if(e&&e.target!==document.getElementById('forgot-pw-overlay'))return;
   document.getElementById('forgot-pw-overlay').classList.remove('open');
 }
+function hideForgotReset(){
+  document.getElementById('forgot-result').style.display='none';
+  document.getElementById('forgot-reset-section').style.display='none';
+  _forgotEmpId=null;
+}
 async function lookupForgotPw(){
   const empno=document.getElementById('forgot-empno').value.trim();
   const resultEl=document.getElementById('forgot-result');
   if(!empno){showToast('❌ 사번을 입력해주세요');return;}
   const rows=await SB.get('employees','emp_no=eq.'+encodeURIComponent(empno)+'&is_active=eq.true');
+  document.getElementById('forgot-reset-section').style.display='none';
+  _forgotEmpId=null;
   if(!rows.length){
     resultEl.style.display='block';
     resultEl.style.borderColor='rgba(226,75,74,0.4)';
@@ -2685,15 +2704,29 @@ async function lookupForgotPw(){
     return;
   }
   const emp=rows[0];
-  const hasPw=!!emp.password;
+  _forgotEmpId=emp.id;
   resultEl.style.display='block';
   resultEl.style.borderColor='rgba(0,200,255,0.25)';
   resultEl.style.background='rgba(0,50,100,0.4)';
   resultEl.style.color='#cde';
-  resultEl.innerHTML=`<strong style="color:#fff;">${emp.name}</strong> 님의 계정이 확인되었습니다.<br><br>`
-    +(hasPw
-      ? `비밀번호를 직접 변경하신 경우, 설정한 비밀번호를 사용하세요.<br>기억나지 않으시면 <strong style="color:#00eeff;">관리자에게 초기화를 요청</strong>해주세요.<br><span style="font-size:11px;color:rgba(255,255,255,0.5);">초기화 후 임시 비밀번호는 사번과 동일합니다.</span>`
-      : `아직 비밀번호를 변경하지 않으셨습니다.<br>초기 비밀번호는 <strong style="color:#00eeff;">사번(${emp.emp_no})과 동일</strong>합니다.`);
+  resultEl.innerHTML=`<strong style="color:#fff;">${emp.name}</strong> 님의 계정이 확인되었습니다.<br>아래에서 새 비밀번호를 설정해주세요.`;
+  document.getElementById('forgot-new-pw').value='';
+  document.getElementById('forgot-confirm-pw').value='';
+  document.getElementById('forgot-reset-section').style.display='block';
+}
+
+async function resetPasswordFromForgot(){
+  const newPw=document.getElementById('forgot-new-pw').value;
+  const confirmPw=document.getElementById('forgot-confirm-pw').value;
+  if(!newPw||!confirmPw){showToast('❌ 새 암호를 모두 입력해주세요');return;}
+  if(newPw.length<4){showToast('❌ 새 암호는 4자 이상이어야 합니다');return;}
+  if(newPw!==confirmPw){showToast('❌ 새 암호가 일치하지 않습니다');return;}
+  if(!_forgotEmpId){showToast('❌ 먼저 사번을 확인해주세요');return;}
+  const ok=await SB.patch('employees',_forgotEmpId,{password:newPw});
+  if(ok){
+    showToast('✅ 비밀번호가 변경되었습니다! 새 비밀번호로 로그인해주세요.');
+    document.getElementById('forgot-pw-overlay').classList.remove('open');
+  } else {showToast('❌ 변경 실패');}
 }
 
 // ── 관리자 - 직원 암호 초기화 ──
