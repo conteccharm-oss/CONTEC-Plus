@@ -313,6 +313,10 @@
     </div>
     <button class="btn-login" id="btn-login">입장하기</button>
     <div class="login-hint" id="login-hint">초기 암호는 사번과 동일합니다</div>
+    <div style="display:flex;align-items:center;justify-content:center;gap:8px;margin-top:10px;">
+      <input type="checkbox" id="chk-remember" style="width:15px;height:15px;accent-color:#00c3ff;cursor:pointer;flex-shrink:0;"/>
+      <label for="chk-remember" style="font-size:12px;color:rgba(255,255,255,0.5);cursor:pointer;user-select:none;">로그인 정보 저장</label>
+    </div>
     <div style="text-align:center;margin-top:10px;">
       <button onclick="openInstallGuide()" style="background:none;border:none;font-family:inherit;font-size:12px;color:rgba(0,200,255,0.7);cursor:pointer;text-decoration:underline;text-underline-offset:3px;">📲 앱 설치 방법 안내</button>
     </div>
@@ -1034,7 +1038,7 @@ async function doLogin(){
   }
   err.style.display='none';
   app.name=name;
-  const _empno=document.getElementById('inp-empno')?document.getElementById('inp-empno').value.trim():'';localStorage.setItem('contec_session',JSON.stringify({name,isAdmin:app.isAdmin,empno:_empno,empId:app.empId||null}));
+  const _empno=document.getElementById('inp-empno')?document.getElementById('inp-empno').value.trim():'';const _rem=document.getElementById('chk-remember')?.checked;const _pw=document.getElementById('inp-pw').value;localStorage.setItem('contec_session',JSON.stringify({name,isAdmin:app.isAdmin,empno:_empno,empId:app.empId||null}));if(_rem){localStorage.setItem('contec_saved_creds',JSON.stringify({empno:_empno,pw:_pw,isAdmin:app.isAdmin}));}else{localStorage.removeItem('contec_saved_creds');}
   document.getElementById('disp-name').textContent=name;
   document.getElementById('mb-title').textContent=new Date().getFullYear()+'년 '+(new Date().getMonth()+1)+'월';
   if(app.isAdmin){document.getElementById('nav-user').style.display='none';document.getElementById('nav-admin').style.display='flex';switchPage('admin');}
@@ -1048,11 +1052,19 @@ document.getElementById('inp-pw').addEventListener('keydown',e=>{if(e.key==='Ent
 document.getElementById('btn-logout').addEventListener('click',()=>{
   localStorage.removeItem('contec_session');
   app.name='';app.isAdmin=false;app.empId=null;app.empNo='';
-  document.getElementById('inp-pw').value='';
-  document.getElementById('inp-empno').value='';
+  window._empFound=null;
   document.getElementById('emp-found').style.display='none';
   document.getElementById('emp-notfound').style.display='none';
-  window._empFound=null;
+  const saved=JSON.parse(localStorage.getItem('contec_saved_creds')||'null');
+  if(saved){
+    document.getElementById('inp-empno').value=saved.empno||'';
+    document.getElementById('inp-pw').value=saved.pw||'';
+    if(saved.isAdmin)switchLoginTab('admin'); else switchLoginTab('user');
+    lookupEmpNo();
+  } else {
+    document.getElementById('inp-pw').value='';
+    document.getElementById('inp-empno').value='';
+  }
   document.getElementById('nav-user').style.display='flex';
   document.getElementById('nav-admin').style.display='none';
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
@@ -1078,7 +1090,21 @@ function switchInstallTab(os,btn){
 })();
 
 // AUTO LOGIN
-(function(){try{const s=JSON.parse(localStorage.getItem('contec_session')||'null');if(s&&s.name){if(s.isAdmin){switchLoginTab('admin');document.getElementById('inp-empno').value=s.empno||'';window._empFound=s.name;document.getElementById('emp-found-name').textContent=s.name;document.getElementById('emp-found').style.display='block';app.empId=s.empId||null;document.getElementById('inp-pw').value=CONFIG.adminPassword;}else{switchLoginTab('user');document.getElementById('inp-empno').value=s.empno||'';window._empFound=s.name;document.getElementById('emp-found-name').textContent=s.name;document.getElementById('emp-found').style.display='block';app.empId=s.empId||null;}doLogin();}}catch(e){}})();
+(function(){try{
+  const saved=JSON.parse(localStorage.getItem('contec_saved_creds')||'null');
+  if(saved)document.getElementById('chk-remember').checked=true;
+  const s=JSON.parse(localStorage.getItem('contec_session')||'null');
+  if(s&&s.name){
+    if(s.isAdmin){switchLoginTab('admin');document.getElementById('inp-empno').value=s.empno||'';window._empFound=s.name;document.getElementById('emp-found-name').textContent=s.name;document.getElementById('emp-found').style.display='block';app.empId=s.empId||null;document.getElementById('inp-pw').value=CONFIG.adminPassword;}
+    else{switchLoginTab('user');document.getElementById('inp-empno').value=s.empno||'';window._empFound=s.name;document.getElementById('emp-found-name').textContent=s.name;document.getElementById('emp-found').style.display='block';app.empId=s.empId||null;if(saved&&saved.pw)document.getElementById('inp-pw').value=saved.pw;}
+    doLogin();
+  } else if(saved){
+    if(saved.isAdmin)switchLoginTab('admin');
+    document.getElementById('inp-empno').value=saved.empno||'';
+    if(saved.pw)document.getElementById('inp-pw').value=saved.pw;
+    lookupEmpNo();
+  }
+}catch(e){}})();
 
 // ── PAGE SWITCH ──
 function switchPage(page){
