@@ -1,11 +1,19 @@
-const CACHE = 'contec-challenge-v38';
-const ASSETS = ['/pdeometer/','/pdeometer/index.html','/pdeometer/logo.png','/pdeometer/manifest.json','/pdeometer/icon-192.png','/pdeometer/icon-512.png'];
+const CACHE = 'contec-challenge-v40';
+const ASSETS = [
+  '/CONTEC-Plus/',
+  '/CONTEC-Plus/index.html',
+  '/CONTEC-Plus/logo_premium_transparent.png',
+  '/CONTEC-Plus/og-image.jpg',
+  '/CONTEC-Plus/manifest.json',
+  '/CONTEC-Plus/icon-192.png',
+  '/CONTEC-Plus/icon-512.png'
+];
 
 self.addEventListener('install', e => {
   e.waitUntil(
     caches.open(CACHE)
       .then(c => c.addAll(ASSETS))
-      .then(() => self.skipWaiting()) // 즉시 대기 건너뛰고 활성화
+      .then(() => self.skipWaiting())
   );
 });
 
@@ -13,7 +21,7 @@ self.addEventListener('activate', e => {
   e.waitUntil(
     caches.keys()
       .then(keys => Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k))))
-      .then(() => self.clients.claim()) // 열린 탭 즉시 제어권 획득
+      .then(() => self.clients.claim())
   );
 });
 
