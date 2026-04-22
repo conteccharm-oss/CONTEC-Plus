@@ -743,6 +743,11 @@
       </div>
       <div class="sec-title">이달의 경품 목록</div>
       <div id="admin-reward-list" style="margin-bottom:1rem;"></div>
+
+      <!-- 이달의 참여 명단 -->
+      <div class="sec-title" style="margin-top:0.5rem;">이달의 참여 명단</div>
+      <div id="admin-race-entry-list" style="margin-bottom:1rem;"></div>
+
       <!-- 이번 달 운영 방식 -->
       <div class="sec-title" style="margin-top:0.5rem;">이번 달 운영 방식</div>
       <div style="display:flex;gap:8px;margin-bottom:1rem;">
@@ -1974,7 +1979,7 @@ function switchAdminTab(btn,tab){
   if(tab==='idea-all'){adminIdeaMonth=getYM();loadAdminIdeaAll();}
   if(tab==='storage')loadStorageTab();
   if(tab==='quiz-mgmt'){populateWeekSelect();quizHistoryMonth=getYM();loadQuizAdminList();renderPrizeTiers();loadElimList();loadSurvivorList();loadQuizTimeDisplay();}
-  if(tab==='race-mgmt'){loadAdminRewardList();loadRaceAutoDaySetting();SB.get('race_entries','year_month=eq.'+getYM()).then(r=>document.getElementById('race-entry-count-admin').textContent=r.length);}
+  if(tab==='race-mgmt'){loadAdminRewardList();loadRaceAutoDaySetting();loadAdminRaceEntries();SB.get('race_entries','year_month=eq.'+getYM()).then(r=>document.getElementById('race-entry-count-admin').textContent=r.length);}
   if(tab==='emp-mgmt'){document.getElementById('emp-list-wrap').style.display='none';document.getElementById('emp-list-toggle-btn').textContent='▼';loadEmployeeList();}
 }
 
@@ -2576,6 +2581,26 @@ function updateRaceModeUI(mode){
     if(autoPanel)autoPanel.style.display='none';
     if(manualPanel)manualPanel.style.display='block';
   }
+}
+
+async function loadAdminRaceEntries(){
+  const ym=getYM();
+  const entries=await SB.get('race_entries','year_month=eq.'+ym+'&order=created_at.asc');
+  const el=document.getElementById('admin-race-entry-list');
+  if(!el)return;
+  if(!entries.length){el.innerHTML='<div style="font-size:13px;color:var(--text-hint);padding:8px 0;">아직 참여자가 없습니다</div>';return;}
+  el.innerHTML=`<div style="font-size:12px;color:var(--text-hint);margin-bottom:8px;">총 ${entries.length}명</div>`+entries.map(e=>`
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:9px 12px;background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:10px;margin-bottom:6px;">
+      <span style="font-size:13px;color:#fff;">${e.name}</span>
+      <button onclick="excludeRaceEntry('${e.id}','${e.name}')" style="padding:4px 10px;font-size:11px;font-weight:700;font-family:inherit;border-radius:7px;border:1px solid rgba(226,75,74,0.4);background:rgba(226,75,74,0.1);color:var(--red);cursor:pointer;">제외</button>
+    </div>`).join('');
+}
+
+async function excludeRaceEntry(id,name){
+  if(!confirm(name+'님을 참여 명단에서 제외할까요?'))return;
+  const ok=await SB.del('race_entries',id);
+  if(ok){showToast('✅ '+name+'님이 제외되었습니다');loadAdminRaceEntries();}
+  else showToast('❌ 제외 실패');
 }
 
 function loadRaceAutoDaySetting(){
