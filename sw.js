@@ -42,6 +42,23 @@ self.addEventListener('fetch', e => {
   );
 });
 
+self.addEventListener('push', e => {
+  const data = e.data ? e.data.json() : {};
+  e.waitUntil(
+    self.registration.showNotification(data.title || 'CONTEC+', {
+      body: data.body || '궤도 레이스가 시작되었습니다!',
+      icon: '/CONTEC-Plus/icon-192.png',
+      badge: '/CONTEC-Plus/icon-192.png',
+      data: { url: '/CONTEC-Plus/' }
+    })
+  );
+});
+
+self.addEventListener('notificationclick', e => {
+  e.notification.close();
+  e.waitUntil(clients.openWindow(e.notification.data?.url || '/CONTEC-Plus/'));
+});
+
 self.addEventListener('message', e => {
   if (e.data === 'SKIP_WAITING') self.skipWaiting();
 });
