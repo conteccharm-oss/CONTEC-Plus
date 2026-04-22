@@ -1006,7 +1006,8 @@ const SB = {
   async delWhere(table,filter){const r=await fetch(CONFIG.supabaseUrl+'/rest/v1/'+table+'?'+filter,{method:'DELETE',headers:this.h});return r.ok;},
   async upload(file){const ext=(file.name.split('.').pop()||'jpg').toLowerCase();const path=Date.now()+'_'+Math.random().toString(36).slice(2)+'.'+ext;const ct=file.type||'application/octet-stream';const r=await fetch(CONFIG.supabaseUrl+'/storage/v1/object/challenge-images/'+path,{method:'POST',headers:{'apikey':CONFIG.supabaseKey,'Authorization':'Bearer '+CONFIG.supabaseKey,'Content-Type':ct,'x-upsert':'true'},body:file});if(!r.ok){const e=await r.text().catch(()=>'');console.error('Upload failed:',r.status,e);}return r.ok?CONFIG.supabaseUrl+'/storage/v1/object/public/challenge-images/'+path:null;},
   async listStorage(bucket){const r=await fetch(CONFIG.supabaseUrl+'/storage/v1/object/list/'+bucket,{method:'POST',headers:{...this.h},body:JSON.stringify({prefix:'',limit:10000,offset:0,sortBy:{column:'created_at',order:'asc'}})});return r.ok?r.json():[];},
-  async deleteStorageFiles(bucket,paths){const r=await fetch(CONFIG.supabaseUrl+'/storage/v1/object/'+bucket,{method:'DELETE',headers:{...this.h},body:JSON.stringify({prefixes:paths})});return r.ok;}
+  async deleteStorageFiles(bucket,paths){const r=await fetch(CONFIG.supabaseUrl+'/storage/v1/object/'+bucket,{method:'DELETE',headers:{...this.h},body:JSON.stringify({prefixes:paths})});return r.ok;},
+  async upsert(table,data){const r=await fetch(CONFIG.supabaseUrl+'/rest/v1/'+table,{method:'POST',headers:{...this.h,'Prefer':'return=minimal,resolution=merge-duplicates'},body:JSON.stringify(data)});return r.ok;}
 };
 
 const app={name:'',isAdmin:false,empId:null,empNo:''};
@@ -1760,6 +1761,7 @@ async function loadIdeaMyList(){
 
 // ── RACE PAGE (직원) ──
 async function loadRacePage(){
+  await loadRaceConfig();
   const ym=getYM();
   const autoDay=getRaceAutoDay();
   const mode=getMonthRaceMode(ym);
@@ -2421,8 +2423,16 @@ async function saveRaceWinner(){
 }
 
 // ── 궤도레이스 자동 운영 ──
-function getRaceAutoDay(){return parseInt(localStorage.getItem('contec_race_auto_day')||'25');}
-function getRaceAutoHour(){return parseInt(localStorage.getItem('contec_race_auto_hour')||'10');}
+const raceConfig={day:null,hour:null};
+function getRaceAutoDay(){return raceConfig.day!==null?raceConfig.day:parseInt(localStorage.getItem('contec_race_auto_day')||'25');}
+function getRaceAutoHour(){return raceConfig.hour!==null?raceConfig.hour:parseInt(localStorage.getItem('contec_race_auto_hour')||'10');}
+async function loadRaceConfig(){
+  const rows=await SB.get('app_settings','key=in.(race_auto_day,race_auto_hour)');
+  rows.forEach(r=>{
+    if(r.key==='race_auto_day'){raceConfig.day=parseInt(r.value);localStorage.setItem('contec_race_auto_day',r.value);}
+    if(r.key==='race_auto_hour'){raceConfig.hour=parseInt(r.value);localStorage.setItem('contec_race_auto_hour',r.value);}
+  });
+}
 function getMonthRaceMode(ym){return localStorage.getItem('contec_race_mode_'+ym)||'auto';}
 
 function getEffectiveRaceDate(ym){
@@ -2473,6 +2483,11 @@ function saveRaceAutoSettings(){
   if(isNaN(hour)||hour<0||hour>23){showToast('❌ 시간은 0~23 사이로 입력하세요');return;}
   localStorage.setItem('contec_race_auto_day',String(day));
   localStorage.setItem('contec_race_auto_hour',String(hour));
+  raceConfig.day=day;raceConfig.hour=hour;
+  await Promise.all([
+    SB.upsert('app_settings',{key:'race_auto_day',value:String(day)}),
+    SB.upsert('app_settings',{key:'race_auto_hour',value:String(hour)})
+  ]);
   const tag=document.getElementById('race-auto-day-tag');
   if(tag)tag.textContent=formatKorDateTime(getEffectiveDateWithDay(day,getYM()),hour);
   const subEl=document.getElementById('race-joined-sub');
