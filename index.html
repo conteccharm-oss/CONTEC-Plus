@@ -745,8 +745,11 @@
       <div id="admin-reward-list" style="margin-bottom:1rem;"></div>
 
       <!-- 이달의 참여 명단 -->
-      <div class="sec-title" style="margin-top:0.5rem;">이달의 참여 명단</div>
-      <div id="admin-race-entry-list" style="margin-bottom:1rem;"></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-top:0.5rem;margin-bottom:0.75rem;cursor:pointer;" onclick="toggleRaceEntryList()">
+        <div class="sec-title" style="margin:0;">이달의 참여 명단</div>
+        <button id="race-entry-toggle-btn" style="padding:5px 12px;background:rgba(255,255,255,0.07);color:var(--text-sub);border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;cursor:pointer;">▼</button>
+      </div>
+      <div id="admin-race-entry-list" style="display:none;margin-bottom:1rem;"></div>
 
       <!-- 이번 달 운영 방식 -->
       <div class="sec-title" style="margin-top:0.5rem;">이번 달 운영 방식</div>
@@ -1979,7 +1982,7 @@ function switchAdminTab(btn,tab){
   if(tab==='idea-all'){adminIdeaMonth=getYM();loadAdminIdeaAll();}
   if(tab==='storage')loadStorageTab();
   if(tab==='quiz-mgmt'){populateWeekSelect();quizHistoryMonth=getYM();loadQuizAdminList();renderPrizeTiers();loadElimList();loadSurvivorList();loadQuizTimeDisplay();}
-  if(tab==='race-mgmt'){loadAdminRewardList();loadRaceAutoDaySetting();loadAdminRaceEntries();SB.get('race_entries','year_month=eq.'+getYM()).then(r=>document.getElementById('race-entry-count-admin').textContent=r.length);}
+  if(tab==='race-mgmt'){loadAdminRewardList();loadRaceAutoDaySetting();SB.get('race_entries','year_month=eq.'+getYM()).then(r=>document.getElementById('race-entry-count-admin').textContent=r.length);}
   if(tab==='emp-mgmt'){document.getElementById('emp-list-wrap').style.display='none';document.getElementById('emp-list-toggle-btn').textContent='▼';loadEmployeeList();}
 }
 
@@ -2581,6 +2584,16 @@ function updateRaceModeUI(mode){
     if(autoPanel)autoPanel.style.display='none';
     if(manualPanel)manualPanel.style.display='block';
   }
+}
+
+function toggleRaceEntryList(){
+  const el=document.getElementById('admin-race-entry-list');
+  const btn=document.getElementById('race-entry-toggle-btn');
+  if(!el)return;
+  const isOpen=el.style.display!=='none';
+  el.style.display=isOpen?'none':'block';
+  if(btn)btn.textContent=isOpen?'▼':'▲';
+  if(!isOpen)loadAdminRaceEntries();
 }
 
 async function loadAdminRaceEntries(){
