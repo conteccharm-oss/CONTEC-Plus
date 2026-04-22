@@ -989,6 +989,46 @@
   </div>
 </div>
 
+<!-- 퀴즈 설명 팝업 -->
+<div class="pw-modal-overlay" id="quiz-info-overlay">
+  <div class="pw-modal" style="max-width:380px;">
+    <div class="pw-modal-title" style="font-size:17px;">🚀 우주 퀴즈 릴레이란?</div>
+    <div style="font-size:13px;color:var(--text-sub);line-height:1.9;margin-bottom:1.25rem;">
+      <div style="margin-bottom:10px;">매주 관리자가 <strong style="color:#fff;">우주 관련 퀴즈</strong> 1문제를 등록해요.</div>
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <div style="background:rgba(255,255,255,0.05);border-radius:10px;padding:10px 12px;">⏱️ 문제가 열리면 <strong style="color:#fff;">1분 이내</strong>에 답변해야 해요</div>
+        <div style="background:rgba(0,200,100,0.08);border:1px solid rgba(0,200,100,0.2);border-radius:10px;padding:10px 12px;">✅ 정답 → <strong style="color:#00ff88;">생존!</strong> 다음 주에도 도전 가능</div>
+        <div style="background:rgba(226,75,74,0.08);border:1px solid rgba(226,75,74,0.2);border-radius:10px;padding:10px 12px;">💥 오답 또는 시간 초과 → <strong style="color:var(--red);">탈락!</strong> 이번 달 종료</div>
+        <div style="background:rgba(255,200,0,0.08);border:1px solid rgba(255,200,0,0.2);border-radius:10px;padding:10px 12px;">🏆 매월 <strong style="color:#ffd700;">마지막 생존자</strong>가 최종 우승!</div>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;">
+      <button onclick="closeInfoPopup('quiz',false)" style="flex:1;padding:11px 0;font-size:13px;font-weight:700;font-family:inherit;border-radius:10px;border:1px solid var(--border);background:rgba(255,255,255,0.05);color:var(--text-sub);cursor:pointer;">닫기</button>
+      <button onclick="closeInfoPopup('quiz',true)" style="flex:2;padding:11px 0;font-size:13px;font-weight:700;font-family:inherit;border-radius:10px;border:none;background:linear-gradient(135deg,#1a3a6e,#0d2a5e);color:#7eb8ff;cursor:pointer;">✅ 다시 보지 않기</button>
+    </div>
+  </div>
+</div>
+
+<!-- 궤도레이스 설명 팝업 -->
+<div class="pw-modal-overlay" id="race-info-overlay">
+  <div class="pw-modal" style="max-width:380px;">
+    <div class="pw-modal-title" style="font-size:17px;">🛸 궤도 레이스란?</div>
+    <div style="font-size:13px;color:var(--text-sub);line-height:1.9;margin-bottom:1.25rem;">
+      <div style="margin-bottom:10px;">매월 진행되는 <strong style="color:#fff;">경품 추첨 이벤트</strong>예요.</div>
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <div style="background:rgba(255,255,255,0.05);border-radius:10px;padding:10px 12px;">🌌 참여하면 <strong style="color:#00eeff;">내 위성</strong>이 궤도에 올라가요</div>
+        <div style="background:rgba(0,200,255,0.08);border:1px solid rgba(0,200,255,0.2);border-radius:10px;padding:10px 12px;">🎁 원하는 <strong style="color:#00eeff;">경품에 투표</strong>해서 상품을 결정해요</div>
+        <div style="background:rgba(180,100,255,0.08);border:1px solid rgba(180,100,255,0.2);border-radius:10px;padding:10px 12px;">💫 추첨일에 위성들이 <strong style="color:#cc88ff;">하나씩 탈락</strong>하며 레이스 진행</div>
+        <div style="background:rgba(255,200,0,0.08);border:1px solid rgba(255,200,0,0.2);border-radius:10px;padding:10px 12px;">🏆 <strong style="color:#ffd700;">마지막 생존 위성</strong>의 주인이 경품 당첨!</div>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;">
+      <button onclick="closeInfoPopup('race',false)" style="flex:1;padding:11px 0;font-size:13px;font-weight:700;font-family:inherit;border-radius:10px;border:1px solid var(--border);background:rgba(255,255,255,0.05);color:var(--text-sub);cursor:pointer;">닫기</button>
+      <button onclick="closeInfoPopup('race',true)" style="flex:2;padding:11px 0;font-size:13px;font-weight:700;font-family:inherit;border-radius:10px;border:none;background:linear-gradient(135deg,#000820,#0a0a2e);color:#00eeff;border:1px solid rgba(0,200,255,0.3);cursor:pointer;">✅ 다시 보지 않기</button>
+    </div>
+  </div>
+</div>
+
 <script>
 const CONFIG = {
   password: 'contec2024',
@@ -1174,6 +1214,7 @@ function _quizPopBlock(){
 }
 
 async function loadQuizPage(){
+  showInfoPopup('quiz');
   const el=document.getElementById('quiz-content');
   const ym=getYM(),wk=getWeekKey();
   const elim=await SB.get('quiz_attempts','name=eq.'+encodeURIComponent(app.name)+'&year_month=eq.'+ym+'&is_correct=eq.false');
@@ -1761,6 +1802,7 @@ async function loadIdeaMyList(){
 
 // ── RACE PAGE (직원) ──
 async function loadRacePage(){
+  showInfoPopup('race');
   await loadRaceConfig();
   const ym=getYM();
   const autoDay=getRaceAutoDay();
@@ -2476,7 +2518,7 @@ function updateEffectiveDatePreview(){
   el.textContent=formatKorDateTime(getEffectiveDateWithDay(day,getYM()),hour);
 }
 
-function saveRaceAutoSettings(){
+async function saveRaceAutoSettings(){
   const day=parseInt(document.getElementById('race-auto-day-input').value);
   const hour=parseInt(document.getElementById('race-auto-hour-input').value);
   if(!day||day<1||day>31){showToast('❌ 날짜는 1~31 사이로 입력하세요');return;}
@@ -3114,6 +3156,17 @@ if('serviceWorker' in navigator){
       window.location.reload();
     });
   });
+}
+
+function showInfoPopup(type){
+  if(localStorage.getItem('contec_'+type+'_info_read')==='true')return;
+  const el=document.getElementById(type+'-info-overlay');
+  if(el)el.classList.add('open');
+}
+function closeInfoPopup(type,doNotShow){
+  const el=document.getElementById(type+'-info-overlay');
+  if(el)el.classList.remove('open');
+  if(doNotShow)localStorage.setItem('contec_'+type+'_info_read','true');
 }
 </script>
 </body>
