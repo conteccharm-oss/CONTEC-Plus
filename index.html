@@ -2474,7 +2474,9 @@ function saveRaceAutoSettings(){
   localStorage.setItem('contec_race_auto_day',String(day));
   localStorage.setItem('contec_race_auto_hour',String(hour));
   const tag=document.getElementById('race-auto-day-tag');
-  if(tag)tag.textContent='매월 '+day+'일 자동운영';
+  if(tag)tag.textContent=formatKorDateTime(getEffectiveDateWithDay(day,getYM()),hour);
+  const subEl=document.getElementById('race-joined-sub');
+  if(subEl)subEl.textContent=formatKorDateTime(getEffectiveDateWithDay(day,getYM()),hour)+' 자동 운영 예정';
   updateEffectiveDatePreview();
   showToast('✅ 저장 완료! 매월 '+day+'일 '+(hour<12?'오전':'오후')+' '+(hour===0?12:hour>12?hour-12:hour)+'시');
 }
