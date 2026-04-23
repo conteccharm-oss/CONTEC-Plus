@@ -1508,7 +1508,7 @@ function quizQuestionCard(q,wk,deletable=true){
       </div>
       <div style="display:flex;align-items:center;gap:8px;">
         <span style="font-size:11px;color:var(--text-hint);">✍️ ${q.created_by||'-'}</span>
-        ${deletable?`<button onclick="SB.del('quiz_relay','${q.id}').then(()=>{showToast('🗑️ 삭제됨');loadQuizAdminList();})" style="padding:3px 8px;background:#888;color:#fff;border:none;border-radius:6px;font-size:11px;font-family:inherit;cursor:pointer;">🗑️</button>`:''}
+        ${deletable?`<button onclick="if(confirm('삭제하시겠습니까?'))SB.del('quiz_relay','${q.id}').then(()=>{showToast('🗑️ 삭제됨');loadQuizAdminList();})" style="padding:3px 8px;background:#888;color:#fff;border:none;border-radius:6px;font-size:11px;font-family:inherit;cursor:pointer;">🗑️</button>`:''}
       </div>
     </div>
     <div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:4px;">${q.question}</div>
@@ -1993,11 +1993,11 @@ async function loadAdminPending(){
   document.getElementById('funny-pending-list').innerHTML=fp.length?fp.map(r=>pendingCard(r,'funny_submissions',r.name,r.title,r.media_url,r.is_video)).join(''):'<div class="rank-empty" style="background:var(--card);border-radius:12px;">없음</div>';
   const ip=await SB.get('idea_submissions','year_month=eq.'+ym+'&status=eq.submitted&order=created_at.asc');
   document.getElementById('idea-pending-cnt').textContent=ip.length;
-  document.getElementById('idea-pending-list').innerHTML=ip.length?ip.map(r=>`<div class="pending-card"><div class="pending-info"><div class="pending-title">💡 ${r.title}</div><div class="pending-sub">by ${r.name} · ${r.content.slice(0,50)}...</div></div><div class="pending-btns"><button class="btn-approve" onclick="approveIdea('${r.id}')">✅ 선정</button><button class="btn-del" onclick="SB.del('idea_submissions','${r.id}').then(()=>{showToast('삭제됨');loadAdminPending();})">🗑️</button></div></div>`).join(''):'<div class="rank-empty" style="background:var(--card);border-radius:12px;">없음</div>';
+  document.getElementById('idea-pending-list').innerHTML=ip.length?ip.map(r=>`<div class="pending-card"><div class="pending-info"><div class="pending-title">💡 ${r.title}</div><div class="pending-sub">by ${r.name} · ${r.content.slice(0,50)}...</div></div><div class="pending-btns"><button class="btn-approve" onclick="approveIdea('${r.id}')">✅ 선정</button><button class="btn-del" onclick="if(confirm('삭제하시겠습니까?'))SB.del('idea_submissions','${r.id}').then(()=>{showToast('삭제됨');loadAdminPending();})">🗑️</button></div></div>`).join(''):'<div class="rank-empty" style="background:var(--card);border-radius:12px;">없음</div>';
 }
 
 function pendingCard(r,table,name,title,mediaUrl,isVideo){
-  return `<div class="pending-card"><div class="pending-info"><div class="pending-title">${title}</div><div class="pending-sub">by ${name}</div></div>${mediaUrl?(isVideo?`<video class="pending-img" src="${mediaUrl}" controls></video>`:`<img class="pending-img" src="${mediaUrl}" onclick="window.open('${mediaUrl}')"/>`):''}<div class="pending-btns"><button class="btn-approve" onclick="SB.patch('${table}','${r.id}',{status:'approved'}).then(()=>{showToast('✅ 승인');loadAdminPending();})">✅ 승인</button><button class="btn-reject" onclick="SB.patch('${table}','${r.id}',{status:'rejected'}).then(()=>{showToast('❌ 거절');loadAdminPending();})">❌ 거절</button><button class="btn-del" onclick="SB.del('${table}','${r.id}').then(()=>{showToast('🗑️ 삭제');loadAdminPending();})">🗑️</button></div></div>`;
+  return `<div class="pending-card"><div class="pending-info"><div class="pending-title">${title}</div><div class="pending-sub">by ${name}</div></div>${mediaUrl?(isVideo?`<video class="pending-img" src="${mediaUrl}" controls></video>`:`<img class="pending-img" src="${mediaUrl}" onclick="window.open('${mediaUrl}')"/>`):''}<div class="pending-btns"><button class="btn-approve" onclick="SB.patch('${table}','${r.id}',{status:'approved'}).then(()=>{showToast('✅ 승인');loadAdminPending();})">✅ 승인</button><button class="btn-reject" onclick="SB.patch('${table}','${r.id}',{status:'rejected'}).then(()=>{showToast('❌ 거절');loadAdminPending();})">❌ 거절</button><button class="btn-del" onclick="if(confirm('삭제하시겠습니까?'))SB.del('${table}','${r.id}').then(()=>{showToast('🗑️ 삭제');loadAdminPending();})">🗑️</button></div></div>`;
 }
 
 function fmtDate(ts){if(!ts)return'';const d=new Date(ts);return(d.getMonth()+1)+'/'+(d.getDate())+' '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');}
@@ -2150,7 +2150,7 @@ async function addReward(){
 async function loadAdminRewardList(){
   const rows=await SB.get('rewards','year_month=eq.'+getYM()+'&order=votes.desc');
   const el=document.getElementById('admin-reward-list');
-  el.innerHTML=rows.length?rows.map(r=>`<div style="background:var(--card);border-radius:12px;border:1px solid var(--border);padding:10px 14px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;"><div><div style="font-size:13px;font-weight:700;">${r.title}</div>${r.description?`<div style="font-size:11px;color:var(--text-hint);">${r.description}</div>`:''}<div style="font-size:12px;color:var(--sky);margin-top:2px;">${r.votes||0}표</div></div><button onclick="SB.delWhere('reward_votes','reward_id=eq.${r.id}').then(()=>SB.del('rewards','${r.id}')).then(()=>{showToast('삭제됨');loadAdminRewardList();})" style="padding:6px 10px;background:#888;color:#fff;border:none;border-radius:8px;font-size:12px;font-family:inherit;cursor:pointer;">🗑️</button></div>`).join(''):'<div style="font-size:13px;color:var(--text-hint);text-align:center;padding:1rem;">등록된 경품 없음</div>';
+  el.innerHTML=rows.length?rows.map(r=>`<div style="background:var(--card);border-radius:12px;border:1px solid var(--border);padding:10px 14px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;"><div><div style="font-size:13px;font-weight:700;">${r.title}</div>${r.description?`<div style="font-size:11px;color:var(--text-hint);">${r.description}</div>`:''}<div style="font-size:12px;color:var(--sky);margin-top:2px;">${r.votes||0}표</div></div><button onclick="if(confirm('삭제하시겠습니까?'))SB.delWhere('reward_votes','reward_id=eq.${r.id}').then(()=>SB.del('rewards','${r.id}')).then(()=>{showToast('삭제됨');loadAdminRewardList();})" style="padding:6px 10px;background:#888;color:#fff;border:none;border-radius:8px;font-size:12px;font-family:inherit;cursor:pointer;">🗑️</button></div>`).join(''):'<div style="font-size:13px;color:var(--text-hint);text-align:center;padding:1rem;">등록된 경품 없음</div>';
 }
 
 // ── ORBITAL RACE (궤도 시뮬레이션) ──
@@ -2905,7 +2905,7 @@ function renderEmpList(rows){
       <div style="display:flex;gap:6px;">
         <button onclick="toggleEmployee('${r.id}',${r.is_active})" style="padding:4px 10px;background:${r.is_active?'#e65100':'var(--green)'};color:#fff;border:none;border-radius:6px;font-size:11px;font-family:inherit;cursor:pointer;">${r.is_active?'비활성화':'활성화'}</button>
         <button onclick="resetEmpPassword('${r.id}','${r.emp_no}','${r.name}')" style="padding:4px 10px;background:rgba(0,150,255,0.3);color:#7df;border:1px solid rgba(0,150,255,0.4);border-radius:6px;font-size:11px;font-family:inherit;cursor:pointer;">🔑 초기화</button>
-        <button onclick="SB.del('employees','${r.id}').then(()=>{showToast('🗑️ 삭제됨');loadEmployeeList();})" style="padding:4px 10px;background:#888;color:#fff;border:none;border-radius:6px;font-size:11px;font-family:inherit;cursor:pointer;">🗑️</button>
+        <button onclick="if(confirm('삭제하시겠습니까?'))SB.del('employees','${r.id}').then(()=>{showToast('🗑️ 삭제됨');loadEmployeeList();})" style="padding:4px 10px;background:#888;color:#fff;border:none;border-radius:6px;font-size:11px;font-family:inherit;cursor:pointer;">🗑️</button>
       </div>
     </div>`).join(''):'<div class="rank-empty" style="background:var(--card);border-radius:12px;">검색 결과 없음</div>';
 }
