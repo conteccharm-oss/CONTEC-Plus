@@ -601,16 +601,14 @@
       </div>
       <div class="card">
         <div style="font-size:14px;font-weight:700;margin-bottom:1rem;">📝 퀴즈 등록</div>
+        <div style="font-size:12px;color:var(--text-hint);margin-bottom:12px;background:rgba(162,123,255,0.08);border:1px solid rgba(162,123,255,0.25);border-radius:8px;padding:8px 10px;">📋 한 달 문제 풀 등록 — 매주 자동으로 랜덤 배정됩니다 (중복 없음)</div>
+        <div style="font-size:12px;color:var(--sky);margin-bottom:12px;">이번 달 등록: <strong id="quiz-month-count" style="color:#fff;">-</strong> 문제</div>
         <div class="m-field">
           <label>퀴즈 유형</label>
           <div style="display:flex;gap:8px;">
             <button id="qtype-subj" class="quiz-type-btn active" onclick="setQuizType('subjective')">✏️ 주관식</button>
             <button id="qtype-multi" class="quiz-type-btn inactive" onclick="setQuizType('multiple')">🔘 객관식</button>
           </div>
-        </div>
-        <div class="m-field">
-          <label>노출 주차</label>
-          <select id="q-week-select" style="width:100%;padding:9px 12px;font-size:13px;font-family:inherit;border:1px solid var(--border);border-radius:10px;outline:none;background:rgba(0,0,0,0.4);color:#fff;"></select>
         </div>
         <div class="m-field"><label>문제</label><textarea id="q-question" placeholder="퀴즈 문제를 입력하세요"></textarea></div>
         <div class="m-field"><label>정답</label><input type="text" id="q-answer" placeholder="정답 입력"/></div>
@@ -1261,41 +1259,44 @@ async function loadQuizPage(){
 
   if(elim.length>0){el.innerHTML=`<div style="background:#fff5f5;border:1.5px solid #ffcccc;border-radius:16px;padding:1.5rem;text-align:center;"><div style="font-size:36px;margin-bottom:8px;">💥</div><div style="font-size:16px;font-weight:700;color:var(--red);">이번 달 탈락!</div><div style="font-size:12px;color:var(--text-sub);margin-top:4px;">다음 달 챌린지에서 다시 도전하세요</div></div>`;return;}
 
-  // 이번 주 문제 풀 로드 (week_key 우선, scheduled_week 폴백)
-  let pool=await SB.get('quiz_relay','week_key=eq.'+wk+'&is_active=eq.true&order=created_at.asc');
-  if(!pool.length) pool=await SB.get('quiz_relay','scheduled_week=eq.'+wk+'&is_active=eq.true&order=created_at.asc');
+  // 이번 달 전체 문제 풀 로드
+  const allPool=await SB.get('quiz_relay','year_month=eq.'+ym+'&is_active=eq.true&order=created_at.asc');
 
   let html='';
-  if(!pool.length){
-    html=`<div class="quiz-card" style="text-align:center;padding:2rem;"><div style="font-size:32px;margin-bottom:8px;">🚀</div><div style="font-size:14px;font-weight:700;color:#fff;">이번 주 문제가 없어요</div><div style="font-size:12px;color:var(--text-hint);margin-top:4px;">관리자가 매주 문제를 등록합니다</div></div>`;
+  if(!allPool.length){
+    html=`<div class="quiz-card" style="text-align:center;padding:2rem;"><div style="font-size:32px;margin-bottom:8px;">🚀</div><div style="font-size:14px;font-weight:700;color:#fff;">이번 달 문제가 없어요</div><div style="font-size:12px;color:var(--text-hint);margin-top:4px;">관리자가 문제를 등록하면 바로 시작됩니다</div></div>`;
     el.innerHTML=html;return;
   }
 
-  // 이미 이번 주 풀에서 답한 적 있는지 확인
-  const poolIds=pool.map(q=>q.id);
-  const myAttempts=await SB.get('quiz_attempts','name=eq.'+encodeURIComponent(app.name)+'&quiz_id=in.('+poolIds.join(',')+')');
-  let quiz,alreadyAnswered=false,myCorrect=false;
+  // 이번 달 내 퀴즈 히스토리 (이전 주차에 받은 문제 제외용)
+  const myHistory=await SB.get('quiz_attempts','name=eq.'+encodeURIComponent(app.name)+'&year_month=eq.'+ym);
+  const myAnsweredIds=new Set(myHistory.map(a=>a.quiz_id));
 
-  if(myAttempts.length){
-    // 이미 답한 문제 그대로 보여줌
-    alreadyAnswered=true;
-    myCorrect=myAttempts.some(a=>a.is_correct);
-    quiz=pool.find(q=>q.id===myAttempts[0].quiz_id)||pool[0];
-  } else {
-    // 개인별 랜덤 배정 (localStorage로 고정, 새로고침해도 동일 문제)
-    const assignKey='quiz_assign_'+wk+'_'+app.name;
-    let assignedId=localStorage.getItem(assignKey);
-    if(!assignedId||!pool.find(q=>q.id===assignedId)){
-      // 랜덤 배정
-      assignedId=pool[Math.floor(Math.random()*pool.length)].id;
-      localStorage.setItem(assignKey,assignedId);
+  // 이번 주 배정 확인 (localStorage)
+  const assignKey='quiz_assign_'+wk+'_'+app.name;
+  let assignedId=localStorage.getItem(assignKey);
+  let quiz=null,alreadyAnswered=false,myCorrect=false;
+
+  if(assignedId&&allPool.find(q=>q.id===assignedId)){
+    // 이번 주 이미 배정된 문제
+    quiz=allPool.find(q=>q.id===assignedId);
+    if(myAnsweredIds.has(assignedId)){
+      alreadyAnswered=true;
+      myCorrect=myHistory.some(a=>a.quiz_id===assignedId&&a.is_correct);
     }
-    quiz=pool.find(q=>q.id===assignedId)||pool[0];
+  } else {
+    // 이번 달 풀에서 이미 받은 문제 제외하고 랜덤 배정
+    const available=allPool.filter(q=>!myAnsweredIds.has(q.id));
+    if(!available.length){
+      html=`<div class="quiz-card" style="text-align:center;padding:2rem;"><div style="font-size:32px;margin-bottom:8px;">🏆</div><div style="font-size:14px;font-weight:700;color:#fff;">이번 달 문제를 모두 풀었어요!</div><div style="font-size:12px;color:var(--text-hint);margin-top:4px;">다음 달 퀴즈를 기다려주세요</div></div>`;
+      el.innerHTML=html;return;
+    }
+    quiz=available[Math.floor(Math.random()*available.length)];
+    localStorage.setItem(assignKey,quiz.id);
   }
 
-  const poolIdx=pool.findIndex(q=>q.id===quiz.id)+1;
-  const poolBadge=pool.length>1
-    ?`<span style="font-size:10px;background:rgba(162,123,255,0.2);color:var(--purple);border:1px solid rgba(162,123,255,0.4);border-radius:8px;padding:2px 7px;margin-left:6px;">풀 ${pool.length}개 중 #${poolIdx}</span>`
+  const poolBadge=allPool.length>1
+    ?`<span style="font-size:10px;background:rgba(162,123,255,0.2);color:var(--purple);border:1px solid rgba(162,123,255,0.4);border-radius:8px;padding:2px 7px;margin-left:6px;">월 ${allPool.length}문제 랜덤풀</span>`
     :'';
   html+=`<div class="quiz-card"><div style="font-size:11px;font-weight:700;color:var(--text-hint);margin-bottom:8px;display:flex;align-items:center;flex-wrap:wrap;gap:4px;">📌 이번 주 문제 · ${quiz.created_by}님 출제${poolBadge}</div><div style="font-size:16px;font-weight:600;color:var(--text);line-height:1.5;">${quiz.question}</div>${quiz.hint?`<div style="font-size:12px;color:var(--text-sub);margin-top:6px;">힌트: ${quiz.hint}</div>`:''}</div>`;
 
@@ -1434,7 +1435,6 @@ async function registerQuiz(){
   const q=document.getElementById('q-question').value.trim();
   const a=document.getElementById('q-answer').value.trim();
   const h=document.getElementById('q-hint').value.trim();
-  const wk=document.getElementById('q-week-select').value;
   if(!q||!a){showToast('❌ 문제와 정답을 입력해주세요');return;}
   let optA='',optB='',optC='',optD='';
   if(_quizType==='multiple'){
@@ -1449,16 +1449,15 @@ async function registerQuiz(){
     }
   }
   const ok=await SB.post('quiz_relay',{
-    year_month:getYM(),week_key:wk,scheduled_week:wk,
+    year_month:getYM(),week_key:null,scheduled_week:null,
     question:q,answer:a,hint:h,
     quiz_type:_quizType,
     option_a:optA||null,option_b:optB||null,option_c:optC||null,option_d:optD||null,
     created_by:app.name,is_active:true
   });
   if(ok){
-    showToast('✅ 문제 등록 완료!');
+    showToast('✅ 문제 등록 완료! (주차 자동 배정)');
     ['q-question','q-answer','q-hint','q-opt-a','q-opt-b','q-opt-c','q-opt-d'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
-    populateWeekSelect();
     loadQuizAdminList();
   } else {
     showToast('❌ 등록 실패 — Supabase SQL 마이그레이션을 먼저 실행해주세요');
@@ -1491,11 +1490,12 @@ function quizHistoryNav(dir){
 
 function quizQuestionCard(q,wk,deletable=true){
   const sw=q.scheduled_week||q.week_key||'';
+  const isUnassigned=!sw;
   const isNow=sw===wk;
   const isPast=sw&&sw<wk;
   const isFuture=sw&&sw>wk;
-  const weekLabel=isNow?'📍 이번 주':isPast?'✅ 진행됨':isFuture?'⏳ 예약됨':'';
-  const borderColor=isNow?'var(--purple)':isFuture?'rgba(0,195,255,0.4)':'var(--border)';
+  const weekLabel=isUnassigned?'📋 미배정':isNow?'📍 이번 주':isPast?'✅ 진행됨':isFuture?'⏳ 예약됨':'';
+  const borderColor=isNow?'var(--purple)':isFuture?'rgba(0,195,255,0.4)':isUnassigned?'rgba(245,200,66,0.35)':'var(--border)';
   const typeLabel=q.quiz_type==='multiple'
     ?'<span style="font-size:10px;background:rgba(162,123,255,0.2);color:var(--purple);border:1px solid var(--purple);padding:1px 6px;border-radius:8px;margin-left:4px;">객관식</span>'
     :'<span style="font-size:10px;background:rgba(0,195,255,0.1);color:var(--sky);border:1px solid rgba(0,195,255,0.3);padding:1px 6px;border-radius:8px;margin-left:4px;">주관식</span>';
@@ -1503,7 +1503,7 @@ function quizQuestionCard(q,wk,deletable=true){
   return `<div style="background:var(--card);border-radius:12px;border:1.5px solid ${borderColor};padding:1rem;margin-bottom:8px;">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
       <div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap;">
-        <span style="font-size:11px;font-weight:700;color:${isNow?'var(--purple)':isFuture?'var(--sky)':'var(--text-hint)'};">${weekLabel}${weekLabel?' · ':''}${sw}</span>
+        <span style="font-size:11px;font-weight:700;color:${isNow?'var(--purple)':isFuture?'var(--sky)':isUnassigned?'var(--gold)':'var(--text-hint)'};">${weekLabel}${weekLabel&&sw?' · ':''}${sw}</span>
         ${typeLabel}
       </div>
       <div style="display:flex;align-items:center;gap:8px;">
@@ -1525,16 +1525,23 @@ async function loadQuizAdminList(){
   const nextBtn=document.getElementById('quiz-history-next-btn');
   if(nextBtn)nextBtn.style.opacity=isCurrent?'0.3':'1';
 
-  const monthWeeks=getWeeksInMonth(ym);
-  const allRows=await SB.get('quiz_relay','order=scheduled_week.asc,created_at.asc&limit=500');
-  const rows=allRows.filter(q=>monthWeeks.includes(q.scheduled_week||q.week_key||''));
+  // year_month 기준 직접 조회 (미배정 문제 포함)
+  const rows=await SB.get('quiz_relay','year_month=eq.'+ym+'&order=scheduled_week.asc,created_at.asc&limit=100');
+
+  // 이번 달 등록 문제 수 표시
+  if(isCurrent){
+    const countEl=document.getElementById('quiz-month-count');
+    if(countEl)countEl.textContent=rows.length;
+  }
 
   const el=document.getElementById('quiz-admin-list');
   const wk=getWeekKey();
+  const unassignedCount=rows.filter(q=>!q.scheduled_week&&!q.week_key).length;
   const summary=`<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:0.75rem;">
     <span style="font-size:12px;color:var(--text-hint);">총 ${rows.length}문제</span>
     <span style="font-size:12px;color:var(--purple);">✏️ 주관식 ${rows.filter(q=>q.quiz_type!=='multiple').length}</span>
     <span style="font-size:12px;color:var(--sky);">🔘 객관식 ${rows.filter(q=>q.quiz_type==='multiple').length}</span>
+    ${unassignedCount?`<span style="font-size:12px;color:var(--gold);">📋 미배정 ${unassignedCount}</span>`:''}
   </div>`;
   if(!rows.length){
     el.innerHTML=summary+'<div class="rank-empty" style="background:var(--card);border-radius:12px;">해당 월 등록된 문제 없음</div>';
