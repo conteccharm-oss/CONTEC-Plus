@@ -1272,10 +1272,19 @@ async function loadQuizPage(){
   const myHistory=await SB.get('quiz_attempts','name=eq.'+encodeURIComponent(app.name)+'&year_month=eq.'+ym);
   const myAnsweredIds=new Set(myHistory.map(a=>a.quiz_id));
 
-  // 이번 주 배정 확인 (localStorage)
+  // 이번 주 배정 확인 (localStorage → DB fallback)
   const assignKey='quiz_assign_'+wk+'_'+app.name;
   let assignedId=localStorage.getItem(assignKey);
   let quiz=null,alreadyAnswered=false,myCorrect=false;
+
+  // localStorage에 없거나 풀에 없으면 DB 이번 주 시도 기록으로 복원
+  if(!assignedId||!allPool.find(q=>q.id===assignedId)){
+    const thisWeekAttempt=myHistory.find(a=>getWeekKeyFromDate(new Date(a.created_at))===wk);
+    if(thisWeekAttempt){
+      assignedId=thisWeekAttempt.quiz_id;
+      localStorage.setItem(assignKey,assignedId);
+    }
+  }
 
   if(assignedId&&allPool.find(q=>q.id===assignedId)){
     // 이번 주 이미 배정된 문제
