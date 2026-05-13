@@ -1846,34 +1846,23 @@ async function loadFunnyList(){
     SB.get('funny_votes','year_month=eq.'+ym+'&voter_name=eq.'+encodeURIComponent(app.name))
   ]);
   const rows=rawRows.sort((a,b)=>(b.votes||0)-(a.votes||0));
-  const myVotedId = myVoteArr[0]?.submission_id || null;
+  const myVotedIds=new Set(myVoteArr.map(v=>v.submission_id));
   const el=document.getElementById('funny-list');
   const infoEl=document.getElementById('funny-vote-info');
-
-  // 승인된 항목들만 투표 대상
-  const votable=rows.filter(r=>r.status==='approved'||r.status==='winner');
-  const totalVotes=votable.reduce((a,b)=>a+(b.votes||0),0);
-
-  if(myVotedId) infoEl.textContent='· 투표 완료 ✅';
-  else if(votable.length>0) infoEl.textContent='· 1인 1표';
-  else infoEl.textContent='';
-
-  const rankBadge=(idx)=>{
-    if(idx===0&&votable.length>0) return '<span class="funny-rank-badge rank-gold">🥇 1위</span>';
-    if(idx===1) return '<span class="funny-rank-badge rank-silver">🥈 2위</span>';
-    if(idx===2) return '<span class="funny-rank-badge rank-bronze">🥉 3위</span>';
-    return '';
-  };
-
-  // 승인/winner 항목 먼저, 검토중 나중
   const approved=rows.filter(r=>r.status==='approved'||r.status==='winner');
-  const pending=rows.filter(r=>r.status==='pending');
-
+  const totalVotes=approved.reduce((a,b)=>a+(b.votes||0),0);
+  infoEl.textContent=approved.length>0?'· 항목별 투표 가능':'';
+  const rankBadge=(idx)=>{
+    if(idx===0&&approved.length>0)return'<span class="funny-rank-badge rank-gold">🥇 1위</span>';
+    if(idx===1)return'<span class="funny-rank-badge rank-silver">🥈 2위</span>';
+    if(idx===2)return'<span class="funny-rank-badge rank-bronze">🥉 3위</span>';
+    return'';
+  };
   const renderCard=(r,rank)=>{
     const isVotable=r.status==='approved'||r.status==='winner';
     const pct=totalVotes>0?Math.round((r.votes||0)/totalVotes*100):0;
-    const cardClass='funny-card'+(rank===0&&isVotable?' rank1':'');
-    return `<div class="${cardClass}">
+    const voted=myVotedIds.has(r.id);
+    return`<div class="funny-card${rank===0&&isVotable?' rank1':''}${voted?' my-voted':''}">
       ${r.media_url?(r.is_video
         ?`<video src="${r.media_url}" style="width:100%;max-height:260px;object-fit:cover;" controls></video>`
         :`<img src="${r.media_url}" style="width:100%;max-height:260px;object-fit:cover;cursor:pointer;" onclick="window.open('${r.media_url}')"/>`
@@ -1890,24 +1879,22 @@ async function loadFunnyList(){
         ${isVotable?`
         <div class="funny-vote-row">
           <div class="funny-vote-count">❤️ ${r.votes||0}표</div>
-          ${!myVotedId
+          ${!voted
             ?`<button class="btn-funny-vote" onclick="voteFunny('${r.id}')">투표하기</button>`
-            :`<button class="btn-funny-vote voted">투표 완료 ✅</button>`
-          }
+            :`<button class="btn-funny-vote voted">투표 완료 ✅</button>`}
         </div>
         <div class="funny-vote-bar"><div class="funny-vote-bar-fill" style="width:${pct}%"></div></div>
         `:''}
       </div>
     </div>`;
   };
-
   if(!rows.length){el.innerHTML='<div class="rank-empty" style="background:var(--card);border-radius:12px;">아직 승인된 내역이 없습니다</div>';return;}
   el.innerHTML=approved.map((r,i)=>renderCard(r,i)).join('');
 }
 
 async function voteFunny(submissionId){
   const ym=getYM();
-  const existing=await SB.get('funny_votes','year_month=eq.'+ym+'&voter_name=eq.'+encodeURIComponent(app.name));
+  const existing=await SB.get('funny_votes','year_month=eq.'+ym+'&voter_name=eq.'+encodeURIComponent(app.name)+'&submission_id=eq.'+submissionId);
   if(existing.length>0){showToast('❌ 이미 투표하셨습니다');return;}
   const ok=await SB.post('funny_votes',{year_month:ym,submission_id:submissionId,voter_name:app.name});
   if(!ok){showToast('❌ 투표 실패');return;}
@@ -2009,13 +1996,11 @@ async function loadIdeaList(){
     SB.get('idea_votes','year_month=eq.'+ym+'&voter_name=eq.'+encodeURIComponent(app.name))
   ]);
   const rows=rawRows.sort((a,b)=>(b.votes||0)-(a.votes||0));
-  const myVotedId=myVoteArr[0]?.submission_id||null;
+  const myVotedIds=new Set(myVoteArr.map(v=>v.submission_id));
   const el=document.getElementById('idea-list');
   const infoEl=document.getElementById('idea-vote-info');
   const totalVotes=rows.reduce((a,b)=>a+(b.votes||0),0);
-  if(myVotedId)infoEl.textContent='· 투표 완료 ✅';
-  else if(rows.length>0)infoEl.textContent='· 1인 1표';
-  else infoEl.textContent='';
+  infoEl.textContent=rows.length>0?'· 항목별 투표 가능':'';
   const rankBadge=(idx)=>{
     if(idx===0&&rows.length>0)return'<span class="funny-rank-badge rank-gold">🥇 1위</span>';
     if(idx===1)return'<span class="funny-rank-badge rank-silver">🥈 2위</span>';
@@ -2024,8 +2009,8 @@ async function loadIdeaList(){
   };
   const renderCard=(r,rank)=>{
     const pct=totalVotes>0?Math.round((r.votes||0)/totalVotes*100):0;
-    const isMyVote=myVotedId===r.id;
-    return`<div class="funny-card${rank===0?' rank1':''}${isMyVote?' my-voted':''}">
+    const voted=myVotedIds.has(r.id);
+    return`<div class="funny-card${rank===0?' rank1':''}${voted?' my-voted':''}">
       <div class="funny-card-body">
         ${rankBadge(rank)}
         ${r.status==='winner'?'<span class="status-pill pill-winner" style="font-size:10px;margin-bottom:6px;display:inline-block;">🏆 선정됨</span>':''}
@@ -2039,9 +2024,9 @@ async function loadIdeaList(){
         </div>
         <div class="funny-vote-row">
           <div class="funny-vote-count">💡 ${r.votes||0}표</div>
-          ${!myVotedId
+          ${!voted
             ?`<button class="btn-funny-vote" style="background:var(--green);box-shadow:0 0 8px rgba(0,200,80,0.4);" onclick="voteIdea('${r.id}')">투표하기</button>`
-            :`<button class="btn-funny-vote voted">${isMyVote?'내가 투표 ✅':'투표 완료'}</button>`}
+            :`<button class="btn-funny-vote voted">투표 완료 ✅</button>`}
         </div>
         <div class="funny-vote-bar"><div class="funny-vote-bar-fill" style="width:${pct}%;background:var(--green);box-shadow:0 0 8px rgba(0,200,80,0.5);"></div></div>
       </div>
@@ -2052,7 +2037,7 @@ async function loadIdeaList(){
 }
 async function voteIdea(submissionId){
   const ym=getYM();
-  const existing=await SB.get('idea_votes','year_month=eq.'+ym+'&voter_name=eq.'+encodeURIComponent(app.name));
+  const existing=await SB.get('idea_votes','year_month=eq.'+ym+'&voter_name=eq.'+encodeURIComponent(app.name)+'&submission_id=eq.'+submissionId);
   if(existing.length>0){showToast('❌ 이미 투표하셨습니다');return;}
   const ok=await SB.post('idea_votes',{year_month:ym,submission_id:submissionId,voter_name:app.name});
   if(!ok){showToast('❌ 투표 실패');return;}
