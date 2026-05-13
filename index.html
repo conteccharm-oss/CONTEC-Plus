@@ -2007,9 +2007,8 @@ async function loadIdeaList(){
   const renderCard=(r,rank)=>{
     const pct=totalVotes>0?Math.round((r.votes||0)/totalVotes*100):0;
     const voted=myVotedIds.has(r.id);
-    return`<div class="funny-card${rank===0?' rank1':''}${voted?' my-voted':''}">
+    return`<div class="funny-card${voted?' my-voted':''}">
       <div class="funny-card-body">
-        ${rankBadge(rank)}
         ${r.status==='winner'?'<span class="status-pill pill-winner" style="font-size:10px;margin-bottom:6px;display:inline-block;">🏆 선정됨</span>':''}
         <div style="display:flex;justify-content:space-between;align-items:flex-start;">
           <div style="flex:1;min-width:0;">
