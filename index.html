@@ -2399,21 +2399,28 @@ let raceSeed=0,raceSatNames=[];
 function makeRaceRNG(seed){let _s=Math.abs(Math.floor(seed)%233280)||1234;return function(){_s=(_s*9301+49297)%233280;return _s/233280;};}
 function buildRaceState(names,seed){
   const sr=makeRaceRNG(seed);
-  const winnerIdx=Math.floor(sr()*names.length);
+  const n=names.length;
+  const winnerCount=Math.min(3,n);
+  // Seeded shuffle: first winnerCount indices = survivors (rank 1 = last survivor)
+  const perm=names.map((_,i)=>i);
+  for(let i=perm.length-1;i>0;i--){const j=Math.floor(sr()*(i+1));[perm[i],perm[j]]=[perm[j],perm[i]];}
+  const winnerSet=new Set(perm.slice(0,winnerCount));
+  const rankMap={};perm.slice(0,winnerCount).forEach((idx,ri)=>{rankMap[idx]=ri+1;});
   const sats=names.map((name,i)=>{
-    const isWinner=i===winnerIdx;
+    const isWinner=winnerSet.has(i);
+    const rank=rankMap[i]||0;
     const orbitFrac=(i/(names.length-1||1))*(0.6+sr()*0.4);
     const spd=(0.025+sr()*0.02)*(sr()>0.5?1:-1);
     const angle=(Math.PI*2/names.length)*i+sr()*0.5;
     const departDelay=isWinner?9999:2+i*0.4+sr()*3;
-    return{name,color:RC[i%RC.length],orbitFrac,speed:spd,angle,departDelay,isWinner,
+    return{name,color:RC[i%RC.length],orbitFrac,speed:spd,angle,departDelay,isWinner,rank,
       state:'orbit',departTimer:0,tx:0,ty:0,tvx:0,tvy:0,trail:[],flash:0,x:0,y:0,scale:1,opacity:1,wobble:0};
   });
   const meteorAngle=sr()*Math.PI*2;
   const collide1=sr();const collide2=sr();
   const swCnt=sr();
   const bhOffX=(sr()-0.5)*0.7;const bhOffY=(sr()-0.5)*0.7;
-  return{winnerIdx,winnerName:names[winnerIdx],sats,meteorAngle,collide1,collide2,swCnt,bhOffX,bhOffY};
+  return{winnerSet,winnerCount,sats,meteorAngle,collide1,collide2,swCnt,bhOffX,bhOffY};
 }
 let raceAnimId=null,raceSats=[],raceStars=[],raceNebula=[],raceDone=false,raceWinner=null,raceT=0,raceW=0,raceH=0,raceCX=0,raceCY=0,raceParticles=[],racePhase='ready',raceCd=3,raceCdTimer=0;
 let raceEvents={meteor:null,solarWind:null,blackHole:null,eventMsg:{text:'',alpha:0,timer:0},shake:0};
@@ -2434,6 +2441,7 @@ async function startOrbitalRace(){
   raceCX=raceW/2; raceCY=raceH/2;
   raceDone=false; raceWinner=null; raceT=0;
   raceParticles=[];
+  window._raceWinnersList=null; window._winnersFinaleCalled=false;
   racePhase='countdown'; raceCd=3; raceCdTimer=0;
   raceEvents={meteor:null,solarWind:null,blackHole:null,eventMsg:{text:'',alpha:0,timer:0},shake:0};
   raceEventsDone=new Set();
@@ -2473,6 +2481,11 @@ function raceLoop(){
     raceCdTimer+=1/60;
     if(raceCdTimer>=1){raceCd--;raceCdTimer=0;if(raceCd<=0)racePhase='race';}
     raceDraw();raceAnimId=requestAnimationFrame(raceLoop);return;
+  }
+  // Safety: if no non-winners exist (≤3 participants all become winners), end immediately
+  if(!raceDone&&!window._winnersFinaleCalled&&raceT>0.5&&raceSats.filter(s=>!s.isWinner).length===0){
+    window._winnersFinaleCalled=true;
+    setTimeout(()=>startWinnersFinale(raceSats.filter(s=>s.isWinner&&s.state==='orbit')),500);
   }
   for(let s=0;s<3;s++) raceUpdate();
   raceDraw();
@@ -2579,19 +2592,26 @@ function raceUpdate(){
       if(s.explodeT>0.5){
         s.state='done';
         const allGone=raceSats.filter(ss=>!ss.isWinner).every(ss=>ss.state==='done');
-        const w=raceSats.find(ss=>ss.isWinner&&ss.state==='orbit');
-        if(allGone&&w)setTimeout(()=>startWinnerZoom(w),300);
+        const aliveWinners=raceSats.filter(ss=>ss.isWinner&&ss.state==='orbit');
+        if(allGone&&aliveWinners.length>0&&!window._winnersFinaleCalled){window._winnersFinaleCalled=true;setTimeout(()=>startWinnersFinale(aliveWinners),300);}
       }
     } else if(s.state==='zooming'){
       s.angle+=s.speed*0.4;s.orbitR=Math.max(EARTH_R+16,s.orbitR-0.5);
       s.x=raceCX+Math.cos(s.angle)*s.orbitR;s.y=raceCY+Math.sin(s.angle)*s.orbitR;
       s.scale=Math.min(3.8,s.scale+0.022);s.flash=0.5+0.5*Math.sin(raceT*8);
-      if(s.scale>=3.8){s.state='done';raceDone=true;raceWinner=s;setTimeout(()=>showRaceWinner(s),200);}
+      if(s.scale>=3.8){s.state='done';raceDone=true;raceWinner=s;setTimeout(()=>showRaceWinner(window._raceWinnersList||[s]),200);}
     }
   });
 }
 
-function startWinnerZoom(s){s.state='zooming';s.scale=1;s.flash=1;}
+function startWinnersFinale(winners){
+  const sorted=[...winners].sort((a,b)=>(a.rank||1)-(b.rank||1));
+  window._raceWinnersList=sorted;
+  raceWinner=sorted[0];
+  sorted[0].state='zooming';sorted[0].scale=1;sorted[0].flash=1;
+  for(let i=1;i<sorted.length;i++){sorted[i].flash=1;}
+}
+function startWinnerZoom(s){startWinnersFinale([s]);}
 
 function raceDraw(){
   const canvas=document.getElementById('race-canvas');
@@ -2663,10 +2683,13 @@ function raceDraw(){
     ctx.fillStyle='rgba(255,255,255,0.45)';ctx.beginPath();ctx.arc(dx-r*0.3,dy-r*0.3,r*0.3,0,Math.PI*2);ctx.fill();
     ctx.fillStyle='rgba(0,0,0,0.85)';ctx.font=`bold ${Math.min(7,r*0.7)}px sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(s.name.slice(0,2),dx,dy);ctx.textBaseline='alphabetic';ctx.globalAlpha=1;
     if(s.state==='zooming'&&s.scale>2){ctx.fillStyle='#FFD700';ctx.font=`bold ${Math.round(10*s.scale/2)}px sans-serif`;ctx.textAlign='center';ctx.fillText(s.name,dx,dy-r-7);}
+    if(raceDone&&s.isWinner&&s.rank>1&&s.state==='orbit'){const m2=['🥈','🥉'];ctx.fillStyle='#FFD700';ctx.font='bold 10px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText((m2[s.rank-2]||'')+' '+s.name,dx,dy-r-9);ctx.textBaseline='alphabetic';}
   });
-  if(raceDone&&raceWinner){
-    ctx.shadowColor=raceWinner.color;ctx.shadowBlur=20;ctx.strokeStyle=raceWinner.color;ctx.lineWidth=3;
-    ctx.beginPath();ctx.arc(raceWinner.x,raceWinner.y,Math.max(2,6*raceWinner.scale)+7,0,Math.PI*2);ctx.stroke();ctx.shadowBlur=0;
+  if(raceDone){
+    (window._raceWinnersList||[raceWinner]).filter(Boolean).forEach(w=>{
+      ctx.shadowColor=w.color;ctx.shadowBlur=20;ctx.strokeStyle=w.color;ctx.lineWidth=3;
+      ctx.beginPath();ctx.arc(w.x,w.y,Math.max(2,6*w.scale)+7,0,Math.PI*2);ctx.stroke();ctx.shadowBlur=0;
+    });
   }
 
   // 이벤트 메시지
@@ -2712,33 +2735,28 @@ function raceDraw(){
 
 function raceDrawWinner(){raceDraw();}
 
-function showRaceWinner(b){
-  document.getElementById('race-admin-winner').textContent=b.name;
+function showRaceWinner(winners){
+  const arr=Array.isArray(winners)?winners:[winners];
+  const rank1=arr.find(w=>w.rank===1)||arr[0];
+  const rank2=arr.find(w=>w.rank===2);
+  const rank3=arr.find(w=>w.rank===3);
+  document.getElementById('race-admin-winner').textContent=rank1.name;
   document.getElementById('race-winner-announce').style.display='block';
-  document.getElementById('race-status').textContent='🥇 1등 당첨! '+b.name;
+  let statusText='🥇 '+rank1.name;
+  if(rank2)statusText+=' | 🥈 '+rank2.name;
+  if(rank3)statusText+=' | 🥉 '+rank3.name;
+  document.getElementById('race-status').textContent=statusText;
 }
 
 async function saveRaceWinner(){
-  if(!raceWinner)return;
+  const winners=window._raceWinnersList;
+  if(!winners||!winners.length)return;
   const ym=getYM();
-  const entries=await SB.get('race_entries','year_month=eq.'+ym+'&order=created_at.asc');
-  const names=entries.map(e=>e.name);
-  const rank1=raceWinner.name;
-  const winners=[{year_month:ym,winner_name:rank1,race_seed:raceSeed,race_names:JSON.stringify(names),rank:1}];
-  const rem1=names.filter(n=>n!==rank1);
-  if(rem1.length>0){
-    const rng2=makeRaceRNG(raceSeed+997);
-    const win2=rem1[Math.floor(rng2()*rem1.length)];
-    winners.push({year_month:ym,winner_name:win2,race_seed:raceSeed+997,race_names:JSON.stringify(names),rank:2});
-    const rem2=rem1.filter(n=>n!==win2);
-    if(rem2.length>0){
-      const rng3=makeRaceRNG(raceSeed+1994);
-      const win3=rem2[Math.floor(rng3()*rem2.length)];
-      winners.push({year_month:ym,winner_name:win3,race_seed:raceSeed+1994,race_names:JSON.stringify(names),rank:3});
-    }
-  }
   let allOk=true;
-  for(const w of winners){const ok=await SB.post('race_results',w);if(!ok)allOk=false;}
+  for(const w of winners){
+    const ok=await SB.post('race_results',{year_month:ym,winner_name:w.name,race_seed:raceSeed,race_names:JSON.stringify(raceSatNames),rank:w.rank||1});
+    if(!ok)allOk=false;
+  }
   if(allOk){showToast('🎉 결과 저장 완료! 1~'+winners.length+'등 발표되었습니다');loadRacePage();}
 }
 
