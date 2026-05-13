@@ -400,8 +400,7 @@
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
         <div style="font-size:15px;font-weight:700;">🚀 우주 퀴즈 릴레이</div>
         <div style="display:flex;align-items:center;gap:8px;">
-          <div onclick="showSurvivorPopup()" style="font-size:12px;background:rgba(255,255,255,0.15);border-radius:20px;padding:4px 12px;cursor:pointer;">생존자 <span id="quiz-alive">-</span>명 👁</div>
-          <div id="quiz-winner-badge" style="display:none;font-size:12px;background:rgba(255,200,0,0.2);border:1px solid rgba(255,200,0,0.5);border-radius:20px;padding:4px 12px;color:#ffd700;">🏆 <span id="quiz-winner-name"></span></div>
+          <div onclick="showSurvivorPopup()" style="font-size:12px;background:rgba(255,255,255,0.15);border-radius:20px;padding:4px 12px;cursor:pointer;">생존자 <span id="quiz-alive">-</span>명 👁️</div>
           <button onclick="showInfoPopup('quiz',true)" style="font-size:12px;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);border-radius:20px;padding:4px 10px;color:rgba(255,255,255,0.7);cursor:pointer;font-family:inherit;">❓ 설명</button>
         </div>
       </div>
@@ -1315,12 +1314,6 @@ async function loadQuizPage(){
   const aliveCount=Math.max(0,aliveNames.length);
   window._quizSurvivors=aliveNames;
   document.getElementById('quiz-alive').textContent=aliveCount;
-  const winBadge=document.getElementById('quiz-winner-badge');
-  const winName=document.getElementById('quiz-winner-name');
-  if(winBadge&&winName){
-    if(aliveCount===1){winName.textContent=aliveNames[0];winBadge.style.display='block';}
-    else{winBadge.style.display='none';}
-  }
   loadQuizPrizeTiers();
   // 현재 경품 표시
   const curPrize=getCurrentPrize(aliveCount);
