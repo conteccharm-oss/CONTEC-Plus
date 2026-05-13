@@ -454,8 +454,8 @@
       </div>
       <button class="btn-main" style="background:var(--green);" onclick="submitIdea()">아이디어 제출</button>
     </div>
-    <div class="sec-title">이번 달 아이디어 투표 <span id="idea-vote-info" style="font-size:11px;font-weight:400;color:var(--text-hint);"></span></div>
-    <div id="idea-vote-list"></div>
+    <div class="sec-title">이달의 아이디어 투표 <span id="idea-vote-info" style="font-size:11px;font-weight:400;color:var(--text-hint);"></span></div>
+    <div id="idea-list"></div>
     <div class="sec-title" style="margin-top:1rem;">이번 달 내 제출 내역</div>
     <div id="idea-my-list"></div>
   </div>
@@ -1246,7 +1246,7 @@ function switchPage(page){
   }
   if(page==='quiz')loadQuizPage();
   if(page==='funny')loadFunnyList();
-  if(page==='idea')loadIdeaVotePage();
+  if(page==='idea')loadIdeaList();
   if(page==='race')loadRacePage();
   if(page==='admin')loadAdminPage();
   if(page==='mypage')loadMyPage();
@@ -1999,44 +1999,56 @@ async function submitIdea(){
   showToast('📤 제출 중...');
   let fileUrl=null;if(file){fileUrl=await SB.upload(file);if(!fileUrl){showToast('❌ 파일 업로드 실패');return;}}
   const ok=await SB.post('idea_submissions',{name:app.name,year_month:getYM(),title,content,file_url:fileUrl,status:'submitted'});
-  if(ok){showToast('✅ 아이디어 제출 완료!');document.getElementById('idea-title').value='';document.getElementById('idea-content').value='';document.getElementById('idea-btn').textContent='📎 파일 첨부';loadIdeaVotePage();}
+  if(ok){showToast('✅ 아이디어 제출 완료! 관리자 승인 후 공개됩니다');document.getElementById('idea-title').value='';document.getElementById('idea-content').value='';document.getElementById('idea-btn').textContent='📎 파일 첨부';loadIdeaList();}
 }
-async function loadIdeaVotePage(){
+async function loadIdeaList(){
   loadIdeaMyList();
   const ym=getYM();
   const [rawRows,myVoteArr]=await Promise.all([
-    SB.get('idea_submissions','year_month=eq.'+ym+'&status=in.(approved,winner)&order=votes.desc'),
+    SB.get('idea_submissions','year_month=eq.'+ym+'&status=in.(approved,winner)&order=created_at.asc'),
     SB.get('idea_votes','year_month=eq.'+ym+'&voter_name=eq.'+encodeURIComponent(app.name))
   ]);
+  const rows=rawRows.sort((a,b)=>(b.votes||0)-(a.votes||0));
   const myVotedId=myVoteArr[0]?.submission_id||null;
+  const el=document.getElementById('idea-list');
   const infoEl=document.getElementById('idea-vote-info');
-  if(infoEl)infoEl.textContent=myVotedId?'· 투표 완료 ✅':'';
-  const totalVotes=rawRows.reduce((a,b)=>a+(b.votes||0),0);
-  const el=document.getElementById('idea-vote-list');
-  if(!el)return;
-  if(!rawRows.length){el.innerHTML='<div class="rank-empty" style="background:var(--card);border-radius:12px;">아직 공개된 아이디어가 없습니다</div>';return;}
-  el.innerHTML=rawRows.map(r=>{
+  const totalVotes=rows.reduce((a,b)=>a+(b.votes||0),0);
+  if(myVotedId)infoEl.textContent='· 투표 완료 ✅';
+  else if(rows.length>0)infoEl.textContent='· 1인 1표';
+  else infoEl.textContent='';
+  const rankBadge=(idx)=>{
+    if(idx===0&&rows.length>0)return'<span class="funny-rank-badge rank-gold">🥇 1위</span>';
+    if(idx===1)return'<span class="funny-rank-badge rank-silver">🥈 2위</span>';
+    if(idx===2)return'<span class="funny-rank-badge rank-bronze">🥉 3위</span>';
+    return'';
+  };
+  const renderCard=(r,rank)=>{
     const pct=totalVotes>0?Math.round((r.votes||0)/totalVotes*100):0;
     const isMyVote=myVotedId===r.id;
-    return `<div class="idea-vote-card ${isMyVote?'my-voted':''}">
-      <div style="display:flex;align-items:flex-start;gap:8px;">
-        <div style="flex:1;min-width:0;">
-          ${r.status==='winner'?'<span class="status-pill pill-winner" style="font-size:10px;margin-bottom:4px;display:inline-block;">🏆 선정됨</span><br>':''}
-          <div style="font-size:13px;font-weight:700;color:#fff;">${r.title}</div>
-          <div style="font-size:12px;color:var(--text-sub);margin-top:4px;line-height:1.5;">${r.content.length>100?r.content.slice(0,100)+'...':r.content}</div>
-          <div style="font-size:11px;color:var(--text-hint);margin-top:3px;">by ${r.name}</div>
-          ${r.file_url?`<a href="${r.file_url}" target="_blank" style="font-size:11px;color:var(--sky);">📎 첨부파일</a>`:''}
+    return`<div class="funny-card${rank===0?' rank1':''}${isMyVote?' my-voted':''}">
+      <div class="funny-card-body">
+        ${rankBadge(rank)}
+        ${r.status==='winner'?'<span class="status-pill pill-winner" style="font-size:10px;margin-bottom:6px;display:inline-block;">🏆 선정됨</span>':''}
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:13px;font-weight:700;">${r.title}</div>
+            <div style="font-size:12px;color:var(--text-sub);margin-top:4px;line-height:1.5;">${r.content.length>120?r.content.slice(0,120)+'...':r.content}</div>
+            <div style="font-size:11px;color:var(--text-hint);margin-top:3px;">by ${r.name} · ${new Date(r.created_at).toLocaleDateString('ko-KR')}</div>
+            ${r.file_url?`<a href="${r.file_url}" target="_blank" style="font-size:11px;color:var(--sky);margin-top:3px;display:inline-block;">📎 첨부파일</a>`:''}
+          </div>
         </div>
+        <div class="funny-vote-row">
+          <div class="funny-vote-count">💡 ${r.votes||0}표</div>
+          ${!myVotedId
+            ?`<button class="btn-funny-vote" style="background:var(--green);box-shadow:0 0 8px rgba(0,200,80,0.4);" onclick="voteIdea('${r.id}')">투표하기</button>`
+            :`<button class="btn-funny-vote voted">${isMyVote?'내가 투표 ✅':'투표 완료'}</button>`}
+        </div>
+        <div class="funny-vote-bar"><div class="funny-vote-bar-fill" style="width:${pct}%;background:var(--green);box-shadow:0 0 8px rgba(0,200,80,0.5);"></div></div>
       </div>
-      <div class="idea-vote-row">
-        <div class="idea-vote-count">💡 ${r.votes||0}표</div>
-        ${!myVotedId
-          ?`<button class="btn-idea-vote" onclick="voteIdea('${r.id}')">투표하기</button>`
-          :`<button class="btn-idea-vote voted">${isMyVote?'내가 투표 ✅':'투표 완료'}</button>`}
-      </div>
-      <div class="idea-vote-bar"><div class="idea-vote-bar-fill" style="width:${pct}%"></div></div>
     </div>`;
-  }).join('');
+  };
+  if(!rows.length){el.innerHTML='<div class="rank-empty" style="background:var(--card);border-radius:12px;">아직 승인된 아이디어가 없습니다</div>';return;}
+  el.innerHTML=rows.map((r,i)=>renderCard(r,i)).join('');
 }
 async function voteIdea(submissionId){
   const ym=getYM();
@@ -2047,12 +2059,12 @@ async function voteIdea(submissionId){
   const sub=await SB.get('idea_submissions','id=eq.'+submissionId);
   if(sub[0])await SB.patch('idea_submissions',submissionId,{votes:(sub[0].votes||0)+1});
   showToast('💡 투표 완료!');
-  loadIdeaVotePage();
+  loadIdeaList();
 }
 async function loadIdeaMyList(){
   const rows=await SB.get('idea_submissions','name=eq.'+encodeURIComponent(app.name)+'&year_month=eq.'+getYM()+'&order=created_at.desc');
   const el=document.getElementById('idea-my-list');
-  el.innerHTML=rows.length?rows.map(r=>`<div class="card" style="margin-bottom:8px;border:1.5px solid ${r.status==='winner'?'var(--green)':r.status==='approved'?'rgba(0,200,255,0.3)':'var(--border)'}"><div style="font-size:13px;font-weight:700;color:#fff;">${r.title}</div><div style="font-size:12px;color:var(--text-sub);margin-top:4px;line-height:1.5;">${r.content}</div>${r.file_url?`<a href="${r.file_url}" target="_blank" style="font-size:11px;color:var(--sky);">📎 첨부파일</a>`:''}<div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px;"><span style="font-size:11px;color:var(--text-hint);">${new Date(r.created_at).toLocaleDateString('ko-KR')}</span>${r.status==='winner'?'<span class="status-pill pill-winner">🏆 선정됨</span>':r.status==='approved'?'<span class="status-pill pill-approved">📢 투표 중</span>':'<span class="status-pill pill-pending">⏳ 검토중</span>'}</div></div>`).join(''):'<div class="rank-empty" style="background:var(--card);border-radius:12px;">제출한 아이디어가 없습니다</div>';
+  el.innerHTML=rows.length?rows.map(r=>`<div class="card" style="margin-bottom:8px;border:1.5px solid ${r.status==='winner'?'var(--green)':r.status==='approved'?'rgba(0,200,80,0.3)':'var(--border)'}"><div style="font-size:13px;font-weight:700;color:#fff;">${r.title}</div><div style="font-size:12px;color:var(--text-sub);margin-top:4px;line-height:1.5;">${r.content}</div>${r.file_url?`<a href="${r.file_url}" target="_blank" style="font-size:11px;color:var(--sky);">📎 첨부파일</a>`:''}<div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px;"><span style="font-size:11px;color:var(--text-hint);">${new Date(r.created_at).toLocaleDateString('ko-KR')}</span>${r.status==='winner'?'<span class="status-pill pill-winner">🏆 선정됨</span>':r.status==='approved'?'<span class="status-pill pill-approved">📢 투표 중</span>':'<span class="status-pill pill-pending">⏳ 검토중</span>'}</div></div>`).join(''):'<div class="rank-empty" style="background:var(--card);border-radius:12px;">제출한 아이디어가 없습니다</div>';
 }
 
 // ── RACE PAGE (직원) ──
