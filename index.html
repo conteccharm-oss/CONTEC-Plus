@@ -2671,17 +2671,26 @@ function raceDraw(){
   raceSats.forEach(s=>{
     if(s.state==='done'&&s!==raceWinner)return;
     const isEx=s.state==='exploding';
+    const isSelf=s.name===app.name;
     const dx=s.x,dy=s.y;
     const alpha=isEx?s.opacity:1;
-    const r=Math.max(2,6*s.scale);
+    const r=Math.max(2,(isSelf?8:6)*s.scale);
     if(s.trail&&s.trail.length>1){ctx.shadowColor=s.color;ctx.shadowBlur=5;for(let i=1;i<s.trail.length;i++){const a=(i/s.trail.length)*0.55;ctx.strokeStyle=s.color+Math.floor(a*255).toString(16).padStart(2,'0');ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(s.trail[i-1].x,s.trail[i-1].y);ctx.lineTo(s.trail[i].x,s.trail[i].y);ctx.stroke();}ctx.shadowBlur=0;}
+    // 본인 위성 하이라이트 링
+    if(isSelf&&s.state==='orbit'){
+      const pulse=0.55+0.45*Math.sin(raceT*5);
+      ctx.strokeStyle=`rgba(255,255,255,${pulse})`;ctx.lineWidth=2;ctx.shadowColor='#fff';ctx.shadowBlur=8;
+      ctx.setLineDash([4,3]);ctx.beginPath();ctx.arc(dx,dy,r+6,0,Math.PI*2);ctx.stroke();ctx.setLineDash([]);ctx.shadowBlur=0;
+    }
     if(s.state==='zooming'&&s.scale>1.5){ctx.shadowColor=s.color;ctx.shadowBlur=20*s.flash;for(let i=0;i<6;i++){const ang=(Math.PI*2/6)*i+raceT*2;ctx.strokeStyle=s.color+Math.floor(0.4*255).toString(16).padStart(2,'0');ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(dx+Math.cos(ang)*r,dy+Math.sin(ang)*r);ctx.lineTo(dx+Math.cos(ang)*(r+r*2.2*s.flash),dy+Math.sin(ang)*(r+r*2.2*s.flash));ctx.stroke();}}
     ctx.globalAlpha=alpha;
-    ctx.shadowColor=s.color;ctx.shadowBlur=s.flash>0?16*s.flash:6;
+    ctx.shadowColor=isSelf?'#ffffff':s.color;ctx.shadowBlur=isSelf?(8+6*Math.sin(raceT*5)):(s.flash>0?16*s.flash:6);
     ctx.fillStyle=s.color;ctx.beginPath();ctx.arc(dx,dy,r,0,Math.PI*2);ctx.fill();
     ctx.shadowBlur=0;ctx.shadowColor='transparent';
     ctx.fillStyle='rgba(255,255,255,0.45)';ctx.beginPath();ctx.arc(dx-r*0.3,dy-r*0.3,r*0.3,0,Math.PI*2);ctx.fill();
-    ctx.fillStyle='rgba(0,0,0,0.85)';ctx.font=`bold ${Math.min(7,r*0.7)}px sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(s.name.slice(0,2),dx,dy);ctx.textBaseline='alphabetic';ctx.globalAlpha=1;
+    ctx.fillStyle=isSelf?'#fff':'rgba(0,0,0,0.85)';ctx.font=`bold ${Math.min(isSelf?9:7,r*0.75)}px sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(s.name.slice(0,2),dx,dy);ctx.textBaseline='alphabetic';ctx.globalAlpha=1;
+    // 본인 이름 레이블
+    if(isSelf&&s.state==='orbit'){ctx.fillStyle='#fff';ctx.font='bold 9px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.shadowColor='rgba(0,0,0,0.9)';ctx.shadowBlur=4;ctx.fillText('👤 '+s.name,dx,dy-r-10);ctx.shadowBlur=0;ctx.textBaseline='alphabetic';}
     if(s.state==='zooming'&&s.scale>2){ctx.fillStyle='#FFD700';ctx.font=`bold ${Math.round(10*s.scale/2)}px sans-serif`;ctx.textAlign='center';ctx.fillText(s.name,dx,dy-r-7);}
     if(raceDone&&s.isWinner&&s.rank>1&&s.state==='orbit'){const m2=['🥈','🥉'];ctx.fillStyle='#FFD700';ctx.font='bold 10px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText((m2[s.rank-2]||'')+' '+s.name,dx,dy-r-9);ctx.textBaseline='alphabetic';}
   });
@@ -3334,6 +3343,20 @@ function runDemoRace(){
     if(dEvents.solarWind?.phase==='warning'){const prog=Math.min(1,dEvents.solarWind.timer/2);ctx.fillStyle='rgba(0,0,0,0.6)';ctx.fillRect(0,H-28,W,28);ctx.fillStyle=`rgba(255,200,0,${0.3+prog*0.5})`;ctx.fillRect(0,H-28,W*prog,28);ctx.fillStyle='#fff';ctx.font='bold 11px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('⚡ 태양풍 경보 — '+Math.ceil(2-dEvents.solarWind.timer)+'초',CX,H-14);}
     if(dPhase==='countdown'){ctx.fillStyle='rgba(0,0,16,0.8)';ctx.fillRect(0,0,W,H);const num=dCd>0?dCd:'GO!',sz=dCd>0?90:70,col=dCd>0?'#FF4444':'#00FF88';const sc=1+(dCdTimer<0.3?(0.3-dCdTimer)/0.3*0.35:0);ctx.save();ctx.translate(CX,CY);ctx.scale(sc,sc);ctx.fillStyle=col;ctx.font=`bold ${sz}px sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.shadowColor=col;ctx.shadowBlur=25;ctx.fillText(num,0,0);ctx.shadowBlur=0;ctx.restore();ctx.fillStyle='rgba(255,255,255,0.35)';ctx.font='11px sans-serif';ctx.textAlign='center';ctx.fillText('DEMO',CX,CY+50);}
     if(dPhase==='race'){const alive=dSats.filter(s=>s.state==='orbit').length;ctx.fillStyle='rgba(0,0,0,0.45)';ctx.fillRect(0,0,W,24);ctx.fillStyle='#FF4444';ctx.fillRect(0,20,W*(alive/n),4);ctx.fillStyle='rgba(255,255,255,0.7)';ctx.font='bold 10px sans-serif';ctx.textAlign='left';ctx.fillText('생존: '+alive+'기',7,15);ctx.fillStyle='rgba(255,200,0,0.7)';ctx.textAlign='right';ctx.fillText('DEMO',W-7,15);}
+    // 데모 결과 패널 (1등 줌 완료 후)
+    if(dDone&&dSats.some(s=>s.isWinner&&s.state==='done')){
+      const winners=dSats.filter(s=>s.isWinner).sort((a,b)=>(a.rank||1)-(b.rank||1));
+      const medals=['🥇','🥈','🥉'];const pw=W*0.72,ph=winners.length*26+28,px=(W-pw)/2,py=H-ph-12;
+      ctx.fillStyle='rgba(0,0,10,0.88)';ctx.strokeStyle='rgba(255,200,0,0.55)';ctx.lineWidth=1.5;
+      ctx.beginPath();ctx.roundRect(px,py,pw,ph,10);ctx.fill();ctx.stroke();
+      ctx.fillStyle='rgba(255,200,0,0.75)';ctx.font='bold 10px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText('✦ 궤도 레이스 결과 ✦',W/2,py+13);
+      winners.forEach((w,i)=>{
+        ctx.textAlign='left';ctx.font=`bold ${i===0?13:11}px sans-serif`;
+        ctx.fillStyle=i===0?'#FFD700':i===1?'#C0C0C0':'#CD7F32';
+        ctx.fillText(medals[i]+' '+w.name,px+14,py+28+i*26);
+      });
+    }
     ctx.restore();
   }
 
