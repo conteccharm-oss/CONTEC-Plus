@@ -1,4 +1,4 @@
-const CACHE = 'contec-challenge-v42';
+const CACHE = 'contec-challenge-v43';
 const ASSETS = [
   '/CONTEC-Plus/logo_premium_transparent.png',
   '/CONTEC-Plus/og-image.jpg',
