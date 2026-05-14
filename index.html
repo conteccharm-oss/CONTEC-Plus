@@ -2118,13 +2118,15 @@ async function loadRacePage(){
     document.getElementById('race-admin-start-section').style.display='block';
     document.getElementById('race-vote-section').style.display='none';
 
-    if(results.length>0){
-      // 이미 완료 → 자동운영 배지 숨기고 완료 표시
-      document.getElementById('race-admin-auto-badge').style.display='none';
-    } else {
-      document.getElementById('race-admin-auto-badge').style.display='block';
-      const descEl=document.getElementById('race-admin-auto-desc');
-      if(descEl)descEl.textContent=formatKorDateTime(effectiveDate,getRaceAutoHour())+'에 자동으로 레이스가 진행됩니다.';
+    // 관리자는 항상 배지+버튼 표시 (결과 유무 무관)
+    document.getElementById('race-admin-auto-badge').style.display='block';
+    const descEl=document.getElementById('race-admin-auto-desc');
+    if(descEl){
+      if(results.length>0){
+        descEl.textContent='이번 달 레이스 결과 있음. 추가 실행 가능합니다.';
+      } else {
+        descEl.textContent=formatKorDateTime(effectiveDate,getRaceAutoHour())+'에 자동으로 레이스가 진행됩니다.';
+      }
     }
   } else {
     document.getElementById('race-admin-start-section').style.display='none';
