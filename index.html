@@ -2924,6 +2924,7 @@ async function startOrbitalRace(){
   raceSeed=_isReplay2?window._replaySeed:Date.now();
   if(_isReplay2){window._replayMode=false;window._replaySeed=null;window._replayNames=null;}
   window._raceRNG=makeRaceRNG(raceSeed+7777); // 결정론적 레이스 RNG
+  window._raceExtraAcc=0; // 소수점 속도 누산기 (Math.random 대체)
   raceSatNames=[...names];
   const _rd=buildRaceState(names,raceSeed);
   window._raceSeedData=_rd;
@@ -2957,7 +2958,9 @@ function raceLoop(){
   }
   const steps=Math.floor(raceSpeedMult);
   const frac=raceSpeedMult-steps;
-  const extra=((window._raceRNG||Math.random)()<frac)?1:0;
+  window._raceExtraAcc=(window._raceExtraAcc||0)+frac;
+  const extra=window._raceExtraAcc>=1?1:0;
+  if(extra)window._raceExtraAcc-=1;
   for(let i=0;i<steps+extra;i++) raceUpdate();
   raceDraw();
   // 피날레 중 or RACE COMPLETE 오버레이 9초간 유지
