@@ -730,7 +730,15 @@
     </div>
     <!-- FAQ 탭 -->
     <div id="admin-tab-faq" style="display:none;">
-      <div class="sec-title">❓ 자주 묻는 질문 관리</div>
+      <!-- 직원 질문 답변 -->
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+        <div class="sec-title" style="margin:0;">💬 직원 질문 <span id="qa-pending-badge" style="display:none;background:var(--red);color:#fff;font-size:10px;font-weight:700;padding:2px 7px;border-radius:99px;margin-left:4px;">0</span></div>
+        <button onclick="loadPendingQuestions()" style="padding:5px 10px;background:rgba(255,255,255,0.07);color:var(--text-sub);border:1px solid var(--border);border-radius:8px;font-size:11px;font-family:inherit;cursor:pointer;">새로고침</button>
+      </div>
+      <div id="qa-pending-list" style="display:flex;flex-direction:column;gap:8px;margin-bottom:1.5rem;"></div>
+
+      <!-- 공지 FAQ 관리 -->
+      <div class="sec-title">📌 공지 FAQ 관리</div>
       <div class="card" style="margin-bottom:1rem;">
         <div style="font-size:13px;font-weight:700;margin-bottom:12px;">새 항목 추가</div>
         <div class="m-field"><label>질문</label><input type="text" id="faq-new-q" placeholder="질문을 입력하세요"/></div>
@@ -944,11 +952,32 @@
   <!-- Q&A 페이지 -->
   <div class="page" id="page-faq">
     <div class="month-banner" style="background:linear-gradient(135deg,#0a0a2e,#1a1060);">
-      <div><div class="mb-sub">자주 묻는 질문</div><div class="mb-title">Q &amp; A</div></div>
+      <div><div class="mb-sub">궁금한 점을 물어보세요</div><div class="mb-title">Q &amp; A</div></div>
       <div class="mb-tag">❓</div>
     </div>
-    <div id="faq-page-list" style="margin-top:1rem;display:flex;flex-direction:column;gap:8px;"></div>
-    <div id="faq-page-empty" style="display:none;text-align:center;padding:3rem 1rem;color:var(--text-hint);font-size:13px;">등록된 Q&amp;A가 없습니다</div>
+    <!-- 질문 제출 폼 -->
+    <div class="card" style="margin-top:1rem;margin-bottom:1rem;">
+      <div style="font-size:13px;font-weight:700;margin-bottom:10px;">✏️ 질문 등록</div>
+      <div class="m-field">
+        <label>질문 내용</label>
+        <textarea id="qa-question-input" placeholder="궁금한 점을 입력하세요" rows="3" style="width:100%;background:rgba(255,255,255,0.07);border:1px solid var(--border);border-radius:8px;color:#fff;padding:10px;font-family:inherit;font-size:13px;resize:vertical;box-sizing:border-box;"></textarea>
+      </div>
+      <button onclick="submitQAQuestion()" class="btn-main" style="width:100%;margin-top:4px;">📩 질문 제출</button>
+    </div>
+    <!-- 공지 FAQ (관리자 등록) -->
+    <div id="faq-static-section" style="display:none;">
+      <div class="sec-title">📌 자주 묻는 질문</div>
+      <div id="faq-page-list" style="display:flex;flex-direction:column;gap:8px;margin-bottom:1rem;"></div>
+    </div>
+    <!-- 직원 질문 (답변 완료) -->
+    <div class="sec-title">💬 직원 Q&amp;A</div>
+    <div id="qa-answered-list" style="display:flex;flex-direction:column;gap:8px;"></div>
+    <div id="qa-answered-empty" style="display:none;text-align:center;padding:2rem 1rem;color:var(--text-hint);font-size:13px;">아직 답변된 질문이 없습니다</div>
+    <!-- 내 미답변 질문 -->
+    <div id="qa-my-pending-section" style="display:none;margin-top:1rem;">
+      <div class="sec-title">⏳ 내 대기 중인 질문</div>
+      <div id="qa-my-pending-list" style="display:flex;flex-direction:column;gap:8px;"></div>
+    </div>
   </div>
 
   <!-- 직원 네비 -->
@@ -1983,23 +2012,101 @@ async function loadHomeWinners(){
 }
 
 // ── FAQ ──
-async function loadFAQPage(){
-  const listEl=document.getElementById('faq-page-list');
-  const emptyEl=document.getElementById('faq-page-empty');
+// ── 직원 Q&A ──
+async function submitQAQuestion(){
+  const q=document.getElementById('qa-question-input').value.trim();
+  if(!q){showToast('❌ 질문 내용을 입력해주세요');return;}
+  const ok=await SB.post('qa_items',{question:q,submitted_by:app.name,status:'pending'});
+  if(ok){
+    showToast('✅ 질문이 등록되었습니다! 관리자 답변 후 공개됩니다');
+    document.getElementById('qa-question-input').value='';
+    loadFAQPage();
+  }else{showToast('❌ 등록 실패');}
+}
+
+async function loadPendingQuestions(){
+  const listEl=document.getElementById('qa-pending-list');
+  const badge=document.getElementById('qa-pending-badge');
   if(!listEl)return;
-  const rows=await SB.get('app_settings','key=eq.faq_items');
-  const items=rows.length?JSON.parse(rows[0].value||'[]'):[];
-  if(!items.length){listEl.innerHTML='';if(emptyEl)emptyEl.style.display='block';return;}
-  if(emptyEl)emptyEl.style.display='none';
-  listEl.innerHTML=items.map((item,i)=>`
-    <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;">
-      <button onclick="(function(btn){const ans=btn.nextElementSibling;const open=ans.style.display==='block';ans.style.display=open?'none':'block';btn.querySelector('.faq-arrow').style.transform=open?'':'rotate(180deg)';})(this)" style="width:100%;display:flex;align-items:center;justify-content:space-between;padding:14px;background:none;border:none;color:#fff;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;text-align:left;gap:8px;">
-        <span>Q. ${item.q}</span><span class="faq-arrow" style="font-size:14px;opacity:0.5;flex-shrink:0;transition:transform 0.2s;">▾</span>
-      </button>
-      <div style="display:none;padding:0 14px 14px;font-size:13px;color:var(--text-sub);line-height:1.7;white-space:pre-wrap;border-top:1px solid var(--border);">
-        <div style="padding-top:12px;">A. ${item.a}</div>
+  const rows=await SB.get('qa_items','status=eq.pending&order=created_at.asc');
+  if(badge){if(rows.length){badge.textContent=rows.length;badge.style.display='inline';}else{badge.style.display='none';}}
+  if(!rows.length){listEl.innerHTML='<div class="rank-empty">대기 중인 질문이 없습니다</div>';return;}
+  listEl.innerHTML=rows.map(r=>`
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px 14px;">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:8px;">
+        <div>
+          <div style="font-size:13px;font-weight:600;color:#fff;margin-bottom:2px;">${r.question}</div>
+          <div style="font-size:11px;color:var(--text-hint);">by ${r.submitted_by} · ${new Date(r.created_at).toLocaleDateString('ko-KR')}</div>
+        </div>
+        <button onclick="deleteQAItem('${r.id}')" style="padding:4px 8px;background:rgba(226,75,74,0.15);color:var(--red);border:1px solid rgba(226,75,74,0.3);border-radius:6px;font-size:11px;font-family:inherit;cursor:pointer;flex-shrink:0;">🗑️</button>
       </div>
+      <textarea id="qa-ans-${r.id}" placeholder="답변을 입력하세요" rows="2" style="width:100%;background:rgba(255,255,255,0.07);border:1px solid var(--border);border-radius:8px;color:#fff;padding:8px 10px;font-family:inherit;font-size:12px;resize:vertical;box-sizing:border-box;margin-bottom:6px;"></textarea>
+      <button onclick="answerQAItem('${r.id}')" class="btn-main" style="width:100%;padding:8px 0;font-size:12px;">💬 답변 등록</button>
     </div>`).join('');
+}
+
+async function answerQAItem(id){
+  const ans=document.getElementById('qa-ans-'+id)?.value.trim();
+  if(!ans){showToast('❌ 답변을 입력해주세요');return;}
+  const ok=await SB.patch('qa_items',id,{answer:ans,status:'answered'});
+  if(ok){showToast('✅ 답변이 등록되었습니다');loadPendingQuestions();}
+  else{showToast('❌ 저장 실패');}
+}
+
+async function deleteQAItem(id){
+  if(!confirm('이 질문을 삭제하시겠습니까?'))return;
+  const ok=await SB.del('qa_items',id);
+  if(ok){showToast('🗑️ 삭제됨');loadPendingQuestions();}
+}
+
+function _faqAccordionHTML(q,a){
+  return`<div style="background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;">
+    <button onclick="(function(btn){const d=btn.nextElementSibling;const o=d.style.display==='block';d.style.display=o?'none':'block';btn.querySelector('.faq-arr').style.transform=o?'':'rotate(180deg)';})(this)" style="width:100%;display:flex;align-items:center;justify-content:space-between;padding:14px;background:none;border:none;color:#fff;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;text-align:left;gap:8px;">
+      <span>Q. ${q}</span><span class="faq-arr" style="font-size:14px;opacity:0.5;flex-shrink:0;transition:transform 0.2s;">▾</span>
+    </button>
+    <div style="display:none;padding:0 14px 14px;font-size:13px;color:var(--text-sub);line-height:1.7;white-space:pre-wrap;border-top:1px solid var(--border);"><div style="padding-top:12px;">A. ${a}</div></div>
+  </div>`;
+}
+
+async function loadFAQPage(){
+  // 공지 FAQ
+  const staticSec=document.getElementById('faq-static-section');
+  const listEl=document.getElementById('faq-page-list');
+  if(listEl){
+    const rows=await SB.get('app_settings','key=eq.faq_items');
+    const items=rows.length?JSON.parse(rows[0].value||'[]'):[];
+    if(items.length&&staticSec){
+      staticSec.style.display='block';
+      listEl.innerHTML=items.map(item=>_faqAccordionHTML(item.q,item.a)).join('');
+    }else if(staticSec){staticSec.style.display='none';}
+  }
+  // 답변된 직원 질문
+  const answeredEl=document.getElementById('qa-answered-list');
+  const answeredEmpty=document.getElementById('qa-answered-empty');
+  if(answeredEl){
+    const qa=await SB.get('qa_items','status=eq.answered&order=created_at.desc');
+    if(qa.length){
+      if(answeredEmpty)answeredEmpty.style.display='none';
+      answeredEl.innerHTML=qa.map(r=>_faqAccordionHTML(r.question,r.answer)).join('');
+    }else{
+      answeredEl.innerHTML='';
+      if(answeredEmpty)answeredEmpty.style.display='block';
+    }
+  }
+  // 내 미답변 질문
+  const myPendingSec=document.getElementById('qa-my-pending-section');
+  const myPendingList=document.getElementById('qa-my-pending-list');
+  if(myPendingList&&app.name){
+    const mine=await SB.get('qa_items','status=eq.pending&submitted_by=eq.'+encodeURIComponent(app.name)+'&order=created_at.desc');
+    if(mine.length&&myPendingSec){
+      myPendingSec.style.display='block';
+      myPendingList.innerHTML=mine.map(r=>`
+        <div style="background:var(--card);border:1px solid rgba(255,200,0,0.2);border-radius:12px;padding:12px 14px;">
+          <div style="font-size:13px;color:#fff;margin-bottom:4px;">${r.question}</div>
+          <div style="font-size:11px;color:rgba(255,200,0,0.6);">⏳ 답변 대기 중 · ${new Date(r.created_at).toLocaleDateString('ko-KR')}</div>
+        </div>`).join('');
+    }else if(myPendingSec){myPendingSec.style.display='none';}
+  }
 }
 
 async function loadFAQItems(){
@@ -2482,7 +2589,7 @@ function switchAdminTab(btn,tab){
   if(tab==='quiz-mgmt'){populateWeekSelect();quizHistoryMonth=getYM();loadQuizAdminList();renderPrizeTiers();loadElimList();loadSurvivorList();loadQuizTimeDisplay();}
   if(tab==='race-mgmt'){loadAdminRewardList();loadRaceAutoDaySetting();loadRaceHistory();SB.get('race_entries','year_month=eq.'+getYM()).then(r=>{const ec=document.getElementById('race-entry-count-admin');if(ec)ec.textContent=r.length;});}
   if(tab==='emp-mgmt'){document.getElementById('emp-list-wrap').style.display='none';document.getElementById('emp-list-toggle-btn').textContent='▼';loadEmployeeList();}
-  if(tab==='faq')loadFAQAdmin();
+  if(tab==='faq'){loadFAQAdmin();loadPendingQuestions();}
 }
 
 async function loadAdminPending(){
