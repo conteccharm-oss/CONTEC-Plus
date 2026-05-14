@@ -392,6 +392,11 @@
         <div class="hc-action" style="color:#00eeff;text-shadow:0 0 6px rgba(0,200,255,0.6)">참여하기 →</div>
       </div>
     </div>
+    <!-- FAQ 섹션 -->
+    <div id="home-faq-section" style="display:none;margin-top:1.5rem;">
+      <div class="sec-title">❓ 자주 묻는 질문</div>
+      <div id="home-faq-list" style="display:flex;flex-direction:column;gap:8px;"></div>
+    </div>
   </div>
 
   <!-- 우주 퀴즈 -->
@@ -723,6 +728,17 @@
       </div>
       <div id="elim-list"></div>
     </div>
+    <!-- FAQ 탭 -->
+    <div id="admin-tab-faq" style="display:none;">
+      <div class="sec-title">❓ 자주 묻는 질문 관리</div>
+      <div class="card" style="margin-bottom:1rem;">
+        <div style="font-size:13px;font-weight:700;margin-bottom:12px;">새 항목 추가</div>
+        <div class="m-field"><label>질문</label><input type="text" id="faq-new-q" placeholder="질문을 입력하세요"/></div>
+        <div class="m-field"><label>답변</label><textarea id="faq-new-a" placeholder="답변을 입력하세요" rows="3" style="width:100%;background:rgba(255,255,255,0.07);border:1px solid var(--border);border-radius:8px;color:#fff;padding:10px;font-family:inherit;font-size:13px;resize:vertical;box-sizing:border-box;"></textarea></div>
+        <button onclick="addFAQItem()" class="btn-main" style="width:100%;margin-top:4px;">➕ 추가</button>
+      </div>
+      <div id="faq-admin-list" style="display:flex;flex-direction:column;gap:8px;"></div>
+    </div>
     <!-- 스토리지 탭 -->
     <div id="admin-tab-storage" style="display:none;">
       <div class="sec-title">💾 스토리지 현황</div>
@@ -934,6 +950,7 @@
     <button class="nav-btn admin-nav" id="anav-quiz-mgmt" onclick="switchAdminTab(this,'quiz-mgmt')"><div class="nav-icon">🚀</div><div class="nav-label">퀴즈</div></button>
     <button class="nav-btn admin-nav" id="anav-race-mgmt" onclick="switchAdminTab(this,'race-mgmt')"><div class="nav-icon">🎱</div><div class="nav-label">레이스</div></button>
     <button class="nav-btn admin-nav" id="anav-emp-mgmt" onclick="switchAdminTab(this,'emp-mgmt')"><div class="nav-icon">👥</div><div class="nav-label">직원관리</div></button>
+    <button class="nav-btn admin-nav" id="anav-faq" onclick="switchAdminTab(this,'faq')"><div class="nav-icon">❓</div><div class="nav-label">FAQ</div></button>
     <button class="nav-btn admin-nav" id="anav-storage" onclick="switchAdminTab(this,'storage')"><div class="nav-icon">💾</div><div class="nav-label">스토리지</div></button>
   </div>
 </div>
@@ -1266,6 +1283,7 @@ function switchPage(page){
   document.querySelectorAll('.nav-btn').forEach(b=>{if(b.getAttribute('onclick')&&b.getAttribute('onclick').includes("'"+page+"'"))b.classList.add('active');});
   if(page==='home'&&!app.isAdmin){
     loadHomeWinners();
+    loadFAQItems();
   }
   if(page==='quiz')loadQuizPage();
   if(page==='funny')loadFunnyList();
@@ -1944,6 +1962,77 @@ async function loadHomeWinners(){
   }else{el.style.display='none';}
 }
 
+// ── FAQ ──
+async function loadFAQItems(){
+  const sec=document.getElementById('home-faq-section');
+  const list=document.getElementById('home-faq-list');
+  if(!sec||!list)return;
+  const rows=await SB.get('app_settings','key=eq.faq_items');
+  const items=rows.length?JSON.parse(rows[0].value||'[]'):[];
+  if(!items.length){sec.style.display='none';return;}
+  sec.style.display='block';
+  list.innerHTML=items.map((item,i)=>`
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;">
+      <button onclick="(function(el){el.nextElementSibling.style.display=el.nextElementSibling.style.display==='block'?'none':'block';})(this)" style="width:100%;display:flex;align-items:center;justify-content:space-between;padding:13px 14px;background:none;border:none;color:#fff;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;text-align:left;gap:8px;">
+        <span>Q. ${item.q}</span><span style="font-size:16px;opacity:0.5;flex-shrink:0;">▾</span>
+      </button>
+      <div style="display:none;padding:0 14px 13px;font-size:12px;color:var(--text-sub);line-height:1.6;white-space:pre-wrap;">A. ${item.a}</div>
+    </div>`).join('');
+}
+
+async function loadFAQAdmin(){
+  const list=document.getElementById('faq-admin-list');
+  if(!list)return;
+  const rows=await SB.get('app_settings','key=eq.faq_items');
+  const items=rows.length?JSON.parse(rows[0].value||'[]'):[];
+  if(!items.length){list.innerHTML='<div class="rank-empty">등록된 항목이 없습니다</div>';return;}
+  list.innerHTML=items.map((item,i)=>`
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px 14px;">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;">
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:13px;font-weight:700;color:#fff;margin-bottom:4px;">Q. ${item.q}</div>
+          <div style="font-size:12px;color:var(--text-sub);line-height:1.5;white-space:pre-wrap;">A. ${item.a}</div>
+        </div>
+        <button onclick="deleteFAQItem(${i})" style="padding:5px 10px;background:rgba(226,75,74,0.15);color:var(--red);border:1px solid rgba(226,75,74,0.3);border-radius:8px;font-size:11px;font-family:inherit;cursor:pointer;flex-shrink:0;">🗑️</button>
+      </div>
+    </div>`).join('');
+}
+
+async function _saveFAQItems(items){
+  const rows=await SB.get('app_settings','key=eq.faq_items');
+  if(rows.length){
+    return await SB.patch('app_settings',{value:JSON.stringify(items)},'key=eq.faq_items');
+  }else{
+    return await SB.post('app_settings',{key:'faq_items',value:JSON.stringify(items)});
+  }
+}
+
+async function addFAQItem(){
+  const q=document.getElementById('faq-new-q').value.trim();
+  const a=document.getElementById('faq-new-a').value.trim();
+  if(!q||!a){showToast('❌ 질문과 답변을 모두 입력해주세요');return;}
+  const rows=await SB.get('app_settings','key=eq.faq_items');
+  const items=rows.length?JSON.parse(rows[0].value||'[]'):[];
+  items.push({id:Date.now(),q,a});
+  const ok=await _saveFAQItems(items);
+  if(ok){
+    showToast('✅ FAQ 항목이 추가되었습니다');
+    document.getElementById('faq-new-q').value='';
+    document.getElementById('faq-new-a').value='';
+    loadFAQAdmin();
+  }else{showToast('❌ 저장 실패');}
+}
+
+async function deleteFAQItem(idx){
+  if(!confirm('이 항목을 삭제하시겠습니까?'))return;
+  const rows=await SB.get('app_settings','key=eq.faq_items');
+  const items=rows.length?JSON.parse(rows[0].value||'[]'):[];
+  items.splice(idx,1);
+  const ok=await _saveFAQItems(items);
+  if(ok){showToast('🗑️ 삭제되었습니다');loadFAQAdmin();}
+  else{showToast('❌ 삭제 실패');}
+}
+
 // ── MYPAGE ──
 async function loadMyPage(){
   document.getElementById('mypage-name-disp').textContent=app.name;
@@ -2339,7 +2428,7 @@ function switchAdminTab(btn,tab){
   document.querySelectorAll('.admin-tab,.admin-nav').forEach(t=>t.classList.remove('active'));
   if(btn)btn.classList.add('active');
   const navBtn=document.getElementById('anav-'+tab);if(navBtn)navBtn.classList.add('active');
-  ['pending','funny-all','idea-all','quiz-mgmt','race-mgmt','emp-mgmt','storage'].forEach(t=>{
+  ['pending','funny-all','idea-all','quiz-mgmt','race-mgmt','emp-mgmt','faq','storage'].forEach(t=>{
     const el=document.getElementById('admin-tab-'+t);
     if(el)el.style.display=t===tab?'block':'none';
   });
@@ -2350,6 +2439,7 @@ function switchAdminTab(btn,tab){
   if(tab==='quiz-mgmt'){populateWeekSelect();quizHistoryMonth=getYM();loadQuizAdminList();renderPrizeTiers();loadElimList();loadSurvivorList();loadQuizTimeDisplay();}
   if(tab==='race-mgmt'){loadAdminRewardList();loadRaceAutoDaySetting();SB.get('race_entries','year_month=eq.'+getYM()).then(r=>{const ec=document.getElementById('race-entry-count-admin');if(ec)ec.textContent=r.length;});}
   if(tab==='emp-mgmt'){document.getElementById('emp-list-wrap').style.display='none';document.getElementById('emp-list-toggle-btn').textContent='▼';loadEmployeeList();}
+  if(tab==='faq')loadFAQAdmin();
 }
 
 async function loadAdminPending(){
@@ -3386,13 +3476,28 @@ async function saveRaceWinner(){
   const winners=window._raceWinnersList;
   if(!winners||!winners.length){showToast('❌ 우승자 정보가 없습니다 — 레이스를 다시 실행해주세요');return;}
   const ym=getYM();
+  const existing=await SB.get('race_results','year_month=eq.'+ym+'&order=created_at.asc');
+  if(existing&&existing.length>0){
+    showToast('✅ 이미 이번 달 결과가 저장되어 있습니다');
+    const announce=document.getElementById('race-winner-announce');
+    if(announce)announce.style.display='none';
+    loadRacePage();
+    return;
+  }
   let allOk=true;
   for(const w of winners){
     const ok=await SB.post('race_results',{year_month:ym,winner_name:w.name,race_seed:raceSeed,race_names:JSON.stringify(raceSatNames),rank:w.rank||1});
     if(!ok)allOk=false;
   }
-  if(allOk){showToast('🎉 결과 저장 완료! 1~'+winners.length+'등 발표');loadRacePage();}
-  else{showToast('❌ 저장 실패 — 이미 이번 달 결과가 있거나 권한 문제입니다');loadRacePage();}
+  if(allOk){
+    showToast('🎉 결과 저장 완료! 1~'+winners.length+'등 발표');
+    const announce=document.getElementById('race-winner-announce');
+    if(announce)announce.style.display='none';
+    loadRacePage();
+  }else{
+    showToast('❌ 저장 실패 — 권한 문제입니다');
+    loadRacePage();
+  }
 }
 
 // ── 궤도레이스 자동 운영 ──
