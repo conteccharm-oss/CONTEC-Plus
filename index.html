@@ -2921,7 +2921,7 @@ async function startOrbitalRace(){
   }));
 
   const _isReplay2=!!(window._replayMode&&window._replaySeed);
-  raceSeed=_isReplay2?window._replaySeed:Date.now();
+  raceSeed=_isReplay2?Number(window._replaySeed):Date.now(); // Number() — DB bigint는 문자열로 반환됨
   if(_isReplay2){window._replayMode=false;window._replaySeed=null;window._replayNames=null;}
   window._raceRNG=makeRaceRNG(raceSeed+7777); // 결정론적 레이스 RNG
   window._raceExtraAcc=0; // 소수점 속도 누산기 (Math.random 대체)
@@ -4494,7 +4494,7 @@ function startUserRaceReveal(){
   // 리플레이 플래그 설정 — startOrbitalRace가 저장된 시드/참여자로 동일 레이스 재현
   window._replayMode=true;
   window._wasReplay=true;
-  window._replaySeed=res.race_seed;
+  window._replaySeed=Number(res.race_seed);
   window._replayNames=names;
   startOrbitalRace();
 }
