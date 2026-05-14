@@ -3145,19 +3145,36 @@ function raceDraw(){
       ctx.beginPath();ctx.moveTo(dx,by+bh);ctx.lineTo(dx,dy-r-1);ctx.stroke();ctx.setLineDash([]);
       ctx.restore();
     } else if(!isEx&&s.state==='orbit'){
-      // 다른 위성 이름 — 위성 위에 작은 알약 배지
       ctx.save();
-      const lbl=s.name.slice(-2);
-      ctx.font='bold 9px sans-serif';
-      const tw2=ctx.measureText(lbl).width;
-      const pw=tw2+8,ph=13,px=dx-pw/2,py=dy-r-16;
-      ctx.globalAlpha=alpha*0.88;
-      ctx.fillStyle='rgba(0,4,20,0.75)';
-      ctx.beginPath();ctx.roundRect(px,py,pw,ph,4);ctx.fill();
-      ctx.strokeStyle='rgba(255,255,255,0.25)';ctx.lineWidth=0.8;
-      ctx.beginPath();ctx.roundRect(px,py,pw,ph,4);ctx.stroke();
-      ctx.fillStyle='rgba(255,255,255,0.92)';ctx.textAlign='center';ctx.textBaseline='middle';
-      ctx.fillText(lbl,dx,py+ph/2);
+      if(window._podiumState?.active){
+        // 포디움 단계 — 이름 전체를 크게 글로우 배지
+        const pulse=0.6+0.4*Math.sin(raceT*4);
+        ctx.font='bold 12px sans-serif';
+        const lbl=s.name;
+        const tw2=ctx.measureText(lbl).width;
+        const pw=tw2+14,ph=19,px=dx-pw/2,py=dy-r-26;
+        ctx.globalAlpha=alpha*0.97;
+        ctx.shadowColor=s.color;ctx.shadowBlur=12*pulse;
+        ctx.fillStyle='rgba(0,2,15,0.92)';ctx.beginPath();ctx.roundRect(px,py,pw,ph,5);ctx.fill();
+        ctx.strokeStyle=s.color+Math.floor(0.85*pulse*255).toString(16).padStart(2,'0');ctx.lineWidth=1.5;
+        ctx.beginPath();ctx.roundRect(px,py,pw,ph,5);ctx.stroke();ctx.shadowBlur=0;
+        ctx.fillStyle='#ffffff';ctx.textAlign='center';ctx.textBaseline='middle';
+        ctx.shadowColor=s.color;ctx.shadowBlur=5;
+        ctx.fillText(lbl,dx,py+ph/2);ctx.shadowBlur=0;
+      } else {
+        // 일반 단계 — 끝 2글자 작은 배지
+        const lbl=s.name.slice(-2);
+        ctx.font='bold 9px sans-serif';
+        const tw2=ctx.measureText(lbl).width;
+        const pw=tw2+8,ph=13,px=dx-pw/2,py=dy-r-16;
+        ctx.globalAlpha=alpha*0.88;
+        ctx.fillStyle='rgba(0,4,20,0.75)';
+        ctx.beginPath();ctx.roundRect(px,py,pw,ph,4);ctx.fill();
+        ctx.strokeStyle='rgba(255,255,255,0.25)';ctx.lineWidth=0.8;
+        ctx.beginPath();ctx.roundRect(px,py,pw,ph,4);ctx.stroke();
+        ctx.fillStyle='rgba(255,255,255,0.92)';ctx.textAlign='center';ctx.textBaseline='middle';
+        ctx.fillText(lbl,dx,py+ph/2);
+      }
       ctx.restore();
     }
     ctx.globalAlpha=1;
@@ -4087,30 +4104,26 @@ async function playUserRace(revealAtEnd=false){
   const W=canvas.offsetWidth||360, H=W;
   canvas.width=W; canvas.height=H;
   const CX=W/2, CY=H/2;
-  const EARTH_R=42;
 
-  // seeded random
-  let _s=seed;
-  function sr(){_s=(_s*9301+49297)%233280;return _s/233280;}
+  // 실제 레이스와 동일한 시드 기반 궤도 파라미터
+  const _rd=buildRaceState(names,seed);
+  const minR=EARTH_R+22, maxR=Math.min(W,H)*0.44;
+  const refR=(minR+maxR)/2;
 
+  // 별 — 별도 시드로 고정 (매번 동일)
+  const _sr2=makeRaceRNG(seed+1);
   const RSC=[[255,255,255],[180,210,255],[255,240,180],[160,200,255],[255,200,200]];
-  const stars=Array.from({length:180},()=>{const c=RSC[Math.floor(sr()*RSC.length)];return{x:sr()*W,y:sr()*H,r:sr()*1.8+0.3,a:sr()*0.9+0.2,tw:sr()*Math.PI*2,c,big:sr()<0.1};});
+  const stars=Array.from({length:180},()=>{const c=RSC[Math.floor(_sr2()*RSC.length)];return{x:_sr2()*W,y:_sr2()*H,r:_sr2()*1.8+0.3,a:_sr2()*0.9+0.2,tw:_sr2()*Math.PI*2,c,big:_sr2()<0.1};});
   const nebula=[{x:W*0.2,y:H*0.2,r:90,h:220},{x:W*0.8,y:H*0.7,r:80,h:270},{x:W*0.5,y:H*0.1,r:70,h:190},{x:W*0.1,y:H*0.8,r:65,h:300}];
 
-  const minR=EARTH_R+20, maxR=Math.min(W,H)*0.44;
-  const winnerIdx=names.indexOf(winnerName);
-
-  const sats=names.map((name,i)=>{
-    const t=i/(names.length-1||1);
-    const orbitR=minR+(maxR-minR)*t*(0.6+sr()*0.4);
-    const spd=(0.028+sr()*0.022)*(sr()>0.5?1:-1);
-    return {
-      name,color:RC[i%RC.length],orbitR,
-      angle:(Math.PI*2/names.length)*i+sr()*0.3,
-      speed:spd,isWinner:i===winnerIdx,
-      state:'orbit',departDelay:1.0+i*0.3,departTimer:0,
-      tx:0,ty:0,tvx:0,tvy:0,trail:[],flash:0,x:0,y:0,scale:1,opacity:1
-    };
+  // buildRaceState 결과로 실제 레이스와 동일한 궤도/속도/순서
+  const sats=_rd.sats.map(s=>{
+    const orbitR=minR+(maxR-minR)*s.orbitFrac;
+    const dir=s.speed>=0?1:-1;
+    const speed=dir*Math.abs(s.speed)*Math.sqrt(refR/orbitR); // 케플러 3법칙 동일
+    return{...s,orbitR,speed,isWinner:s.name===winnerName,
+      state:'orbit',departTimer:0,tx:0,ty:0,tvx:0,tvy:0,trail:[],flash:0,x:0,y:0,scale:1,opacity:1,
+      departDelay:s.departDelay/10}; // 10배 빠른 재생
   });
 
   let done=false, rT=0;
@@ -4121,12 +4134,13 @@ async function playUserRace(revealAtEnd=false){
       if(s.state==='done')return;
       s.flash=Math.max(0,s.flash-0.04);
       if(s.state==='orbit'){
-        s.angle+=s.speed; s.x=CX+Math.cos(s.angle)*s.orbitR; s.y=CY+Math.sin(s.angle)*s.orbitR;
+        s.angle+=s.speed;s.x=CX+Math.cos(s.angle)*s.orbitR;s.y=CY+Math.sin(s.angle)*s.orbitR;
+        s.trail.push({x:s.x,y:s.y});if(s.trail.length>8)s.trail.shift();
         s.departTimer+=1/60;
         if(s.departTimer>s.departDelay&&!s.isWinner){
           s.state='exit';
           const nx=(s.x-CX)/s.orbitR,ny=(s.y-CY)/s.orbitR;
-          s.tx=s.x;s.ty=s.y;s.tvx=nx*(5+sr()*4);s.tvy=ny*(5+sr()*4);s.flash=1;
+          s.tx=s.x;s.ty=s.y;s.tvx=nx*(5+Math.random()*4);s.tvy=ny*(5+Math.random()*4);s.flash=1;
         }
       } else if(s.state==='exit'){
         s.tx+=s.tvx;s.ty+=s.tvy;s.tvx*=0.97;s.tvy*=0.97;
@@ -4153,12 +4167,11 @@ async function playUserRace(revealAtEnd=false){
     nebula.forEach(n=>{const g=ctx.createRadialGradient(n.x,n.y,0,n.x,n.y,n.r);g.addColorStop(0,`hsla(${n.h},90%,65%,0.18)`);g.addColorStop(0.4,`hsla(${n.h},80%,55%,0.08)`);g.addColorStop(1,`hsla(${n.h},70%,55%,0)`);ctx.fillStyle=g;ctx.beginPath();ctx.arc(n.x,n.y,n.r,0,Math.PI*2);ctx.fill();});
     stars.forEach(s=>{s.tw+=0.012;const a=Math.min(1,s.a*(0.55+0.45*Math.sin(s.tw)));if(s.big){ctx.shadowColor=`rgb(${s.c})`;ctx.shadowBlur=8;}ctx.fillStyle=`rgba(${s.c[0]},${s.c[1]},${s.c[2]},${a})`;ctx.beginPath();ctx.arc(s.x,s.y,s.r,0,Math.PI*2);ctx.fill();if(s.big)ctx.shadowBlur=0;});
     sats.filter(s=>s.state==='orbit'||s.state==='zooming').forEach(s=>{ctx.shadowColor='rgba(0,210,255,0.5)';ctx.shadowBlur=5;ctx.strokeStyle='rgba(0,210,255,0.2)';ctx.lineWidth=1;ctx.setLineDash([4,8]);ctx.beginPath();ctx.arc(CX,CY,s.orbitR,0,Math.PI*2);ctx.stroke();ctx.setLineDash([]);ctx.shadowBlur=0;});
-    const eg=ctx.createRadialGradient(CX-EARTH_R*0.3,CY-EARTH_R*0.3,2,CX,CY,EARTH_R);
-    eg.addColorStop(0,'#5ab4ff');eg.addColorStop(0.4,'#1a6cd0');eg.addColorStop(0.7,'#0d3a7a');eg.addColorStop(1,'#061a3a');
-    ctx.shadowColor='#3399ff';ctx.shadowBlur=18;ctx.fillStyle=eg;ctx.beginPath();ctx.arc(CX,CY,EARTH_R,0,Math.PI*2);ctx.fill();ctx.shadowBlur=0;
+    const eg=ctx.createRadialGradient(CX-EARTH_R*0.3,CY-EARTH_R*0.3,2,CX,CY,EARTH_R);eg.addColorStop(0,'#5ab4ff');eg.addColorStop(0.4,'#1a6cd0');eg.addColorStop(0.7,'#0d3a7a');eg.addColorStop(1,'#061a3a');ctx.shadowColor='#3399ff';ctx.shadowBlur=18;ctx.fillStyle=eg;ctx.beginPath();ctx.arc(CX,CY,EARTH_R,0,Math.PI*2);ctx.fill();ctx.shadowBlur=0;
     const atm=ctx.createRadialGradient(CX,CY,EARTH_R-3,CX,CY,EARTH_R+16);atm.addColorStop(0,'rgba(100,190,255,0.55)');atm.addColorStop(0.5,'rgba(80,160,255,0.2)');atm.addColorStop(1,'rgba(100,180,255,0)');ctx.fillStyle=atm;ctx.beginPath();ctx.arc(CX,CY,EARTH_R+16,0,Math.PI*2);ctx.fill();
     ctx.strokeStyle='rgba(120,210,255,0.18)';ctx.lineWidth=2.5;ctx.beginPath();ctx.arc(CX,CY,EARTH_R+19,0,Math.PI*2);ctx.stroke();
     ctx.font='14px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('🌍',CX,CY);ctx.textBaseline='alphabetic';
+    const alive=sats.filter(s=>s.state==='orbit'&&!s.isWinner).length;
     sats.forEach(s=>{
       if(s.state==='done'&&!s.isWinner)return;
       const ex=s.state==='exit';const dx=ex?s.tx:s.x,dy=ex?s.ty:s.y;const alpha=ex?s.opacity:1;const r=Math.max(2,5*s.scale);
@@ -4168,11 +4181,27 @@ async function playUserRace(revealAtEnd=false){
       ctx.fillStyle=s.color;ctx.beginPath();ctx.arc(dx,dy,r,0,Math.PI*2);ctx.fill();
       ctx.shadowBlur=0;ctx.shadowColor='transparent';
       ctx.fillStyle='rgba(255,255,255,0.45)';ctx.beginPath();ctx.arc(dx-r*0.3,dy-r*0.3,r*0.3,0,Math.PI*2);ctx.fill();
-      if(r>=4){ctx.fillStyle='rgba(0,0,0,0.8)';ctx.font=`bold ${Math.min(7,r*0.7)}px sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(s.name.slice(0,2),dx,dy);ctx.textBaseline='alphabetic';}
+      // 이름 표시: 마지막 3기 or zooming 시 전체 이름
+      if(s.state==='zooming'&&s.scale>2){
+        ctx.fillStyle='#FFD700';ctx.font=`bold ${Math.round(9*s.scale/2)}px sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(s.name,dx,dy-r-6);ctx.textBaseline='alphabetic';
+      } else if(alive<=3&&s.state==='orbit'){
+        ctx.save();
+        const pulse=0.6+0.4*Math.sin(rT*4);
+        ctx.font='bold 11px sans-serif';
+        const lbl=s.name;const tw=ctx.measureText(lbl).width;
+        const pw=tw+12,ph=17,px=dx-pw/2,py=dy-r-22;
+        ctx.globalAlpha=alpha*0.95;
+        ctx.shadowColor=s.color;ctx.shadowBlur=9*pulse;
+        ctx.fillStyle='rgba(0,2,15,0.9)';ctx.beginPath();ctx.roundRect(px,py,pw,ph,4);ctx.fill();
+        ctx.strokeStyle=s.color;ctx.lineWidth=1.2;ctx.beginPath();ctx.roundRect(px,py,pw,ph,4);ctx.stroke();ctx.shadowBlur=0;
+        ctx.fillStyle='#fff';ctx.textAlign='center';ctx.textBaseline='middle';
+        ctx.shadowColor=s.color;ctx.shadowBlur=3;ctx.fillText(lbl,dx,py+ph/2);ctx.shadowBlur=0;
+        ctx.restore();
+      } else if(r>=4){
+        ctx.fillStyle='rgba(0,0,0,0.8)';ctx.font=`bold ${Math.min(7,r*0.7)}px sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(s.name.slice(0,2),dx,dy);ctx.textBaseline='alphabetic';
+      }
       ctx.globalAlpha=1;
-      if(s.state==='zooming'&&s.scale>2){ctx.fillStyle='#FFD700';ctx.font=`bold ${Math.round(9*s.scale/2)}px sans-serif`;ctx.textAlign='center';ctx.fillText(s.name,dx,dy-r-6);}
     });
-    const alive=sats.filter(s=>s.state==='orbit').length;
     if(!done&&alive>0){ctx.fillStyle='rgba(0,255,255,0.6)';ctx.font='10px sans-serif';ctx.textAlign='left';ctx.fillText('궤도 중: '+alive+'기',8,18);}
   }
 
