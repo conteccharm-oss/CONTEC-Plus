@@ -2807,15 +2807,20 @@ let raceEventQueue=[],raceEventsDone=new Set();
 const EARTH_R=42;
 
 async function startOrbitalRace(){
-  // 관리자 섹션이 숨겨져 있으면 먼저 보여주기
-  const _adminSec=document.getElementById('race-admin-start-section');
-  if(_adminSec)_adminSec.style.display='block';
-  const entries=await SB.get('race_entries','year_month=eq.'+getYM()+'&order=created_at.asc');
-  const _ec=document.getElementById('race-entry-count');if(_ec)_ec.textContent=entries.length;
-  if(entries.length<2){showToast('❌ 최소 2명 이상 참여해야 합니다');return;}
-  // 배지 숨기고 레이스 시작
-  const _badge=document.getElementById('race-admin-auto-badge');if(_badge)_badge.style.display='none';
-  const names=entries.map(e=>e.name);
+  const _isReplay=!!(window._replayMode&&window._replayNames&&window._replayNames.length);
+  let names;
+  if(_isReplay){
+    names=window._replayNames;
+  } else {
+    // 관리자 섹션이 숨겨져 있으면 먼저 보여주기
+    const _adminSec=document.getElementById('race-admin-start-section');
+    if(_adminSec)_adminSec.style.display='block';
+    const entries=await SB.get('race_entries','year_month=eq.'+getYM()+'&order=created_at.asc');
+    const _ec=document.getElementById('race-entry-count');if(_ec)_ec.textContent=entries.length;
+    if(entries.length<2){showToast('❌ 최소 2명 이상 참여해야 합니다');return;}
+    const _badge=document.getElementById('race-admin-auto-badge');if(_badge)_badge.style.display='none';
+    names=entries.map(e=>e.name);
+  }
   const canvas=document.getElementById('race-canvas');
   document.getElementById('race-canvas-wrap').style.display='block';
   document.getElementById('race-winner-announce').style.display='none';
@@ -2862,7 +2867,9 @@ async function startOrbitalRace(){
     r:80+Math.random()*80,hue:[200,260,180,300,170][i],a:0.07+Math.random()*0.05
   }));
 
-  raceSeed=Date.now();
+  const _isReplay2=!!(window._replayMode&&window._replaySeed);
+  raceSeed=_isReplay2?window._replaySeed:Date.now();
+  if(_isReplay2){window._replayMode=false;window._replaySeed=null;window._replayNames=null;}
   raceSatNames=[...names];
   const _rd=buildRaceState(names,raceSeed);
   window._raceSeedData=_rd;
@@ -3598,13 +3605,22 @@ function showRaceWinner(winners){
       <div style="width:14px;height:14px;border-radius:50%;background:${w.color};box-shadow:0 0 8px ${w.color};"></div>
     </div>`).join('');
 
-  announceEl.innerHTML=`
-    <div style="font-size:11px;color:rgba(255,200,0,0.7);letter-spacing:3px;margin-bottom:12px;font-weight:700;">✦ RACE COMPLETE ✦</div>
-    ${winnerCards}
-    <div style="display:flex;gap:8px;margin-top:4px;justify-content:center;flex-wrap:wrap;">
-      <button class="btn-main" style="background:var(--green);width:auto;padding:10px 24px;" onclick="saveRaceWinner()">💾 결과 저장 & 발표 (1~${sorted.length}등)</button>
-      <button class="btn-main" style="background:linear-gradient(135deg,#1a0a00,#2a1500);border:1.5px solid rgba(255,200,0,0.5);color:#FFD700;width:auto;padding:10px 24px;" onclick="showRaceResultOnly()">🏆 결과만 보기</button>
-    </div>`;
+  const _wasReplay=window._wasReplay;window._wasReplay=false;
+  if(_wasReplay){
+    // 직원 리플레이: 저장 버튼 없이 결과만 표시
+    announceEl.innerHTML=`
+      <div style="font-size:11px;color:rgba(255,200,0,0.7);letter-spacing:3px;margin-bottom:12px;font-weight:700;">✦ RACE COMPLETE ✦</div>
+      ${winnerCards}
+      <button class="btn-main" style="background:linear-gradient(135deg,#1a0a00,#2a1500);border:1.5px solid rgba(255,200,0,0.5);color:#FFD700;width:auto;padding:10px 24px;margin-top:8px;" onclick="showRaceResultOnly()">🏆 결과 확인</button>`;
+  } else {
+    announceEl.innerHTML=`
+      <div style="font-size:11px;color:rgba(255,200,0,0.7);letter-spacing:3px;margin-bottom:12px;font-weight:700;">✦ RACE COMPLETE ✦</div>
+      ${winnerCards}
+      <div style="display:flex;gap:8px;margin-top:4px;justify-content:center;flex-wrap:wrap;">
+        <button class="btn-main" style="background:var(--green);width:auto;padding:10px 24px;" onclick="saveRaceWinner()">💾 결과 저장 & 발표 (1~${sorted.length}등)</button>
+        <button class="btn-main" style="background:linear-gradient(135deg,#1a0a00,#2a1500);border:1.5px solid rgba(255,200,0,0.5);color:#FFD700;width:auto;padding:10px 24px;" onclick="showRaceResultOnly()">🏆 결과만 보기</button>
+      </div>`;
+  }
   announceEl.style.display='flex';
   announceEl.style.flexDirection='column';
   announceEl.style.alignItems='center';
@@ -4399,10 +4415,18 @@ function runDemoRace(){
 let userRaceAnimId=null;
 
 function startUserRaceReveal(){
+  const res=window._raceResult;
+  if(!res){showToast('❌ 레이스 데이터가 없습니다');return;}
+  const names=res.race_names?JSON.parse(res.race_names):[];
+  if(!names.length){showToast('❌ 참여자 데이터가 없습니다');return;}
   document.getElementById('race-result-teaser').style.display='none';
-  document.getElementById('user-race-canvas').style.display='block';
-  document.getElementById('user-race-status').textContent='궤도 레이스 진행 중...';
-  playUserRace(true);
+  document.getElementById('race-result-box').style.display='none';
+  // 리플레이 플래그 설정 — startOrbitalRace가 저장된 시드/참여자로 동일 레이스 재현
+  window._replayMode=true;
+  window._wasReplay=true;
+  window._replaySeed=res.race_seed;
+  window._replayNames=names;
+  startOrbitalRace();
 }
 
 function showRaceResultOnly(){
