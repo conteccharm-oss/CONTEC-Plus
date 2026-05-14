@@ -591,7 +591,7 @@
         <div style="font-size:42px;margin-bottom:8px;filter:drop-shadow(0 0 12px gold);">🏆</div>
         <div style="font-size:10px;color:rgba(255,200,0,0.7);letter-spacing:3px;margin-bottom:10px;font-weight:700;">✦ MISSION COMPLETE ✦</div>
         <div id="race-winner-display"></div>
-        <button class="btn-main" style="background:linear-gradient(135deg,#0a0820,#1a0a3a);border:1px solid rgba(0,200,255,0.3);width:auto;padding:10px 24px;margin-top:1rem;color:#00eeff;box-shadow:0 0 10px rgba(0,200,255,0.2);" onclick="playUserRace()">🛸 레이스 다시보기</button>
+        <button class="btn-main" style="background:linear-gradient(135deg,#0a0820,#1a0a3a);border:1px solid rgba(0,200,255,0.3);width:auto;padding:10px 24px;margin-top:1rem;color:#00eeff;box-shadow:0 0 10px rgba(0,200,255,0.2);" onclick="startUserRaceReveal()">🛸 레이스 다시보기</button>
       </div>
       <!-- 관리자 전용 추가 액션 -->
       <div id="race-admin-result-actions" style="display:none;gap:8px;margin-top:1rem;">
@@ -2878,7 +2878,7 @@ async function startOrbitalRace(){
   document.getElementById('race-canvas-wrap').style.display='block';
   document.getElementById('race-winner-announce').style.display='none';
   document.getElementById('race-status').textContent='';
-  raceW=canvas.offsetWidth||360; raceH=raceW;
+  raceW=360; raceH=360; // 고정 크기 — 기기 무관하게 동일한 물리/재생
   canvas.width=raceW; canvas.height=raceH;
   raceCX=raceW/2; raceCY=raceH/2;
   raceDone=false; raceWinner=null; raceT=0;
@@ -2886,6 +2886,7 @@ async function startOrbitalRace(){
   window._raceWinnersList=null; window._winnersFinaleCalled=false; window._finaleT=null;
   window._podiumState={active:false,rank:3};
   window._finaleStarted=false; window._finaleBaseT=null;
+  window._raceResultShown=false;
   window._userSpeedBoost=1.0; window._eventSlowEndTime=0;
   const _sc=document.getElementById('race-speed-ctrl');if(_sc)_sc.style.display='flex';
   setUserSpeedBoost(1.0);
@@ -3643,8 +3644,12 @@ function raceDraw(){
 function raceDrawWinner(){raceDraw();}
 
 function showRaceWinner(winners){
+  if(window._raceResultShown)return; // 이중 호출 방지
+  window._raceResultShown=true;
   const arr=Array.isArray(winners)?winners:[winners];
-  const sorted=[...arr].sort((a,b)=>(a.rank||1)-(b.rank||1));
+  const deduped=[]; const seenRank=new Set();
+  arr.forEach(w=>{const r=w.rank||1;if(!seenRank.has(r)){seenRank.add(r);deduped.push(w);}});
+  const sorted=deduped.sort((a,b)=>(a.rank||1)-(b.rank||1)).slice(0,3);
   const rank1=sorted[0], rank2=sorted[1], rank3=sorted[2];
   document.getElementById('race-admin-winner').textContent=rank1.name;
 
@@ -4011,7 +4016,9 @@ function renderWinnerDisplay(results){
   if(!el)return;
   const medals=['🥇','🥈','🥉'];
   const rankLabels=['1등','2등','3등'];
-  const sorted=[...results].sort((a,b)=>(a.rank||1)-(b.rank||1));
+  const _deduped=[]; const _seenR=new Set();
+  [...results].sort((a,b)=>(a.rank||1)-(b.rank||1)).forEach(r=>{const k=r.rank||1;if(!_seenR.has(k)){_seenR.add(k);_deduped.push(r);}});
+  const sorted=_deduped.slice(0,3);
   if(sorted.length===1){
     el.innerHTML=`<div style="font-size:26px;font-weight:900;color:#FFD700;text-shadow:0 0 16px rgba(255,200,0,0.7);">🥇 ${sorted[0].winner_name}</div>
       <div style="font-size:12px;color:rgba(255,220,100,0.6);margin-top:6px;letter-spacing:1px;">궤도 레이스 1등</div>`;
