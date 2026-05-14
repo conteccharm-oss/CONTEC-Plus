@@ -2881,7 +2881,7 @@ async function startOrbitalRace(){
   document.getElementById('race-canvas-wrap').style.display='block';
   document.getElementById('race-winner-announce').style.display='none';
   document.getElementById('race-status').textContent='';
-  raceW=canvas.offsetWidth||360; raceH=raceW;
+  raceW=360; raceH=360; // 고정: 기기 무관 동일 물리 보장 (CSS width:100%가 시각적 스케일 담당)
   canvas.width=raceW; canvas.height=raceH;
   raceCX=raceW/2; raceCY=raceH/2;
   raceDone=false; raceWinner=null; raceT=0;
@@ -2934,7 +2934,7 @@ async function startOrbitalRace(){
   raceSatNames=[...names];
   const _rd=buildRaceState(names,raceSeed);
   window._raceSeedData=_rd;
-  const minR=EARTH_R+22, maxR=Math.min(raceW,raceH)*0.44;
+  const minR=EARTH_R+22, maxR=Math.min(raceW,raceH)*0.40; // 0.44→0.40: 상단 레이블 클리핑 방지
   const refR=(minR+maxR)/2; // 기준 궤도 반경
   raceSats=_rd.sats.map(s=>{
     const orbitR=minR+(maxR-minR)*s.orbitFrac;
