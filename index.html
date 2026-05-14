@@ -941,6 +941,16 @@
     </div>
   </div>
 
+  <!-- Q&A 페이지 -->
+  <div class="page" id="page-faq">
+    <div class="month-banner" style="background:linear-gradient(135deg,#0a0a2e,#1a1060);">
+      <div><div class="mb-sub">자주 묻는 질문</div><div class="mb-title">Q &amp; A</div></div>
+      <div class="mb-tag">❓</div>
+    </div>
+    <div id="faq-page-list" style="margin-top:1rem;display:flex;flex-direction:column;gap:8px;"></div>
+    <div id="faq-page-empty" style="display:none;text-align:center;padding:3rem 1rem;color:var(--text-hint);font-size:13px;">등록된 Q&amp;A가 없습니다</div>
+  </div>
+
   <!-- 직원 네비 -->
   <div class="bottom-nav" id="nav-user">
     <button class="nav-btn active" onclick="switchPage('home')"><div class="nav-icon">🏠</div><div class="nav-label">홈</div></button>
@@ -948,6 +958,7 @@
     <button class="nav-btn" onclick="switchPage('funny')"><div class="nav-icon">😂</div><div class="nav-label">웃수저</div></button>
     <button class="nav-btn" onclick="switchPage('idea')"><div class="nav-icon">💡</div><div class="nav-label">아이디어</div></button>
     <button class="nav-btn" onclick="switchPage('race')"><div class="nav-icon">🎱</div><div class="nav-label">레이스</div></button>
+    <button class="nav-btn" onclick="switchPage('faq')"><div class="nav-icon">❓</div><div class="nav-label">Q&amp;A</div></button>
     <button class="nav-btn" onclick="switchPage('mypage')"><div class="nav-icon">👤</div><div class="nav-label">마이페이지</div></button>
   </div>
   <!-- 관리자 네비 -->
@@ -1299,6 +1310,7 @@ function switchPage(page){
   if(page==='race')loadRacePage();
   if(page==='admin')loadAdminPage();
   if(page==='mypage')loadMyPage();
+  if(page==='faq')loadFAQPage();
 }
 
 // ── QUIZ ──
@@ -1971,6 +1983,25 @@ async function loadHomeWinners(){
 }
 
 // ── FAQ ──
+async function loadFAQPage(){
+  const listEl=document.getElementById('faq-page-list');
+  const emptyEl=document.getElementById('faq-page-empty');
+  if(!listEl)return;
+  const rows=await SB.get('app_settings','key=eq.faq_items');
+  const items=rows.length?JSON.parse(rows[0].value||'[]'):[];
+  if(!items.length){listEl.innerHTML='';if(emptyEl)emptyEl.style.display='block';return;}
+  if(emptyEl)emptyEl.style.display='none';
+  listEl.innerHTML=items.map((item,i)=>`
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;">
+      <button onclick="(function(btn){const ans=btn.nextElementSibling;const open=ans.style.display==='block';ans.style.display=open?'none':'block';btn.querySelector('.faq-arrow').style.transform=open?'':'rotate(180deg)';})(this)" style="width:100%;display:flex;align-items:center;justify-content:space-between;padding:14px;background:none;border:none;color:#fff;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;text-align:left;gap:8px;">
+        <span>Q. ${item.q}</span><span class="faq-arrow" style="font-size:14px;opacity:0.5;flex-shrink:0;transition:transform 0.2s;">▾</span>
+      </button>
+      <div style="display:none;padding:0 14px 14px;font-size:13px;color:var(--text-sub);line-height:1.7;white-space:pre-wrap;border-top:1px solid var(--border);">
+        <div style="padding-top:12px;">A. ${item.a}</div>
+      </div>
+    </div>`).join('');
+}
+
 async function loadFAQItems(){
   const sec=document.getElementById('home-faq-section');
   const list=document.getElementById('home-faq-list');
