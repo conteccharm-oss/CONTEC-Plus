@@ -883,9 +883,17 @@
         </div>
         <div id="race-admin-done-list" style="margin-bottom:12px;"></div>
         <div style="display:flex;gap:8px;">
-          <button onclick="resetRaceMonth()" style="flex:1;padding:9px 0;font-size:12px;font-weight:700;font-family:inherit;border-radius:8px;border:1.5px solid rgba(226,75,74,0.4);cursor:pointer;background:rgba(226,75,74,0.1);color:var(--red);">🔄 리셋</button>
+          <button onclick="resetRaceMonth()" style="flex:1;padding:9px 0;font-size:12px;font-weight:700;font-family:inherit;border-radius:8px;border:1.5px solid rgba(226,75,74,0.4);cursor:pointer;background:rgba(226,75,74,0.1);color:var(--red);">🔄 전체 리셋</button>
         </div>
       </div>
+
+      <!-- 레이스 내역 -->
+      <div class="sec-title" style="margin-top:0.5rem;">📋 레이스 내역</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+        <select id="race-history-month-sel" onchange="loadRaceHistory()" style="padding:7px 10px;font-size:12px;font-family:inherit;border:1px solid var(--border);border-radius:8px;background:rgba(0,0,0,0.3);color:#fff;"></select>
+        <button onclick="loadRaceHistory()" style="padding:7px 12px;background:rgba(255,255,255,0.07);color:var(--text-sub);border:1px solid var(--border);border-radius:8px;font-size:11px;font-family:inherit;cursor:pointer;">새로고침</button>
+      </div>
+      <div id="race-history-list"></div>
     </div>
   </div>
 
@@ -1999,12 +2007,7 @@ async function loadFAQAdmin(){
 }
 
 async function _saveFAQItems(items){
-  const rows=await SB.get('app_settings','key=eq.faq_items');
-  if(rows.length){
-    return await SB.patch('app_settings',{value:JSON.stringify(items)},'key=eq.faq_items');
-  }else{
-    return await SB.post('app_settings',{key:'faq_items',value:JSON.stringify(items)});
-  }
+  return await SB.upsert('app_settings',{key:'faq_items',value:JSON.stringify(items)});
 }
 
 async function addFAQItem(){
@@ -2168,6 +2171,13 @@ async function loadIdeaMyList(){
 }
 
 // ── RACE PAGE (직원) ──
+function getLatestRaceRun(allResults){
+  if(!allResults.length)return[];
+  let latestSeed=null,latestTs='';
+  for(const r of allResults){if(r.created_at>latestTs){latestTs=r.created_at;latestSeed=r.race_seed;}}
+  return allResults.filter(r=>r.race_seed===latestSeed);
+}
+
 async function loadRacePage(){
   await loadRaceConfig();
   const ym=getYM();
@@ -2206,10 +2216,11 @@ async function loadRacePage(){
   if(subEl)subEl.textContent=formatKorDateTime(effectiveDate,getRaceAutoHour())+' 자동 운영 예정';
 
   // 결과 확인 (이번 달 전체)
-  const results=await SB.get('race_results','year_month=eq.'+ym+'&order=created_at.asc');
+  const allResults=await SB.get('race_results','year_month=eq.'+ym+'&order=created_at.asc');
+  const results=getLatestRaceRun(allResults);
 
   // ── 자동 운영 체크 (관리자 + 오늘이 effective date + 설정 시간 이후 + 결과 없음) ──
-  if(app.isAdmin && !results.length){
+  if(app.isAdmin && !allResults.length){
     const today=new Date();
     const autoHour=getRaceAutoHour();
     if(today.toDateString()===effectiveDate.toDateString() && today.getHours()>=autoHour){
@@ -2232,8 +2243,9 @@ async function loadRacePage(){
     document.getElementById('race-admin-auto-badge').style.display='block';
     const descEl=document.getElementById('race-admin-auto-desc');
     if(descEl){
-      if(results.length>0){
-        descEl.textContent='이번 달 레이스 결과 있음. 추가 실행 가능합니다.';
+      if(allResults.length>0){
+        const runCount=new Set(allResults.map(r=>r.race_seed)).size;
+        descEl.textContent='이번 달 레이스 '+runCount+'회 완료. 추가 실행 가능합니다.';
       } else {
         descEl.textContent=formatKorDateTime(effectiveDate,getRaceAutoHour())+'에 자동으로 레이스가 진행됩니다.';
       }
@@ -2437,7 +2449,7 @@ function switchAdminTab(btn,tab){
   if(tab==='idea-all'){adminIdeaMonth=getYM();loadAdminIdeaAll();}
   if(tab==='storage')loadStorageTab();
   if(tab==='quiz-mgmt'){populateWeekSelect();quizHistoryMonth=getYM();loadQuizAdminList();renderPrizeTiers();loadElimList();loadSurvivorList();loadQuizTimeDisplay();}
-  if(tab==='race-mgmt'){loadAdminRewardList();loadRaceAutoDaySetting();SB.get('race_entries','year_month=eq.'+getYM()).then(r=>{const ec=document.getElementById('race-entry-count-admin');if(ec)ec.textContent=r.length;});}
+  if(tab==='race-mgmt'){loadAdminRewardList();loadRaceAutoDaySetting();loadRaceHistory();SB.get('race_entries','year_month=eq.'+getYM()).then(r=>{const ec=document.getElementById('race-entry-count-admin');if(ec)ec.textContent=r.length;});}
   if(tab==='emp-mgmt'){document.getElementById('emp-list-wrap').style.display='none';document.getElementById('emp-list-toggle-btn').textContent='▼';loadEmployeeList();}
   if(tab==='faq')loadFAQAdmin();
 }
@@ -3476,14 +3488,6 @@ async function saveRaceWinner(){
   const winners=window._raceWinnersList;
   if(!winners||!winners.length){showToast('❌ 우승자 정보가 없습니다 — 레이스를 다시 실행해주세요');return;}
   const ym=getYM();
-  const existing=await SB.get('race_results','year_month=eq.'+ym+'&order=created_at.asc');
-  if(existing&&existing.length>0){
-    showToast('✅ 이미 이번 달 결과가 저장되어 있습니다');
-    const announce=document.getElementById('race-winner-announce');
-    if(announce)announce.style.display='none';
-    loadRacePage();
-    return;
-  }
   let allOk=true;
   for(const w of winners){
     const ok=await SB.post('race_results',{year_month:ym,winner_name:w.name,race_seed:raceSeed,race_names:JSON.stringify(raceSatNames),rank:w.rank||1});
@@ -3495,7 +3499,9 @@ async function saveRaceWinner(){
     if(announce)announce.style.display='none';
     loadRacePage();
   }else{
-    showToast('❌ 저장 실패 — 권한 문제입니다');
+    showToast('❌ 저장 실패 — DB 제약 문제입니다. Supabase에서 고유 제약 해제 필요');
+    const announce=document.getElementById('race-winner-announce');
+    if(announce)announce.style.display='none';
     loadRacePage();
   }
 }
@@ -3841,6 +3847,62 @@ async function addExtraRace(){
     loadRaceAutoDaySetting();
     loadRacePage();
   }
+}
+
+// ── 레이스 내역 관리 ──
+async function loadRaceHistory(){
+  const sel=document.getElementById('race-history-month-sel');
+  const histEl=document.getElementById('race-history-list');
+  if(!histEl)return;
+
+  // 월 선택기 초기화 (현재 포함 최근 6개월)
+  if(sel&&!sel.options.length){
+    const now=new Date();
+    for(let i=0;i<6;i++){
+      const d=new Date(now.getFullYear(),now.getMonth()-i,1);
+      const v=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+      sel.add(new Option(v,v));
+    }
+  }
+  const ym=sel?sel.value:getYM();
+
+  const all=await SB.get('race_results','year_month=eq.'+ym+'&order=created_at.asc');
+  if(!all.length){histEl.innerHTML='<div class="rank-empty">이번 달 레이스 내역이 없습니다</div>';return;}
+
+  // race_seed 기준으로 그룹화
+  const runsMap=new Map();
+  for(const r of all){
+    const k=String(r.race_seed||'_');
+    if(!runsMap.has(k))runsMap.set(k,{seed:r.race_seed,rows:[],firstTs:r.created_at});
+    runsMap.get(k).rows.push(r);
+    const g=runsMap.get(k);
+    if(r.created_at>g.firstTs)g.firstTs=r.created_at;
+  }
+  const runs=[...runsMap.values()].sort((a,b)=>b.firstTs.localeCompare(a.firstTs));
+  const medals=['🥇','🥈','🥉'];
+
+  histEl.innerHTML=runs.map((run,i)=>{
+    const sorted=[...run.rows].sort((a,b)=>(a.rank||1)-(b.rank||1));
+    const d=new Date(run.firstTs);
+    const dateStr=d.getFullYear()+'.'+(d.getMonth()+1)+'.'+d.getDate()+' '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
+    return`<div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px 14px;margin-bottom:8px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+        <div>
+          <span style="font-size:12px;font-weight:700;color:#00eeff;">${runs.length-i}차 레이스</span>
+          <span style="font-size:11px;color:var(--text-hint);margin-left:8px;">${dateStr}</span>
+        </div>
+        <button onclick="deleteRaceRun(${JSON.stringify(run.seed)})" style="padding:4px 10px;background:rgba(226,75,74,0.15);color:var(--red);border:1px solid rgba(226,75,74,0.3);border-radius:8px;font-size:11px;font-family:inherit;cursor:pointer;">🗑️ 삭제</button>
+      </div>
+      ${sorted.map((r,j)=>{const medal=medals[(r.rank||j+1)-1]||'🏅';return`<div style="font-size:13px;font-weight:600;padding:2px 0;color:#fff;">${medal} ${r.winner_name}</div>`;}).join('')}
+    </div>`;
+  }).join('');
+}
+
+async function deleteRaceRun(seed){
+  if(!confirm('이 레이스 결과를 삭제하시겠습니까?'))return;
+  const ok=await SB.delWhere('race_results','race_seed=eq.'+seed);
+  if(ok){showToast('🗑️ 삭제되었습니다');loadRaceHistory();loadRacePage();}
+  else{showToast('❌ 삭제 실패');}
 }
 
 // ── 퀴즈 경품 티어 ──
