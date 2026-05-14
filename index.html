@@ -2870,6 +2870,7 @@ async function startOrbitalRace(){
   const _isReplay2=!!(window._replayMode&&window._replaySeed);
   raceSeed=_isReplay2?window._replaySeed:Date.now();
   if(_isReplay2){window._replayMode=false;window._replaySeed=null;window._replayNames=null;}
+  window._raceRNG=makeRaceRNG(raceSeed+7777); // 결정론적 레이스 RNG
   raceSatNames=[...names];
   const _rd=buildRaceState(names,raceSeed);
   window._raceSeedData=_rd;
@@ -2903,7 +2904,7 @@ function raceLoop(){
   }
   const steps=Math.floor(raceSpeedMult);
   const frac=raceSpeedMult-steps;
-  const extra=(Math.random()<frac)?1:0;
+  const extra=((window._raceRNG||Math.random)()<frac)?1:0;
   for(let i=0;i<steps+extra;i++) raceUpdate();
   raceDraw();
   // 피날레 중 or RACE COMPLETE 오버레이 9초간 유지
@@ -2982,29 +2983,29 @@ function triggerRaceEvent(type){
   }
   if(type==='debris'){
     window._eventSlowEndTime=Date.now()+3000;
-    const cnt=5+Math.floor(Math.random()*5);
+    const _rr=window._raceRNG||Math.random;
+    const cnt=5+Math.floor(_rr()*5);
     const aliveTargets=raceSats.filter(s=>s.state==='orbit'&&!s.isWinner);
-    const target=aliveTargets.length>0?aliveTargets[Math.floor(Math.random()*aliveTargets.length)]:null;
+    const target=aliveTargets.length>0?aliveTargets[Math.floor(_rr()*aliveTargets.length)]:null;
     const pieces=Array.from({length:cnt},(_,i)=>{
       if(i===0&&target){
-        // 1번 파편: 타겟 위성을 직접 조준하는 대형 쓰레기
-        const spawnAng=Math.atan2(target.y-raceCY,target.x-raceCX)+Math.PI+(Math.random()-0.5)*0.25;
+        const spawnAng=Math.atan2(target.y-raceCY,target.x-raceCX)+Math.PI+(_rr()-0.5)*0.25;
         const spawnDist=raceW*0.72;
         const sx=raceCX+Math.cos(spawnAng)*spawnDist,sy=raceCY+Math.sin(spawnAng)*spawnDist;
-        const spd=7+Math.random()*3;
+        const spd=7+_rr()*3;
         const dx2=target.x-sx,dy2=target.y-sy,dl=Math.sqrt(dx2*dx2+dy2*dy2)||1;
         return{x:sx,y:sy,vx:(dx2/dl)*spd,vy:(dy2/dl)*spd,
-          r:10,rot:Math.random()*Math.PI*2,rotV:(Math.random()-0.5)*0.25,
-          pts:Array.from({length:7},(_,k)=>({a:(Math.PI*2/7)*k,r:0.7+Math.random()*0.6})),
+          r:10,rot:_rr()*Math.PI*2,rotV:(_rr()-0.5)*0.25,
+          pts:Array.from({length:7},(_,k)=>({a:(Math.PI*2/7)*k,r:0.7+_rr()*0.6})),
           trail:[],active:true,isBig:true};
       }
-      const ang=(Math.PI*2/cnt)*i+Math.random()*0.8;
-      const spd=5+Math.random()*5;
-      const angVar=ang+(Math.random()-0.5)*0.4;
+      const ang=(Math.PI*2/cnt)*i+_rr()*0.8;
+      const spd=5+_rr()*5;
+      const angVar=ang+(_rr()-0.5)*0.4;
       return{x:raceCX+Math.cos(ang)*(raceW*0.65),y:raceCY+Math.sin(ang)*(raceH*0.65),
         vx:-Math.cos(angVar)*spd,vy:-Math.sin(angVar)*spd,
-        r:3+Math.random()*4,rot:Math.random()*Math.PI*2,rotV:(Math.random()-0.5)*0.3,
-        pts:Array.from({length:6},(_,k)=>({a:(Math.PI*2/6)*k,r:0.6+Math.random()*0.7})),
+        r:3+_rr()*4,rot:_rr()*Math.PI*2,rotV:(_rr()-0.5)*0.3,
+        pts:Array.from({length:6},(_,k)=>({a:(Math.PI*2/6)*k,r:0.6+_rr()*0.7})),
         trail:[],active:true,isBig:false};
     });
     raceEvents.debris={pieces,timer:0};
@@ -3018,9 +3019,10 @@ function triggerRaceEvent(type){
   if(type==='meteor'){
     raceEvents._meteorCount=(raceEvents._meteorCount||0)+1;
     if(raceEvents._meteorCount>=2){
-      // 2차 운석: 완전 랜덤 방향, 더 크고 빠름
-      const angle2=Math.random()*Math.PI*2;
-      const spd2=16+Math.random()*6;
+      // 2차 운석: 결정론적 방향
+      const _rr2=window._raceRNG||Math.random;
+      const angle2=_rr2()*Math.PI*2;
+      const spd2=16+_rr2()*6;
       raceEvents.meteor={x:raceCX+Math.cos(angle2)*(raceW*0.85),y:raceCY+Math.sin(angle2)*(raceH*0.85),vx:-Math.cos(angle2)*spd2,vy:-Math.sin(angle2)*spd2,r:24,trail:[],active:true,isBig:true};
       showRaceMsg('🔥 초대형 운석 낙하!');
       raceEvents.shake=10;
@@ -3156,9 +3158,10 @@ function raceUpdate(){
     if(s.wobble>0)s.wobble=Math.max(0,s.wobble-0.035);
 
     if(s.state==='orbit'){
-      s.angle+=s.speed+(s.wobble?(Math.random()-0.5)*0.06:0);
-      s.x=raceCX+Math.cos(s.angle)*s.orbitR+(s.wobble?(Math.random()-0.5)*s.wobble*12:0);
-      s.y=raceCY+Math.sin(s.angle)*s.orbitR+(s.wobble?(Math.random()-0.5)*s.wobble*12:0);
+      const _rw=window._raceRNG||Math.random;
+      s.angle+=s.speed+(s.wobble?(_rw()-0.5)*0.06:0);
+      s.x=raceCX+Math.cos(s.angle)*s.orbitR+(s.wobble?(_rw()-0.5)*s.wobble*12:0);
+      s.y=raceCY+Math.sin(s.angle)*s.orbitR+(s.wobble?(_rw()-0.5)*s.wobble*12:0);
       // 궤적 기록 (본인은 더 길게)
       const trailLen=s.name===app.name?18:8;
       s.trail.push({x:s.x,y:s.y});
