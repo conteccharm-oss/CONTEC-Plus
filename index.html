@@ -570,7 +570,10 @@
         <div style="font-size:42px;margin-bottom:10px;">🛸</div>
         <div style="font-size:15px;font-weight:900;color:#fff;margin-bottom:6px;">이달의 궤도 레이스 완료!</div>
         <div style="font-size:12px;color:rgba(180,230,255,0.65);margin-bottom:1.5rem;">레이스 영상을 보고 당첨자를 확인해보세요</div>
-        <button class="btn-main" style="background:linear-gradient(135deg,#001030,#0D1B3E);border:1.5px solid rgba(0,200,255,0.5);color:#00eeff;width:auto;padding:12px 36px;box-shadow:0 0 16px rgba(0,200,255,0.2);font-size:14px;" onclick="startUserRaceReveal()">🌌 확인하기</button>
+        <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;">
+          <button class="btn-main" style="background:linear-gradient(135deg,#001030,#0D1B3E);border:1.5px solid rgba(0,200,255,0.5);color:#00eeff;width:auto;padding:12px 28px;box-shadow:0 0 16px rgba(0,200,255,0.2);font-size:14px;" onclick="startUserRaceReveal()">🌌 확인하기</button>
+          <button class="btn-main" style="background:linear-gradient(135deg,#1a0a00,#2a1500);border:1.5px solid rgba(255,200,0,0.5);color:#FFD700;width:auto;padding:12px 28px;box-shadow:0 0 16px rgba(255,180,0,0.2);font-size:14px;" onclick="showRaceResultOnly()">🏆 결과만 보기</button>
+        </div>
       </div>
       <!-- 재생 캔버스 -->
       <canvas id="user-race-canvas" style="display:none;width:100%;border-radius:16px;margin-top:1rem;margin-bottom:8px;"></canvas>
@@ -2958,7 +2961,7 @@ function raceUpdate(){
       raceEvents._lastAlive=aliveNow;
     }
     // 마지막 1기 → 1위 확정
-    if(window._podiumState.active&&aliveNow===1&&!window._winnersFinaleCalled){
+    if(aliveNow===1&&!window._winnersFinaleCalled){
       const lastSat=nonWin[0];
       window._winnersFinaleCalled=true;
       lastSat.isWinner=true;lastSat.rank=1;
@@ -2966,7 +2969,7 @@ function raceUpdate(){
       raceEvents.shake=28;
       for(let _k=0;_k<3;_k++)addRaceP(lastSat.x,lastSat.y,'#FFD700',20+_k*5);
       addRaceW(lastSat.x,lastSat.y,'#FFD700',100);
-      // 2위·3위 포함해서 전달
+      // 포디움 2·3위 포함
       const _p23=raceSats.filter(s=>s.podiumRank);
       setTimeout(()=>startWinnersFinale([..._p23,lastSat]),1200);
     }
@@ -3355,7 +3358,10 @@ function showRaceWinner(winners){
   announceEl.innerHTML=`
     <div style="font-size:11px;color:rgba(255,200,0,0.7);letter-spacing:3px;margin-bottom:12px;font-weight:700;">✦ RACE COMPLETE ✦</div>
     ${winnerCards}
-    <button class="btn-main" style="background:var(--green);width:auto;padding:10px 24px;margin-top:4px;" onclick="saveRaceWinner()">결과 저장 & 발표 (1~${sorted.length}등)</button>`;
+    <div style="display:flex;gap:8px;margin-top:4px;justify-content:center;flex-wrap:wrap;">
+      <button class="btn-main" style="background:var(--green);width:auto;padding:10px 24px;" onclick="saveRaceWinner()">💾 결과 저장 & 발표 (1~${sorted.length}등)</button>
+      <button class="btn-main" style="background:linear-gradient(135deg,#1a0a00,#2a1500);border:1.5px solid rgba(255,200,0,0.5);color:#FFD700;width:auto;padding:10px 24px;" onclick="showRaceResultOnly()">🏆 결과만 보기</button>
+    </div>`;
   announceEl.style.display='block';
 
   // 자동운영: 버튼 없이 결과 자동 저장
@@ -4088,6 +4094,19 @@ function startUserRaceReveal(){
   document.getElementById('user-race-canvas').style.display='block';
   document.getElementById('user-race-status').textContent='궤도 레이스 진행 중...';
   playUserRace(true);
+}
+
+function showRaceResultOnly(){
+  // 애니메이션 없이 결과 바로 보기 (사용자·관리자 공통)
+  if(userRaceAnimId){cancelAnimationFrame(userRaceAnimId);userRaceAnimId=null;}
+  const teaser=document.getElementById('race-result-teaser');if(teaser)teaser.style.display='none';
+  const canvas=document.getElementById('user-race-canvas');if(canvas)canvas.style.display='none';
+  const status=document.getElementById('user-race-status');if(status)status.textContent='';
+  const resultBox=document.getElementById('race-result-box');if(resultBox)resultBox.style.display='block';
+  const rs=document.getElementById('race-result-section');if(rs)rs.style.display='block';
+  // 관리자: race-winner-announce 가리고 result section 강조
+  const announce=document.getElementById('race-winner-announce');if(announce&&app.isAdmin)announce.style.display='none';
+  if(resultBox)resultBox.scrollIntoView({behavior:'smooth',block:'start'});
 }
 
 async function playUserRace(revealAtEnd=false){
