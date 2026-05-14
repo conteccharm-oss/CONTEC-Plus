@@ -2244,7 +2244,7 @@ function startJoinOrbitPreview(entries,newName=null){
     const frac=(i/Math.max(entries.length-1,1));
     const orbitR=minR+(maxR-minR)*(0.25+frac*0.72);
     return{name,color:RC[i%RC.length],orbitR,
-      speed:(0.016+i*0.003)*(i%2===0?1:-1),
+      speed:(0.006+i*0.001)*(i%2===0?1:-1),
       angle:prev?prev.angle:(Math.PI*2/entries.length)*i+i*0.4,
       launching:isNew,launchT:0,opacity:isNew?0:1,scale:isNew?0.1:1,x:0,y:0};
   });
