@@ -536,7 +536,7 @@
 
     <!-- 관리자 레이스 시작 (관리자 전용) -->
     <div id="race-admin-start-section" style="display:none;margin-top:1rem;">
-      <div class="sec-title">관리자 레이스 제어</div>
+      <div id="race-admin-ctrl-title" class="sec-title">관리자 레이스 제어</div>
       <!-- 자동운영 모드 안내 -->
       <div id="race-admin-auto-badge" style="display:none;background:linear-gradient(135deg,#000c20,#001030);border:1.5px solid rgba(0,200,255,0.35);border-radius:12px;padding:1rem 1.25rem;margin-bottom:1rem;">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
@@ -4486,8 +4486,11 @@ function startUserRaceReveal(){
   if(!names.length){showToast('❌ 참여자 데이터가 없습니다');return;}
   document.getElementById('race-result-teaser').style.display='none';
   document.getElementById('race-result-box').style.display='none';
-  // 직원: race-canvas-wrap이 admin section 안에 있어 임시로 섹션 표시
-  if(!app.isAdmin){document.getElementById('race-admin-start-section').style.display='block';}
+  // 직원: race-canvas-wrap이 admin section 안에 있어 임시로 섹션 표시 (타이틀은 숨김)
+  if(!app.isAdmin){
+    document.getElementById('race-admin-start-section').style.display='block';
+    const t=document.getElementById('race-admin-ctrl-title');if(t)t.style.display='none';
+  }
   // 리플레이 플래그 설정 — startOrbitalRace가 저장된 시드/참여자로 동일 레이스 재현
   window._replayMode=true;
   window._wasReplay=true;
