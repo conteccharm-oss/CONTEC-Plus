@@ -2444,9 +2444,8 @@ async function loadRacePage(){
   } else {
     document.getElementById('race-admin-start-section').style.display='none';
     document.getElementById('race-vote-section').style.display='block';
-    if(!results.length){
-      SB.get('race_entries','year_month=eq.'+ym+'&order=created_at.asc').then(allE=>startJoinOrbitPreview(allE));
-    }
+    // 직원: 결과 유무 관계없이 항상 궤도 프리뷰 표시
+    SB.get('race_entries','year_month=eq.'+ym+'&order=created_at.asc').then(allE=>startJoinOrbitPreview(allE));
   }
 
   // 결과 표시
@@ -2878,7 +2877,7 @@ async function startOrbitalRace(){
   document.getElementById('race-canvas-wrap').style.display='block';
   document.getElementById('race-winner-announce').style.display='none';
   document.getElementById('race-status').textContent='';
-  raceW=360; raceH=360; // 고정 크기 — 기기 무관하게 동일한 물리/재생
+  raceW=canvas.offsetWidth||360; raceH=raceW;
   canvas.width=raceW; canvas.height=raceH;
   raceCX=raceW/2; raceCY=raceH/2;
   raceDone=false; raceWinner=null; raceT=0;
@@ -4487,6 +4486,8 @@ function startUserRaceReveal(){
   if(!names.length){showToast('❌ 참여자 데이터가 없습니다');return;}
   document.getElementById('race-result-teaser').style.display='none';
   document.getElementById('race-result-box').style.display='none';
+  // 직원: race-canvas-wrap이 admin section 안에 있어 임시로 섹션 표시
+  if(!app.isAdmin){document.getElementById('race-admin-start-section').style.display='block';}
   // 리플레이 플래그 설정 — startOrbitalRace가 저장된 시드/참여자로 동일 레이스 재현
   window._replayMode=true;
   window._wasReplay=true;
@@ -4505,6 +4506,8 @@ function showRaceResultOnly(){
   const rs=document.getElementById('race-result-section');if(rs)rs.style.display='block';
   // 관리자: race-winner-announce 가리고 result section 강조
   const announce=document.getElementById('race-winner-announce');if(announce&&app.isAdmin)announce.style.display='none';
+  // 직원: 리플레이 후 admin section 다시 숨김
+  if(!app.isAdmin){const adm=document.getElementById('race-admin-start-section');if(adm)adm.style.display='none';}
   if(resultBox)resultBox.scrollIntoView({behavior:'smooth',block:'start'});
 }
 
