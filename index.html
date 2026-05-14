@@ -487,6 +487,12 @@
     <div id="race-vote-section">
       <div class="sec-title">이달의 경품 투표</div>
       <div id="reward-list"></div>
+      <!-- 참여자 궤도 미리보기 캔버스 -->
+      <div id="join-orbit-wrap" style="display:none;margin-top:1rem;margin-bottom:0.5rem;">
+        <div style="font-size:11px;color:rgba(0,200,255,0.6);text-align:center;margin-bottom:6px;letter-spacing:0.5px;font-weight:600;">📡 이달 참여자 현황</div>
+        <canvas id="join-orbit-canvas" style="display:block;width:100%;border-radius:12px;background:#000820;border:1px solid rgba(0,200,255,0.15);"></canvas>
+        <div id="join-orbit-count" style="font-size:11px;color:rgba(0,200,255,0.5);text-align:center;margin-top:5px;"></div>
+      </div>
       <div id="race-join-section" style="display:none;margin-top:1rem;">
         <div class="card" style="text-align:center;">
           <div style="font-size:24px;margin-bottom:8px;">🚀</div>
@@ -527,14 +533,21 @@
           <span style="font-size:13px;font-weight:700;color:#00eeff;">자동운영 모드</span>
         </div>
         <div id="race-admin-auto-desc" style="font-size:12px;color:rgba(180,230,255,0.7);line-height:1.6;"></div>
-        <button onclick="setMonthRaceMode('manual');loadRacePage();" style="margin-top:10px;padding:7px 16px;background:rgba(255,255,255,0.07);color:var(--text-sub);border:1px solid var(--border);border-radius:8px;font-size:12px;font-family:inherit;cursor:pointer;">수동으로 전환하기</button>
-      </div>
-      <!-- 수동운영 시작 버튼 -->
-      <div id="race-admin-manual-ctrl" class="card" style="text-align:center;background:linear-gradient(135deg,#0a0010,#0a0020);border:1px solid rgba(0,200,255,0.25);">
-        <div style="font-size:13px;color:var(--text-sub);margin-bottom:1rem;">참여자: <strong id="race-entry-count">0</strong>명</div>
-        <button class="btn-main" style="background:linear-gradient(135deg,#000820,#0D1B3E);" onclick="startOrbitalRace()">🚀 궤도 레이스 시작!</button>
+        <div style="font-size:12px;color:rgba(180,230,255,0.55);margin-top:6px;">참여자: <strong id="race-entry-count" style="color:#00eeff;">0</strong>명</div>
+        <div style="display:flex;gap:8px;margin-top:10px;">
+          <button onclick="runAutoRaceNow()" style="flex:1;padding:9px 0;font-size:12px;font-weight:700;font-family:inherit;border-radius:8px;border:1.5px solid rgba(0,220,120,0.5);background:rgba(0,180,100,0.15);color:#00ff88;cursor:pointer;">🚀 지금 바로 실행</button>
+        </div>
       </div>
       <canvas id="race-canvas" style="display:none;margin-top:1rem;border-radius:16px;"></canvas>
+      <!-- 내 위성 상태 표시 -->
+      <div id="my-sat-status" style="display:none;margin-top:8px;border-radius:10px;padding:10px 16px;text-align:center;font-size:13px;font-weight:700;transition:all 0.4s;"></div>
+      <!-- 배속 조절 -->
+      <div id="race-speed-ctrl" style="display:none;margin-top:8px;align-items:center;justify-content:center;gap:6px;flex-wrap:wrap;">
+        <span style="font-size:11px;color:rgba(180,200,255,0.6);">배속:</span>
+        <button id="spd-btn-1" onclick="setUserSpeedBoost(1.0)" style="padding:5px 13px;font-size:12px;font-weight:700;font-family:inherit;border-radius:8px;border:1.5px solid rgba(0,200,255,0.6);background:rgba(0,150,255,0.25);color:#00eeff;cursor:pointer;">×1</button>
+        <button id="spd-btn-15" onclick="setUserSpeedBoost(1.5)" style="padding:5px 13px;font-size:12px;font-weight:700;font-family:inherit;border-radius:8px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.05);color:rgba(180,200,255,0.7);cursor:pointer;">×1.5</button>
+        <button id="spd-btn-2" onclick="setUserSpeedBoost(2.0)" style="padding:5px 13px;font-size:12px;font-weight:700;font-family:inherit;border-radius:8px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.05);color:rgba(180,200,255,0.7);cursor:pointer;">×2</button>
+      </div>
       <div id="race-status" style="text-align:center;margin-top:8px;font-size:13px;color:var(--text-hint);"></div>
       <div id="race-winner-announce" style="display:none;background:var(--card);border-radius:16px;border:2px solid var(--gold);padding:1.5rem;text-align:center;margin-top:1rem;">
         <div style="font-size:36px;margin-bottom:8px;">🥇</div>
@@ -789,13 +802,6 @@
       </div>
       <div id="admin-race-entry-list" style="display:none;margin-bottom:1rem;"></div>
 
-      <!-- 이번 달 운영 방식 -->
-      <div class="sec-title" style="margin-top:0.5rem;">이번 달 운영 방식</div>
-      <div style="display:flex;gap:8px;margin-bottom:1rem;">
-        <button id="race-mode-auto-btn" onclick="setMonthRaceMode('auto')" style="flex:1;padding:11px 0;font-size:13px;font-weight:700;font-family:inherit;border-radius:10px;border:1.5px solid rgba(0,200,255,0.4);cursor:pointer;background:rgba(0,150,255,0.25);color:#00eeff;">🤖 자동운영</button>
-        <button id="race-mode-manual-btn" onclick="setMonthRaceMode('manual')" style="flex:1;padding:11px 0;font-size:13px;font-weight:700;font-family:inherit;border-radius:10px;border:1.5px solid var(--border);cursor:pointer;background:rgba(255,255,255,0.05);color:var(--text-sub);">🎮 수동운영</button>
-      </div>
-
       <!-- 자동운영 설정 패널 -->
       <div id="race-auto-settings" class="card" style="margin-bottom:1rem;border:1px solid rgba(0,200,255,0.25);">
         <div style="font-size:14px;font-weight:700;margin-bottom:0.75rem;">⚙️ 자동 운영 설정</div>
@@ -830,14 +836,6 @@
           <div style="font-size:11px;color:var(--text-hint);margin-bottom:3px;">이번 달 자동 운영 예정</div>
           <div id="race-effective-date" style="font-size:14px;font-weight:700;color:#00eeff;">-</div>
         </div>
-      </div>
-
-      <!-- 수동운영 패널 -->
-      <div id="race-manual-settings" class="card" style="display:none;margin-bottom:1rem;text-align:center;border:1px solid rgba(180,100,255,0.3);">
-        <div style="font-size:14px;font-weight:700;margin-bottom:0.5rem;">🎮 수동 운영</div>
-        <div style="font-size:12px;color:var(--text-hint);margin-bottom:1rem;">레이스 페이지에서 직접 궤도 레이스를 시작합니다</div>
-        <div style="font-size:13px;color:var(--text-sub);margin-bottom:1rem;">참여자: <strong id="race-entry-count-admin">0</strong>명</div>
-        <button class="btn-main" style="background:linear-gradient(135deg,#1a0030,#2a0050);border:1px solid rgba(180,100,255,0.4);color:#cc88ff;width:auto;padding:10px 28px;" onclick="switchPage('race')">🛸 레이스 페이지로 이동</button>
       </div>
 
       <!-- 이번 달 완료 표시 -->
@@ -2064,7 +2062,6 @@ async function loadRacePage(){
   await loadRaceConfig();
   const ym=getYM();
   const autoDay=getRaceAutoDay();
-  const mode=getMonthRaceMode(ym);
   const effectiveDate=getEffectiveRaceDate(ym);
 
   // 배너 태그 업데이트
@@ -2101,8 +2098,8 @@ async function loadRacePage(){
   // 결과 확인 (이번 달 전체)
   const results=await SB.get('race_results','year_month=eq.'+ym+'&order=created_at.asc');
 
-  // ── 자동 운영 체크 (자동모드 + 오늘이 effective date + 설정 시간 이후 + 결과 없음) ──
-  if(!results.length && mode==='auto'){
+  // ── 자동 운영 체크 (관리자 + 오늘이 effective date + 설정 시간 이후 + 결과 없음) ──
+  if(app.isAdmin && !results.length){
     const today=new Date();
     const autoHour=getRaceAutoHour();
     if(today.toDateString()===effectiveDate.toDateString() && today.getHours()>=autoHour){
@@ -2122,21 +2119,19 @@ async function loadRacePage(){
     document.getElementById('race-vote-section').style.display='none';
 
     if(results.length>0){
-      // 이미 완료 → 시작 버튼 숨기고 완료 표시
+      // 이미 완료 → 자동운영 배지 숨기고 완료 표시
       document.getElementById('race-admin-auto-badge').style.display='none';
-      document.getElementById('race-admin-manual-ctrl').style.display='none';
-    } else if(mode==='auto'){
-      document.getElementById('race-admin-auto-badge').style.display='block';
-      document.getElementById('race-admin-manual-ctrl').style.display='none';
-      const descEl=document.getElementById('race-admin-auto-desc');
-      if(descEl)descEl.textContent=formatKorDateTime(effectiveDate,getRaceAutoHour())+'에 자동으로 레이스가 진행됩니다. 수동으로 진행하려면 아래 버튼을 누르세요.';
     } else {
-      document.getElementById('race-admin-auto-badge').style.display='none';
-      document.getElementById('race-admin-manual-ctrl').style.display='block';
+      document.getElementById('race-admin-auto-badge').style.display='block';
+      const descEl=document.getElementById('race-admin-auto-desc');
+      if(descEl)descEl.textContent=formatKorDateTime(effectiveDate,getRaceAutoHour())+'에 자동으로 레이스가 진행됩니다.';
     }
   } else {
     document.getElementById('race-admin-start-section').style.display='none';
     document.getElementById('race-vote-section').style.display='block';
+    if(!results.length){
+      SB.get('race_entries','year_month=eq.'+ym+'&order=created_at.asc').then(allE=>startJoinOrbitPreview(allE));
+    }
   }
 
   // 결과 표시
@@ -2178,7 +2173,88 @@ async function voteReward(rewardId){
 async function joinRace(){
   const ym=getYM();
   const ok=await SB.post('race_entries',{year_month:ym,name:app.name});
-  if(ok){showToast('🚀 레이스 참여 완료!');document.getElementById('race-join-section').style.display='none';document.getElementById('race-joined-badge').style.display='block';}
+  if(ok){
+    showToast('🚀 레이스 참여 완료!');
+    document.getElementById('race-join-section').style.display='none';
+    document.getElementById('race-joined-badge').style.display='block';
+    const allE=await SB.get('race_entries','year_month=eq.'+ym+'&order=created_at.asc');
+    startJoinOrbitPreview(allE, app.name);
+  }
+}
+
+// ── 참여자 궤도 미리보기 ──
+let joinOrbitAnim=null,joinOrbitSats=[],joinOrbitT=0,joinOrbitParticles=[];
+const JEARTH_R=22;
+
+function startJoinOrbitPreview(entries,newName=null){
+  const canvas=document.getElementById('join-orbit-canvas');
+  const wrap=document.getElementById('join-orbit-wrap');
+  if(!canvas||!wrap)return;
+  if(!entries||!entries.length){wrap.style.display='none';if(joinOrbitAnim)cancelAnimationFrame(joinOrbitAnim);return;}
+  if(joinOrbitAnim){cancelAnimationFrame(joinOrbitAnim);joinOrbitAnim=null;}
+  wrap.style.display='block';
+  // 레이아웃 반영 후 실제 너비 읽기
+  requestAnimationFrame(()=>{
+  const W=canvas.offsetWidth||280; canvas.width=W; canvas.height=Math.round(W*0.72);
+  const H=canvas.height, CX=W/2, CY=H/2;
+  joinOrbitT=0; joinOrbitParticles=[];
+  const minR=JEARTH_R+14, maxR=Math.min(W,H)*0.43;
+  joinOrbitSats=entries.map((e,i)=>{
+    const name=e.name||e;
+    const prev=joinOrbitSats.find(s=>s.name===name);
+    const isNew=name===newName;
+    const frac=(i/Math.max(entries.length-1,1));
+    const orbitR=minR+(maxR-minR)*(0.25+frac*0.72);
+    return{name,color:RC[i%RC.length],orbitR,
+      speed:(0.016+i*0.003)*(i%2===0?1:-1),
+      angle:prev?prev.angle:(Math.PI*2/entries.length)*i+i*0.4,
+      launching:isNew,launchT:0,opacity:isNew?0:1,scale:isNew?0.1:1,x:0,y:0};
+  });
+  const countEl=document.getElementById('join-orbit-count');
+  if(countEl)countEl.textContent=entries.length+'명 참여 중';
+  if(!window._jStars||window._jStars._W!==W){
+    window._jStars=Array.from({length:55},()=>({x:Math.random()*W,y:Math.random()*H,r:Math.random()*1.4+0.2,a:Math.random()*0.6+0.2,tw:Math.random()*Math.PI*2}));
+    window._jStars._W=W;
+  }
+  (function loop(){joinOrbitAnim=requestAnimationFrame(loop);drawJoinOrbit(canvas,W,H,CX,CY);})();
+  }); // requestAnimationFrame 레이아웃 대기
+}
+
+function drawJoinOrbit(canvas,W,H,CX,CY){
+  const ctx=canvas.getContext('2d');
+  joinOrbitT+=1/60;
+  ctx.fillStyle='#000820';ctx.fillRect(0,0,W,H);
+  // 별
+  (window._jStars||[]).forEach(s=>{s.tw+=0.012;ctx.fillStyle=`rgba(255,255,255,${s.a*(0.5+0.5*Math.sin(s.tw))})`;ctx.beginPath();ctx.arc(s.x,s.y,s.r,0,Math.PI*2);ctx.fill();});
+  // 궤도 링
+  joinOrbitSats.forEach(s=>{ctx.strokeStyle='rgba(0,200,255,0.12)';ctx.lineWidth=1;ctx.setLineDash([3,7]);ctx.beginPath();ctx.arc(CX,CY,s.orbitR,0,Math.PI*2);ctx.stroke();ctx.setLineDash([]);});
+  // 지구
+  const eg=ctx.createRadialGradient(CX-JEARTH_R*0.3,CY-JEARTH_R*0.3,2,CX,CY,JEARTH_R);
+  eg.addColorStop(0,'#5ab4ff');eg.addColorStop(0.4,'#1a6cd0');eg.addColorStop(1,'#061a3a');
+  ctx.shadowColor='#3399ff';ctx.shadowBlur=12;ctx.fillStyle=eg;ctx.beginPath();ctx.arc(CX,CY,JEARTH_R,0,Math.PI*2);ctx.fill();ctx.shadowBlur=0;
+  ctx.font='10px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('🌍',CX,CY);ctx.textBaseline='alphabetic';
+  // 파티클
+  for(let i=joinOrbitParticles.length-1;i>=0;i--){const p=joinOrbitParticles[i];p.x+=p.vx;p.y+=p.vy;p.life-=0.045;if(p.life<=0){joinOrbitParticles.splice(i,1);continue;}ctx.globalAlpha=p.life;ctx.fillStyle=p.col;ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.fill();ctx.globalAlpha=1;}
+  // 위성
+  joinOrbitSats.forEach(s=>{
+    s.angle+=s.speed;
+    if(s.launching){
+      s.launchT+=1/60;const prog=Math.min(1,s.launchT/1.8);const eased=1-Math.pow(1-prog,3);
+      const curR=JEARTH_R+2+(s.orbitR-JEARTH_R-2)*eased;
+      s.x=CX+Math.cos(s.angle)*curR;s.y=CY+Math.sin(s.angle)*curR;
+      s.opacity=prog;s.scale=0.3+prog*0.7;
+      if(Math.random()<0.45)joinOrbitParticles.push({x:s.x,y:s.y,vx:(Math.random()-0.5)*2.5,vy:(Math.random()-0.5)*2.5,col:s.color,life:0.7,r:1.5});
+      if(prog>=1){s.launching=false;s.opacity=1;s.scale=1;}
+    } else {s.x=CX+Math.cos(s.angle)*s.orbitR;s.y=CY+Math.sin(s.angle)*s.orbitR;}
+    const isSelf=s.name===app.name;
+    const r=Math.max(2,(isSelf?6.5:4.5)*s.scale);
+    ctx.globalAlpha=s.opacity;
+    if(isSelf&&!s.launching){const p=0.45+0.45*Math.sin(joinOrbitT*4);ctx.strokeStyle=`rgba(255,255,255,${p})`;ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(s.x,s.y,r+4,0,Math.PI*2);ctx.stroke();}
+    ctx.shadowColor=s.color;ctx.shadowBlur=isSelf?10:5;ctx.fillStyle=s.color;ctx.beginPath();ctx.arc(s.x,s.y,r,0,Math.PI*2);ctx.fill();ctx.shadowBlur=0;
+    ctx.fillStyle=isSelf?'#fff':'rgba(0,0,0,0.8)';ctx.font=`bold ${Math.max(5,Math.round(r*0.75))}px sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(s.name.slice(0,2),s.x,s.y);ctx.textBaseline='alphabetic';
+    if(isSelf){ctx.fillStyle='rgba(255,255,255,0.85)';ctx.font='bold 8px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.shadowColor='rgba(0,0,0,0.9)';ctx.shadowBlur=3;ctx.fillText('👤'+s.name,s.x,s.y-r-8);ctx.shadowBlur=0;ctx.textBaseline='alphabetic';}
+    ctx.globalAlpha=1;
+  });
 }
 
 // ── ADMIN ──
@@ -2219,7 +2295,7 @@ function switchAdminTab(btn,tab){
   if(tab==='idea-all'){adminIdeaMonth=getYM();loadAdminIdeaAll();}
   if(tab==='storage')loadStorageTab();
   if(tab==='quiz-mgmt'){populateWeekSelect();quizHistoryMonth=getYM();loadQuizAdminList();renderPrizeTiers();loadElimList();loadSurvivorList();loadQuizTimeDisplay();}
-  if(tab==='race-mgmt'){loadAdminRewardList();loadRaceAutoDaySetting();SB.get('race_entries','year_month=eq.'+getYM()).then(r=>document.getElementById('race-entry-count-admin').textContent=r.length);}
+  if(tab==='race-mgmt'){loadAdminRewardList();loadRaceAutoDaySetting();SB.get('race_entries','year_month=eq.'+getYM()).then(r=>{const ec=document.getElementById('race-entry-count-admin');if(ec)ec.textContent=r.length;});}
   if(tab==='emp-mgmt'){document.getElementById('emp-list-wrap').style.display='none';document.getElementById('emp-list-toggle-btn').textContent='▼';loadEmployeeList();}
 }
 
@@ -2400,37 +2476,52 @@ function makeRaceRNG(seed){let _s=Math.abs(Math.floor(seed)%233280)||1234;return
 function buildRaceState(names,seed){
   const sr=makeRaceRNG(seed);
   const n=names.length;
-  const winnerCount=Math.min(3,n);
-  // Seeded shuffle: first winnerCount indices = survivors (rank 1 = last survivor)
-  const perm=names.map((_,i)=>i);
-  for(let i=perm.length-1;i>0;i--){const j=Math.floor(sr()*(i+1));[perm[i],perm[j]]=[perm[j],perm[i]];}
-  const winnerSet=new Set(perm.slice(0,winnerCount));
-  const rankMap={};perm.slice(0,winnerCount).forEach((idx,ri)=>{rankMap[idx]=ri+1;});
   const sats=names.map((name,i)=>{
-    const isWinner=winnerSet.has(i);
-    const rank=rankMap[i]||0;
     const orbitFrac=(i/(names.length-1||1))*(0.6+sr()*0.4);
-    const spd=(0.025+sr()*0.02)*(sr()>0.5?1:-1);
+    const spd=(0.024+sr()*0.005)*(sr()>0.22?1:-1);
     const angle=(Math.PI*2/names.length)*i+sr()*0.5;
-    const departDelay=isWinner?9999:2+i*0.4+sr()*3;
-    return{name,color:RC[i%RC.length],orbitFrac,speed:spd,angle,departDelay,isWinner,rank,
+    const departDelay=38+i*3+sr()*20; // 이벤트 먼저, 자연 퇴장은 늦게
+    return{name,color:RC[i%RC.length],orbitFrac,speed:spd,angle,departDelay,isWinner:false,rank:0,
       state:'orbit',departTimer:0,tx:0,ty:0,tvx:0,tvy:0,trail:[],flash:0,x:0,y:0,scale:1,opacity:1,wobble:0};
   });
   const meteorAngle=sr()*Math.PI*2;
   const collide1=sr();const collide2=sr();
   const swCnt=sr();
   const bhOffX=(sr()-0.5)*0.7;const bhOffY=(sr()-0.5)*0.7;
-  return{winnerSet,winnerCount,sats,meteorAngle,collide1,collide2,swCnt,bhOffX,bhOffY};
+  return{sats,meteorAngle,collide1,collide2,swCnt,bhOffX,bhOffY};
 }
-let raceAnimId=null,raceSats=[],raceStars=[],raceNebula=[],raceDone=false,raceWinner=null,raceT=0,raceW=0,raceH=0,raceCX=0,raceCY=0,raceParticles=[],racePhase='ready',raceCd=3,raceCdTimer=0;
+let raceAnimId=null,raceSats=[],raceStars=[],raceNebula=[],raceDone=false,raceWinner=null,raceT=0,raceW=0,raceH=0,raceCX=0,raceCY=0,raceParticles=[],racePhase='ready',raceCd=3,raceCdTimer=0,raceSpeedMult=1;
+function getRaceSpeedMult(remaining){if(remaining<=5)return 0.75;if(remaining<=8)return 1.1;if(remaining<=15)return 1.3;if(remaining<=25)return 1.1;return 1.0;}
+function buildRaceEventQueue(n){
+  const q=[
+    {type:'meteorWarn',at:6},{type:'meteor',at:8},
+    {type:'collision',at:22},
+    {type:'solarWind',at:34},
+    {type:'bhWarn',at:48},{type:'blackHole',at:50}
+  ];
+  if(n>=8)  q.push({type:'debris',at:14});
+  if(n>=12) q.push({type:'meteorWarn',at:29},{type:'meteor',at:31});
+  if(n>=15) q.push({type:'debris',at:40});
+  if(n>=18) q.push({type:'collision',at:44});
+  if(n>=22) q.push({type:'debris',at:56});
+  if(n>=28) q.push({type:'solarWind',at:62});
+  if(n>=35) q.push({type:'debris',at:68},{type:'meteorWarn',at:72},{type:'meteor',at:74});
+  if(n>=45) q.push({type:'collision',at:78},{type:'debris',at:84});
+  return q.sort((a,b)=>a.at-b.at);
+}
 let raceEvents={meteor:null,solarWind:null,blackHole:null,eventMsg:{text:'',alpha:0,timer:0},shake:0};
 let raceEventQueue=[],raceEventsDone=new Set();
 const EARTH_R=42;
 
 async function startOrbitalRace(){
+  // 관리자 섹션이 숨겨져 있으면 먼저 보여주기
+  const _adminSec=document.getElementById('race-admin-start-section');
+  if(_adminSec)_adminSec.style.display='block';
   const entries=await SB.get('race_entries','year_month=eq.'+getYM()+'&order=created_at.asc');
-  document.getElementById('race-entry-count').textContent=entries.length;
+  const _ec=document.getElementById('race-entry-count');if(_ec)_ec.textContent=entries.length;
   if(entries.length<2){showToast('❌ 최소 2명 이상 참여해야 합니다');return;}
+  // 배지 숨기고 레이스 시작
+  const _badge=document.getElementById('race-admin-auto-badge');if(_badge)_badge.style.display='none';
   const names=entries.map(e=>e.name);
   const canvas=document.getElementById('race-canvas');
   canvas.style.display='block';
@@ -2441,17 +2532,30 @@ async function startOrbitalRace(){
   raceCX=raceW/2; raceCY=raceH/2;
   raceDone=false; raceWinner=null; raceT=0;
   raceParticles=[];
-  window._raceWinnersList=null; window._winnersFinaleCalled=false;
+  window._raceWinnersList=null; window._winnersFinaleCalled=false; window._finaleT=null;
+  window._podiumState={active:false,rank:3};
+  window._finaleStarted=false; window._finaleBaseT=null;
+  window._userSpeedBoost=1.0; window._eventSlowEndTime=0;
+  const _sc=document.getElementById('race-speed-ctrl');if(_sc)_sc.style.display='flex';
+  setUserSpeedBoost(1.0);
   racePhase='countdown'; raceCd=3; raceCdTimer=0;
-  raceEvents={meteor:null,solarWind:null,blackHole:null,eventMsg:{text:'',alpha:0,timer:0},shake:0};
+  raceSpeedMult=1.0;
+  // 내 위성 상태 초기화
+  const mss=document.getElementById('my-sat-status');
+  if(mss){
+    if(app.name&&names.includes(app.name)){
+      mss.style.display='block';
+      mss.style.background='linear-gradient(135deg,rgba(0,40,20,0.9),rgba(0,60,30,0.9))';
+      mss.style.border='1.5px solid rgba(0,220,120,0.5)';
+      mss.style.color='#00ff88';
+      mss.innerHTML=`<span style="font-size:16px;margin-right:6px;">🛸</span> 내 위성 생존 중`;
+    } else {
+      mss.style.display='none';
+    }
+  }
+  raceEvents={meteor:null,solarWind:null,blackHole:null,debris:null,eventMsg:{text:'',alpha:0,timer:0},shake:0,proximityWarn:null,_lastAlive:undefined,_meteorCount:0,_lastStatusT:-1,_final5Triggered:false};
   raceEventsDone=new Set();
-  // 이벤트 순서 큐 (시간 기준)
-  raceEventQueue=[
-    {type:'meteor',   at:4},
-    {type:'collision',at:9},
-    {type:'solarWind',at:15},
-    {type:'blackHole',at:22},
-  ];
+  raceEventQueue=buildRaceEventQueue(names.length);
 
   // 별
   const SC=[[255,255,255],[180,210,255],[255,240,180],[160,200,255],[255,200,200]];
@@ -2470,7 +2574,14 @@ async function startOrbitalRace(){
   const _rd=buildRaceState(names,raceSeed);
   window._raceSeedData=_rd;
   const minR=EARTH_R+22, maxR=Math.min(raceW,raceH)*0.44;
-  raceSats=_rd.sats.map(s=>({...s,orbitR:minR+(maxR-minR)*s.orbitFrac}));
+  const refR=(minR+maxR)/2; // 기준 궤도 반경
+  raceSats=_rd.sats.map(s=>{
+    const orbitR=minR+(maxR-minR)*s.orbitFrac;
+    const dir=s.speed>=0?1:-1;
+    // 케플러 3법칙: 안쪽 궤도 빠름, 바깥쪽 느림 (v ∝ 1/√r)
+    const speed=dir*Math.abs(s.speed)*Math.sqrt(refR/orbitR);
+    return{...s,orbitR,speed};
+  });
 
   if(raceAnimId)cancelAnimationFrame(raceAnimId);
   raceLoop();
@@ -2482,29 +2593,142 @@ function raceLoop(){
     if(raceCdTimer>=1){raceCd--;raceCdTimer=0;if(raceCd<=0)racePhase='race';}
     raceDraw();raceAnimId=requestAnimationFrame(raceLoop);return;
   }
-  // Safety: if no non-winners exist (≤3 participants all become winners), end immediately
-  if(!raceDone&&!window._winnersFinaleCalled&&raceT>0.5&&raceSats.filter(s=>!s.isWinner).length===0){
-    window._winnersFinaleCalled=true;
-    setTimeout(()=>startWinnersFinale(raceSats.filter(s=>s.isWinner&&s.state==='orbit')),500);
+  // 배속: 이벤트 슬로우 > 최종단계 슬로우 > 동적 배속, 여기에 유저 부스트 적용
+  if(!raceDone){
+    const _nwa=raceSats.filter(s=>s.state==='orbit'&&!s.isWinner).length;
+    const _evSlow=Date.now()<(window._eventSlowEndTime||0);
+    const _finSlow=_nwa<=5&&_nwa>0;
+    let _base=_evSlow?0.55:_finSlow?0.75:getRaceSpeedMult(_nwa);
+    raceSpeedMult=_base*(window._userSpeedBoost||1.0);
   }
-  for(let s=0;s<3;s++) raceUpdate();
+  const steps=Math.floor(raceSpeedMult);
+  const frac=raceSpeedMult-steps;
+  const extra=(Math.random()<frac)?1:0;
+  for(let i=0;i<steps+extra;i++) raceUpdate();
   raceDraw();
-  if(!raceDone)raceAnimId=requestAnimationFrame(raceLoop);
+  // 피날레 중 or RACE COMPLETE 오버레이 5초간 유지
+  const _keepGoing=!raceDone||(window._finaleStarted&&(window._finaleBaseT===null||raceT-window._finaleBaseT<5));
+  if(_keepGoing)raceAnimId=requestAnimationFrame(raceLoop);
 }
 
+function setUserSpeedBoost(v){
+  window._userSpeedBoost=v;
+  const btns={1.0:'spd-btn-1',1.5:'spd-btn-15',2.0:'spd-btn-2'};
+  Object.entries(btns).forEach(([val,id])=>{
+    const b=document.getElementById(id);if(!b)return;
+    const on=parseFloat(val)===v;
+    b.style.background=on?'rgba(0,150,255,0.3)':'rgba(255,255,255,0.05)';
+    b.style.border=on?'1.5px solid rgba(0,200,255,0.7)':'1px solid rgba(255,255,255,0.15)';
+    b.style.color=on?'#00eeff':'rgba(180,200,255,0.7)';
+  });
+}
 function addRaceP(x,y,col,cnt=12){for(let i=0;i<cnt;i++){const a=Math.random()*Math.PI*2,s=2+Math.random()*4;raceParticles.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,col,life:1,r:2+Math.random()*3});}}
 function addRaceW(x,y,c,mr=38){raceParticles.push({type:'wave',x,y,r:6,maxR:mr,col:c,life:1});}
-function raceExplode(s){s.state='exploding';s.explodeT=0;addRaceP(s.x,s.y,s.color,14);addRaceW(s.x,s.y,s.color);}
+function raceExplode(s){
+  if(s.state!=='orbit')return; // 중복 탈락 방지
+  s.state='exploding';s.explodeT=0;addRaceP(s.x,s.y,s.color,14);addRaceW(s.x,s.y,s.color);
+  if(s.name===app.name) updateMySatStatus('eliminated');
+  // 포디움 순위 배정 (마지막 3기에서 탈락 시)
+  if(window._podiumState?.active&&!s.isWinner&&window._podiumState.rank>=2){
+    s.podiumRank=window._podiumState.rank;
+    s.rank=window._podiumState.rank;
+    window._podiumState.rank--;
+    const medals=['','🥇','🥈','🥉'];
+    showRaceMsg(medals[s.podiumRank]+' '+s.name+' — '+(s.podiumRank===3?'3':'2')+'위 확정!');
+    raceEvents.shake=18;
+    addRaceP(s.x,s.y,'#FFD700',22);addRaceW(s.x,s.y,'#FFD700',65);
+  }
+}
 function showRaceMsg(text){raceEvents.eventMsg={text,alpha:1,timer:0};}
+
+function updateMySatStatus(state){
+  const el=document.getElementById('my-sat-status');
+  if(!el||!app.name)return;
+  const mySat=raceSats.find(s=>s.name===app.name);
+  if(!mySat){el.style.display='none';return;}
+  if(state==='alive'||mySat.state==='orbit'){
+    el.style.display='block';
+    el.style.background='linear-gradient(135deg,rgba(0,40,20,0.9),rgba(0,60,30,0.9))';
+    el.style.border='1.5px solid rgba(0,220,120,0.5)';
+    el.style.color='#00ff88';
+    el.innerHTML=`<span style="font-size:16px;margin-right:6px;">🛸</span> 내 위성 생존 중`;
+  } else if(state==='eliminated'||mySat.state==='exploding'||mySat.state==='done'){
+    el.style.display='block';
+    el.style.background='linear-gradient(135deg,rgba(40,0,0,0.95),rgba(60,10,0,0.95))';
+    el.style.border='1.5px solid rgba(255,60,60,0.6)';
+    el.style.color='#ff4444';
+    el.innerHTML=`<span style="font-size:16px;margin-right:6px;">💥</span> 내 위성 탈락됨`;
+  } else if(state==='winner'){
+    el.style.display='block';
+    el.style.background='linear-gradient(135deg,rgba(30,20,0,0.95),rgba(50,40,0,0.95))';
+    el.style.border='1.5px solid rgba(255,200,0,0.7)';
+    el.style.color='#FFD700';
+    el.innerHTML=`<span style="font-size:16px;margin-right:6px;">🏆</span> 내 위성 우승!`;
+  }
+}
 
 function triggerRaceEvent(type){
   const alive=raceSats.filter(s=>s.state==='orbit'&&!s.isWinner);
-  if(alive.length<2)return;
   const sd=window._raceSeedData||{};
+  if(type==='meteorWarn'){
+    showRaceMsg('☄️ 레이더에 거대 운석 포착!');raceEvents.shake=5;
+    raceSats.filter(s=>s.state==='orbit').forEach(s=>s.flash=0.7);
+    return;
+  }
+  if(type==='bhWarn'){
+    showRaceMsg('🌀 공간 왜곡 에너지 급상승!');raceEvents.shake=4;
+    raceSats.filter(s=>s.state==='orbit').forEach(s=>s.wobble=Math.max(s.wobble,0.8));
+    return;
+  }
+  if(type==='debris'){
+    window._eventSlowEndTime=Date.now()+3000;
+    const cnt=5+Math.floor(Math.random()*5);
+    const aliveTargets=raceSats.filter(s=>s.state==='orbit'&&!s.isWinner);
+    const target=aliveTargets.length>0?aliveTargets[Math.floor(Math.random()*aliveTargets.length)]:null;
+    const pieces=Array.from({length:cnt},(_,i)=>{
+      if(i===0&&target){
+        // 1번 파편: 타겟 위성을 직접 조준하는 대형 쓰레기
+        const spawnAng=Math.atan2(target.y-raceCY,target.x-raceCX)+Math.PI+(Math.random()-0.5)*0.25;
+        const spawnDist=raceW*0.72;
+        const sx=raceCX+Math.cos(spawnAng)*spawnDist,sy=raceCY+Math.sin(spawnAng)*spawnDist;
+        const spd=7+Math.random()*3;
+        const dx2=target.x-sx,dy2=target.y-sy,dl=Math.sqrt(dx2*dx2+dy2*dy2)||1;
+        return{x:sx,y:sy,vx:(dx2/dl)*spd,vy:(dy2/dl)*spd,
+          r:10,rot:Math.random()*Math.PI*2,rotV:(Math.random()-0.5)*0.25,
+          pts:Array.from({length:7},(_,k)=>({a:(Math.PI*2/7)*k,r:0.7+Math.random()*0.6})),
+          trail:[],active:true,isBig:true};
+      }
+      const ang=(Math.PI*2/cnt)*i+Math.random()*0.8;
+      const spd=5+Math.random()*5;
+      const angVar=ang+(Math.random()-0.5)*0.4;
+      return{x:raceCX+Math.cos(ang)*(raceW*0.65),y:raceCY+Math.sin(ang)*(raceH*0.65),
+        vx:-Math.cos(angVar)*spd,vy:-Math.sin(angVar)*spd,
+        r:3+Math.random()*4,rot:Math.random()*Math.PI*2,rotV:(Math.random()-0.5)*0.3,
+        pts:Array.from({length:6},(_,k)=>({a:(Math.PI*2/6)*k,r:0.6+Math.random()*0.7})),
+        trail:[],active:true,isBig:false};
+    });
+    raceEvents.debris={pieces,timer:0};
+    showRaceMsg('🗑️ 우주쓰레기 군집 접근!');
+    raceEvents.shake=6;
+    return;
+  }
+  if(alive.length<2)return;
+  // 이벤트 발생 시 3초간 슬로우
+  window._eventSlowEndTime=Date.now()+3000;
   if(type==='meteor'){
-    const angle=sd.meteorAngle??Math.random()*Math.PI*2;
-    raceEvents.meteor={x:raceCX+Math.cos(angle)*(raceW*0.8),y:raceCY+Math.sin(angle)*(raceH*0.8),vx:-Math.cos(angle)*12,vy:-Math.sin(angle)*12,r:16,trail:[],active:true};
-    showRaceMsg('☄️ 거대 운석 낙하!');
+    raceEvents._meteorCount=(raceEvents._meteorCount||0)+1;
+    if(raceEvents._meteorCount>=2){
+      // 2차 운석: 완전 랜덤 방향, 더 크고 빠름
+      const angle2=Math.random()*Math.PI*2;
+      const spd2=16+Math.random()*6;
+      raceEvents.meteor={x:raceCX+Math.cos(angle2)*(raceW*0.85),y:raceCY+Math.sin(angle2)*(raceH*0.85),vx:-Math.cos(angle2)*spd2,vy:-Math.sin(angle2)*spd2,r:24,trail:[],active:true,isBig:true};
+      showRaceMsg('🔥 초대형 운석 낙하!');
+      raceEvents.shake=10;
+    } else {
+      const angle=sd.meteorAngle??Math.random()*Math.PI*2;
+      raceEvents.meteor={x:raceCX+Math.cos(angle)*(raceW*0.8),y:raceCY+Math.sin(angle)*(raceH*0.8),vx:-Math.cos(angle)*12,vy:-Math.sin(angle)*12,r:16,trail:[],active:true,isBig:false};
+      showRaceMsg('☄️ 거대 운석 낙하!');
+    }
   } else if(type==='collision'){
     if(alive.length>=2){
       const a=alive[Math.floor((sd.collide1??Math.random())*alive.length)];
@@ -2524,10 +2748,28 @@ function triggerRaceEvent(type){
 }
 
 function raceUpdate(){
+  if(window._finaleStarted){
+    if(window._finaleBaseT===null)window._finaleBaseT=raceT;
+    raceT+=1/60;
+    const fp=Math.min(1,(raceT-window._finaleBaseT)/0.9);
+    raceSats.forEach(s=>{s._finaleAlpha=Math.max(0,1-fp);});
+    return;
+  }
   raceT+=1/60;
   if(raceEvents.shake>0) raceEvents.shake=Math.max(0,raceEvents.shake*0.9-0.2);
   const em=raceEvents.eventMsg;
-  if(em.alpha>0){em.timer+=1/60;em.alpha=Math.max(0,1-em.timer/2.5);}
+  if(em.alpha>0){em.timer+=1/60;em.alpha=Math.max(0,1-em.timer/3.5);}
+
+  // 본인 위성 상태 갱신 — 배속에 무관하게 0.5초 간격 (프레임 스킵 방지)
+  if(raceT>=raceEvents._lastStatusT+0.5){
+    raceEvents._lastStatusT=raceT;
+    const _ms=raceSats.find(s=>s.name===app.name);
+    if(_ms){
+      if(_ms.state==='orbit') updateMySatStatus('alive');
+      else if(_ms.isWinner&&(_ms.state==='zooming'||_ms.state==='done')) updateMySatStatus('winner');
+      else if(_ms.state==='exploding'||_ms.state==='done') updateMySatStatus('eliminated');
+    }
+  }
 
   // 이벤트 큐 처리
   if(raceEventQueue.length>0&&raceT>=raceEventQueue[0].at){
@@ -2544,7 +2786,7 @@ function raceUpdate(){
     m.trail.push({x:m.x,y:m.y});if(m.trail.length>25)m.trail.shift();
     m.x+=m.vx;m.y+=m.vy;
     raceEvents.shake=3;if(Math.random()<0.6)addRaceP(m.x+(Math.random()-0.5)*10,m.y+(Math.random()-0.5)*10,'#FF8C00',1);
-    raceSats.forEach(s=>{if(s.state!=='orbit')return;const dx=s.x-m.x,dy=s.y-m.y;if(Math.sqrt(dx*dx+dy*dy)<m.r+8){raceExplode(s);m.active=false;addRaceW(m.x,m.y,'#FF3300',120);addRaceP(m.x,m.y,'#FF4400',50);raceEvents.shake=25;}});
+    raceSats.forEach(s=>{if(s.state!=='orbit')return;const dx=s.x-m.x,dy=s.y-m.y;if(Math.sqrt(dx*dx+dy*dy)<m.r+8){raceExplode(s);m.active=false;if(m.isBig){addRaceW(m.x,m.y,'#FF3300',160);addRaceW(m.x,m.y,'#FF8800',90);addRaceP(m.x,m.y,'#FF4400',70);addRaceP(m.x,m.y,'#FFCC00',30);raceEvents.shake=35;showRaceMsg('💥 초대형 운석 직격!');}else{addRaceW(m.x,m.y,'#FF3300',120);addRaceP(m.x,m.y,'#FF4400',50);raceEvents.shake=25;}}});
     const de=Math.sqrt((m.x-raceCX)**2+(m.y-raceCY)**2);
     if(m.active&&de<EARTH_R+m.r){m.active=false;addRaceW(m.x,m.y,'#FF3300',100);addRaceP(m.x,m.y,'#FF8800',40);raceEvents.shake=20;}
     if(m.x<-100||m.x>raceW+100||m.y<-100||m.y>raceH+100)m.active=false;
@@ -2576,42 +2818,133 @@ function raceUpdate(){
     } else if(bh.phase==='shrink'){bh.r=Math.max(0,bh.r-1.5);if(bh.r<=0)raceEvents.blackHole=null;}
   }
 
+  // 우주쓰레기
+  if(raceEvents.debris){
+    raceEvents.debris.timer+=1/60;
+    let anyActive=false;
+    raceEvents.debris.pieces.forEach(d=>{
+      if(!d.active)return;
+      anyActive=true;
+      d.rot+=d.rotV;
+      d.trail.push({x:d.x,y:d.y});if(d.trail.length>10)d.trail.shift();
+      d.x+=d.vx;d.y+=d.vy;
+      raceSats.forEach(s=>{
+        if(s.state!=='orbit')return;
+        const dx=s.x-d.x,dy=s.y-d.y;
+        if(Math.sqrt(dx*dx+dy*dy)<d.r+8){
+          if(!s.isWinner){
+            raceExplode(s);
+            if(d.isBig){
+              addRaceP(d.x,d.y,'#dddddd',30);addRaceP(d.x,d.y,'#FF8800',18);
+              addRaceW(d.x,d.y,'#aaaaaa',90);addRaceW(d.x,d.y,'#FF4400',60);
+              raceEvents.shake=22;showRaceMsg('💥 우주쓰레기 직격!');
+            } else {
+              addRaceP(d.x,d.y,'#aaaaaa',8);raceEvents.shake=12;
+            }
+          }
+          d.active=false;
+        }
+      });
+      if(d.x<-120||d.x>raceW+120||d.y<-120||d.y>raceH+120)d.active=false;
+    });
+    if(!anyActive&&raceEvents.debris.timer>1)raceEvents.debris=null;
+  }
+
   raceSats.forEach(s=>{
     if(s.state==='done')return;
     s.flash=Math.max(0,s.flash-0.04);
     if(s.wobble>0)s.wobble=Math.max(0,s.wobble-0.035);
 
     if(s.state==='orbit'){
-      s.angle+=s.speed+(s.wobble?(Math.random()-0.5)*0.08:0);
-      s.x=raceCX+Math.cos(s.angle)*s.orbitR+(s.wobble?(Math.random()-0.5)*s.wobble*14:0);
-      s.y=raceCY+Math.sin(s.angle)*s.orbitR+(s.wobble?(Math.random()-0.5)*s.wobble*14:0);
+      s.angle+=s.speed+(s.wobble?(Math.random()-0.5)*0.06:0);
+      s.x=raceCX+Math.cos(s.angle)*s.orbitR+(s.wobble?(Math.random()-0.5)*s.wobble*12:0);
+      s.y=raceCY+Math.sin(s.angle)*s.orbitR+(s.wobble?(Math.random()-0.5)*s.wobble*12:0);
+      // 궤적 기록 (본인은 더 길게)
+      const trailLen=s.name===app.name?18:8;
+      s.trail.push({x:s.x,y:s.y});
+      if(s.trail.length>trailLen)s.trail.shift();
       s.departTimer+=1/60;
       if(s.departTimer>s.departDelay&&!s.isWinner){raceExplode(s);}
     } else if(s.state==='exploding'){
       s.explodeT+=1/60;s.scale=Math.max(0,1-s.explodeT*3);s.opacity=Math.max(0,1-s.explodeT*2.5);
-      if(s.explodeT>0.5){
-        s.state='done';
-        const allGone=raceSats.filter(ss=>!ss.isWinner).every(ss=>ss.state==='done');
-        const aliveWinners=raceSats.filter(ss=>ss.isWinner&&ss.state==='orbit');
-        if(allGone&&aliveWinners.length>0&&!window._winnersFinaleCalled){window._winnersFinaleCalled=true;setTimeout(()=>startWinnersFinale(aliveWinners),300);}
-      }
+      if(s.explodeT>0.5){s.state='done';}
     } else if(s.state==='zooming'){
       s.angle+=s.speed*0.4;s.orbitR=Math.max(EARTH_R+16,s.orbitR-0.5);
       s.x=raceCX+Math.cos(s.angle)*s.orbitR;s.y=raceCY+Math.sin(s.angle)*s.orbitR;
       s.scale=Math.min(3.8,s.scale+0.022);s.flash=0.5+0.5*Math.sin(raceT*8);
-      if(s.scale>=3.8){s.state='done';raceDone=true;raceWinner=s;setTimeout(()=>showRaceWinner(window._raceWinnersList||[s]),200);}
+      if(s.scale>=3.8){s.state='done';raceDone=true;raceWinner=s;if(s.name===app.name)updateMySatStatus('winner');setTimeout(()=>showRaceWinner(window._raceWinnersList||[s]),3500);}
     }
   });
+
+  // ── 근접 충돌 경고 ──
+  if(!raceDone&&racePhase==='race'){
+    const orbitAll=raceSats.filter(s=>s.state==='orbit');
+    const nonWin=orbitAll.filter(s=>!s.isWinner);
+    for(let i=0;i<nonWin.length;i++){
+      for(let j=i+1;j<nonWin.length;j++){
+        const a=nonWin[i],b=nonWin[j];
+        const dist=Math.sqrt((a.x-b.x)**2+(a.y-b.y)**2);
+        if(dist<24&&!raceEvents.proximityWarn){
+          raceEvents.proximityWarn={alpha:1,timer:0};
+          showRaceMsg('⚠️ 위성 충돌 직전!');
+          a.flash=1;b.flash=1;raceEvents.shake=7;
+        }
+      }
+    }
+    if(raceEvents.proximityWarn){
+      raceEvents.proximityWarn.timer+=1/60;
+      raceEvents.proximityWarn.alpha=Math.max(0,1-raceEvents.proximityWarn.timer/1.5);
+      if(raceEvents.proximityWarn.alpha<=0)raceEvents.proximityWarn=null;
+    }
+    // ── 생존자 임박 알림 + 포디움 진입 ──
+    const aliveNow=nonWin.length;
+    if(raceEvents._lastAlive===undefined)raceEvents._lastAlive=-1;
+    if(aliveNow!==raceEvents._lastAlive){
+      if(aliveNow===4)showRaceMsg('🔥 4기 남았다! 긴장감 최고조!');
+      else if(aliveNow===3&&!window._podiumState.active){
+        window._podiumState.active=true;
+        showRaceMsg('🏁 최후의 3강! 포디움 결전!');
+        raceSats.filter(s=>s.state==='orbit').forEach(s=>s.flash=0.9);
+        raceEvents.shake=12;
+      }
+      else if(aliveNow===2)showRaceMsg('⚡ 최후의 위성은?!');
+      raceEvents._lastAlive=aliveNow;
+    }
+    // 마지막 1기 → 1위 확정
+    if(window._podiumState.active&&aliveNow===1&&!window._winnersFinaleCalled){
+      const lastSat=nonWin[0];
+      window._winnersFinaleCalled=true;
+      lastSat.isWinner=true;lastSat.rank=1;
+      showRaceMsg('🥇 '+lastSat.name+' — 🏆 1위!');
+      raceEvents.shake=28;
+      for(let _k=0;_k<3;_k++)addRaceP(lastSat.x,lastSat.y,'#FFD700',20+_k*5);
+      addRaceW(lastSat.x,lastSat.y,'#FFD700',100);
+      // 2위·3위 포함해서 전달
+      const _p23=raceSats.filter(s=>s.podiumRank);
+      setTimeout(()=>startWinnersFinale([..._p23,lastSat]),1200);
+    }
+    // 마지막 5기 → departure 압축 (이름 보이는 속도로 줄이되 빠른 탈락 유도)
+    if(!raceEvents._final5Triggered&&aliveNow<=5&&aliveNow>3){
+      raceEvents._final5Triggered=true;
+      nonWin.forEach((s,i)=>{const t=s.departTimer+7+i*4;if(t<s.departDelay)s.departDelay=t;});
+    }
+  }
 }
 
 function startWinnersFinale(winners){
   const sorted=[...winners].sort((a,b)=>(a.rank||1)-(b.rank||1));
   window._raceWinnersList=sorted;
   raceWinner=sorted[0];
-  sorted[0].state='zooming';sorted[0].scale=1;sorted[0].flash=1;
-  for(let i=1;i<sorted.length;i++){sorted[i].flash=1;}
+  if(sorted[0].name===app.name)updateMySatStatus('winner');
+  // 모든 위성 페이드아웃 초기화
+  raceSats.forEach(s=>{s._finaleAlpha=1.0;});
+  window._finaleStarted=true;
+  window._finaleBaseT=null;
+  window._finaleT=null;
+  // 1초 후 raceDone (페이드 완료), 4.5초 후 HTML 결과창
+  setTimeout(()=>{raceDone=true;},1100);
+  setTimeout(()=>showRaceWinner(window._raceWinnersList||[raceWinner]),4500);
 }
-function startWinnerZoom(s){startWinnersFinale([s]);}
 
 function raceDraw(){
   const canvas=document.getElementById('race-canvas');
@@ -2657,8 +2990,28 @@ function raceDraw(){
   // 운석
   if(raceEvents.meteor?.active){
     const m=raceEvents.meteor;
-    for(let i=1;i<m.trail.length;i++){const a=(i/m.trail.length)*0.85;ctx.strokeStyle=`rgba(255,80,0,${a})`;ctx.lineWidth=(i/m.trail.length)*18;ctx.beginPath();ctx.moveTo(m.trail[i-1].x,m.trail[i-1].y);ctx.lineTo(m.trail[i].x,m.trail[i].y);ctx.stroke();}
-    ctx.shadowColor='#FF3300';ctx.shadowBlur=30;ctx.fillStyle='#FF2200';ctx.beginPath();ctx.arc(m.x,m.y,m.r,0,Math.PI*2);ctx.fill();ctx.fillStyle='#FFCC00';ctx.beginPath();ctx.arc(m.x-4,m.y-4,m.r*0.4,0,Math.PI*2);ctx.fill();ctx.shadowBlur=0;
+    for(let i=1;i<m.trail.length;i++){const a=(i/m.trail.length)*0.85;ctx.strokeStyle=m.isBig?`rgba(255,160,0,${a})`:`rgba(255,80,0,${a})`;ctx.lineWidth=(i/m.trail.length)*(m.isBig?30:18);ctx.beginPath();ctx.moveTo(m.trail[i-1].x,m.trail[i-1].y);ctx.lineTo(m.trail[i].x,m.trail[i].y);ctx.stroke();}
+    ctx.shadowColor=m.isBig?'#FF6600':'#FF3300';ctx.shadowBlur=m.isBig?55:30;ctx.fillStyle=m.isBig?'#FF4400':'#FF2200';ctx.beginPath();ctx.arc(m.x,m.y,m.r,0,Math.PI*2);ctx.fill();
+    if(m.isBig){ctx.fillStyle='rgba(255,255,200,0.8)';ctx.beginPath();ctx.arc(m.x-6,m.y-6,m.r*0.35,0,Math.PI*2);ctx.fill();ctx.fillStyle='rgba(255,120,0,0.6)';ctx.beginPath();ctx.arc(m.x+5,m.y+4,m.r*0.25,0,Math.PI*2);ctx.fill();}
+    else{ctx.fillStyle='#FFCC00';ctx.beginPath();ctx.arc(m.x-4,m.y-4,m.r*0.4,0,Math.PI*2);ctx.fill();}
+    ctx.shadowBlur=0;
+  }
+
+  // 우주쓰레기
+  if(raceEvents.debris){
+    raceEvents.debris.pieces.forEach(d=>{
+      if(!d.active)return;
+      // 궤적
+      for(let i=1;i<d.trail.length;i++){const a=(i/d.trail.length)*0.45;ctx.strokeStyle=`rgba(160,160,160,${a})`;ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(d.trail[i-1].x,d.trail[i-1].y);ctx.lineTo(d.trail[i].x,d.trail[i].y);ctx.stroke();}
+      // 파편 (다각형) — isBig은 주황 글로우로 강조
+      ctx.save();ctx.translate(d.x,d.y);ctx.rotate(d.rot);
+      if(d.isBig){ctx.shadowColor='#FF8800';ctx.shadowBlur=16;ctx.fillStyle='#cc8844';ctx.strokeStyle='rgba(255,200,100,0.85)';ctx.lineWidth=1.5;}
+      else{ctx.shadowColor='#aaaaaa';ctx.shadowBlur=6;ctx.fillStyle='#b0b0b0';ctx.strokeStyle='rgba(220,220,220,0.6)';ctx.lineWidth=1;}
+      ctx.beginPath();
+      d.pts.forEach((p,i)=>{const x=Math.cos(p.a)*d.r*p.r,y=Math.sin(p.a)*d.r*p.r;i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);});
+      ctx.closePath();ctx.fill();ctx.stroke();
+      ctx.shadowBlur=0;ctx.restore();
+    });
   }
 
   // 지구
@@ -2669,36 +3022,169 @@ function raceDraw(){
 
   // 위성
   raceSats.forEach(s=>{
-    if(s.state==='done'&&s!==raceWinner)return;
+    if(s.state==='done')return;
+    if((s._finaleAlpha??1)<=0.01)return;
     const isEx=s.state==='exploding';
     const isSelf=s.name===app.name;
     const dx=s.x,dy=s.y;
-    const alpha=isEx?s.opacity:1;
-    const r=Math.max(2,(isSelf?8:6)*s.scale);
-    if(s.trail&&s.trail.length>1){ctx.shadowColor=s.color;ctx.shadowBlur=5;for(let i=1;i<s.trail.length;i++){const a=(i/s.trail.length)*0.55;ctx.strokeStyle=s.color+Math.floor(a*255).toString(16).padStart(2,'0');ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(s.trail[i-1].x,s.trail[i-1].y);ctx.lineTo(s.trail[i].x,s.trail[i].y);ctx.stroke();}ctx.shadowBlur=0;}
-    // 본인 위성 하이라이트 링
-    if(isSelf&&s.state==='orbit'){
-      const pulse=0.55+0.45*Math.sin(raceT*5);
-      ctx.strokeStyle=`rgba(255,255,255,${pulse})`;ctx.lineWidth=2;ctx.shadowColor='#fff';ctx.shadowBlur=8;
-      ctx.setLineDash([4,3]);ctx.beginPath();ctx.arc(dx,dy,r+6,0,Math.PI*2);ctx.stroke();ctx.setLineDash([]);ctx.shadowBlur=0;
+    const alpha=isEx?s.opacity:(s._finaleAlpha??1);
+    const baseR=isSelf?10:6;
+    const r=Math.max(2,baseR*s.scale);
+
+    // ── 궤적 (trail) ──
+    if(s.trail&&s.trail.length>1){
+      for(let i=1;i<s.trail.length;i++){
+        const a=(i/s.trail.length)*(isSelf?0.6:0.35);
+        ctx.strokeStyle=s.color+Math.floor(a*220).toString(16).padStart(2,'0');
+        ctx.lineWidth=isSelf?2.5:1.5;
+        ctx.beginPath();ctx.moveTo(s.trail[i-1].x,s.trail[i-1].y);ctx.lineTo(s.trail[i].x,s.trail[i].y);ctx.stroke();
+      }
     }
-    if(s.state==='zooming'&&s.scale>1.5){ctx.shadowColor=s.color;ctx.shadowBlur=20*s.flash;for(let i=0;i<6;i++){const ang=(Math.PI*2/6)*i+raceT*2;ctx.strokeStyle=s.color+Math.floor(0.4*255).toString(16).padStart(2,'0');ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(dx+Math.cos(ang)*r,dy+Math.sin(ang)*r);ctx.lineTo(dx+Math.cos(ang)*(r+r*2.2*s.flash),dy+Math.sin(ang)*(r+r*2.2*s.flash));ctx.stroke();}}
+
+    // ── 본인 위성 헤일로 + ▼ 화살표 지시자 ──
+    if(isSelf&&s.state==='orbit'){
+      const pulse=0.5+0.5*Math.sin(raceT*3.5);
+      ctx.save();
+      for(let i=3;i>=1;i--){
+        ctx.strokeStyle=`rgba(255,255,255,${pulse*0.07*i})`;ctx.lineWidth=i*4;
+        ctx.beginPath();ctx.arc(dx,dy,r+8+i*5,0,Math.PI*2);ctx.stroke();
+      }
+      ctx.setLineDash([5,4]);
+      ctx.strokeStyle=`rgba(255,255,255,${0.55+0.45*pulse})`;ctx.lineWidth=2;
+      ctx.shadowColor='#ffffff';ctx.shadowBlur=12;
+      ctx.beginPath();ctx.arc(dx,dy,r+6,0,Math.PI*2);ctx.stroke();
+      ctx.setLineDash([]);ctx.shadowBlur=0;
+      // 깜박이는 ▼ 화살표 (배지 위)
+      const arrY=dy-r-44;const arrA=0.4+0.6*pulse;
+      ctx.fillStyle=`rgba(0,255,180,${arrA})`;ctx.shadowColor='#00ffb8';ctx.shadowBlur=8;
+      ctx.font='bold 12px sans-serif';ctx.textAlign='center';ctx.textBaseline='top';
+      ctx.fillText('▼',dx,arrY);ctx.shadowBlur=0;
+      ctx.restore();
+    }
+
+    // ── zooming 광선 ──
+    if(s.state==='zooming'&&s.scale>1.5){
+      ctx.shadowColor=s.color;ctx.shadowBlur=20*s.flash;
+      for(let i=0;i<6;i++){const ang=(Math.PI*2/6)*i+raceT*2;ctx.strokeStyle=s.color+Math.floor(0.4*255).toString(16).padStart(2,'0');ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(dx+Math.cos(ang)*r,dy+Math.sin(ang)*r);ctx.lineTo(dx+Math.cos(ang)*(r+r*2.2*s.flash),dy+Math.sin(ang)*(r+r*2.2*s.flash));ctx.stroke();}
+      ctx.shadowBlur=0;
+    }
+
+    // ── 위성 본체 ──
     ctx.globalAlpha=alpha;
-    ctx.shadowColor=isSelf?'#ffffff':s.color;ctx.shadowBlur=isSelf?(8+6*Math.sin(raceT*5)):(s.flash>0?16*s.flash:6);
+    ctx.shadowColor=isSelf?'#ffffff':s.color;
+    ctx.shadowBlur=isSelf?(16+8*Math.sin(raceT*3.5)):(s.flash>0?16*s.flash:5);
     ctx.fillStyle=s.color;ctx.beginPath();ctx.arc(dx,dy,r,0,Math.PI*2);ctx.fill();
     ctx.shadowBlur=0;ctx.shadowColor='transparent';
-    ctx.fillStyle='rgba(255,255,255,0.45)';ctx.beginPath();ctx.arc(dx-r*0.3,dy-r*0.3,r*0.3,0,Math.PI*2);ctx.fill();
-    ctx.fillStyle=isSelf?'#fff':'rgba(0,0,0,0.85)';ctx.font=`bold ${Math.min(isSelf?9:7,r*0.75)}px sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(s.name.slice(0,2),dx,dy);ctx.textBaseline='alphabetic';ctx.globalAlpha=1;
-    // 본인 이름 레이블
-    if(isSelf&&s.state==='orbit'){ctx.fillStyle='#fff';ctx.font='bold 9px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.shadowColor='rgba(0,0,0,0.9)';ctx.shadowBlur=4;ctx.fillText('👤 '+s.name,dx,dy-r-10);ctx.shadowBlur=0;ctx.textBaseline='alphabetic';}
+    // 하이라이트 점 (본인은 흰 중심)
+    if(isSelf){ctx.fillStyle='rgba(255,255,255,0.9)';ctx.beginPath();ctx.arc(dx,dy,r*0.32,0,Math.PI*2);ctx.fill();}
+    else{ctx.fillStyle='rgba(255,255,255,0.35)';ctx.beginPath();ctx.arc(dx-r*0.3,dy-r*0.3,r*0.28,0,Math.PI*2);ctx.fill();}
+
+    // ── 위성 이름 텍스트 ──
+    if(isSelf&&(s.state==='orbit'||s.state==='zooming')){
+      // 이름 배지 (배경 박스 + 화살표)
+      ctx.save();
+      const label='👤 '+s.name;
+      ctx.font='bold 11px sans-serif';
+      const tw=ctx.measureText(label).width;
+      const bw=tw+18,bh=21,bx=dx-bw/2,by=dy-r-32;
+      ctx.globalAlpha=alpha*0.92;
+      ctx.fillStyle='rgba(0,4,20,0.88)';ctx.beginPath();ctx.roundRect(bx,by,bw,bh,5);ctx.fill();
+      ctx.strokeStyle=`rgba(0,220,255,0.75)`;ctx.lineWidth=1.2;ctx.beginPath();ctx.roundRect(bx,by,bw,bh,5);ctx.stroke();
+      ctx.fillStyle='#fff';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.shadowColor='rgba(0,180,255,0.9)';ctx.shadowBlur=5;
+      ctx.fillText(label,dx,by+bh/2);ctx.shadowBlur=0;
+      // 배지 → 위성 연결 선
+      ctx.strokeStyle='rgba(255,255,255,0.3)';ctx.lineWidth=1;ctx.setLineDash([3,3]);
+      ctx.beginPath();ctx.moveTo(dx,by+bh);ctx.lineTo(dx,dy-r-1);ctx.stroke();ctx.setLineDash([]);
+      ctx.restore();
+    } else if(!isEx&&s.state==='orbit'){
+      // 다른 위성 이름 — 위성 위에 작은 알약 배지
+      ctx.save();
+      const lbl=s.name.slice(-2);
+      ctx.font='bold 9px sans-serif';
+      const tw2=ctx.measureText(lbl).width;
+      const pw=tw2+8,ph=13,px=dx-pw/2,py=dy-r-16;
+      ctx.globalAlpha=alpha*0.88;
+      ctx.fillStyle='rgba(0,4,20,0.75)';
+      ctx.beginPath();ctx.roundRect(px,py,pw,ph,4);ctx.fill();
+      ctx.strokeStyle='rgba(255,255,255,0.25)';ctx.lineWidth=0.8;
+      ctx.beginPath();ctx.roundRect(px,py,pw,ph,4);ctx.stroke();
+      ctx.fillStyle='rgba(255,255,255,0.92)';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(lbl,dx,py+ph/2);
+      ctx.restore();
+    }
+    ctx.globalAlpha=1;
+
+    // 포디움 순위 배지 (탈락 시 / 폭발 중)
+    if(s.podiumRank&&(s.state==='exploding'||s.state==='done')){
+      const medals=['','🥇','🥈','🥉'];
+      ctx.save();ctx.globalAlpha=Math.max(0,s.opacity||1)*0.95;
+      ctx.font=`bold ${s.podiumRank===3?14:13}px sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.shadowColor='#FFD700';ctx.shadowBlur=10;
+      ctx.fillStyle=s.podiumRank===3?'#CD7F32':s.podiumRank===2?'#C0C0C0':'#FFD700';
+      ctx.fillText(medals[s.podiumRank]+' '+s.name,dx,dy-r-14);ctx.shadowBlur=0;ctx.restore();
+    }
+
     if(s.state==='zooming'&&s.scale>2){ctx.fillStyle='#FFD700';ctx.font=`bold ${Math.round(10*s.scale/2)}px sans-serif`;ctx.textAlign='center';ctx.fillText(s.name,dx,dy-r-7);}
+    // 2·3위 수상자 이름 (orbit 유지 중)
     if(raceDone&&s.isWinner&&s.rank>1&&s.state==='orbit'){const m2=['🥈','🥉'];ctx.fillStyle='#FFD700';ctx.font='bold 10px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText((m2[s.rank-2]||'')+' '+s.name,dx,dy-r-9);ctx.textBaseline='alphabetic';}
   });
-  if(raceDone){
-    (window._raceWinnersList||[raceWinner]).filter(Boolean).forEach(w=>{
-      ctx.shadowColor=w.color;ctx.shadowBlur=20;ctx.strokeStyle=w.color;ctx.lineWidth=3;
-      ctx.beginPath();ctx.arc(w.x,w.y,Math.max(2,6*w.scale)+7,0,Math.PI*2);ctx.stroke();ctx.shadowBlur=0;
-    });
+  if(raceDone&&window._finaleStarted){
+    if(!window._finaleT)window._finaleT=raceT;
+    const ft=Math.min(1,(raceT-window._finaleT)/0.55);
+    if(ft>0){
+      const wList=(window._raceWinnersList||[raceWinner]).filter(Boolean);
+      const sorted=[...wList].sort((a,b)=>(a.rank||1)-(b.rank||1));
+      ctx.save();
+      // 전체화면 어두운 배경
+      ctx.globalAlpha=Math.min(0.97,ft*1.8);
+      ctx.fillStyle='rgba(0,2,16,0.97)';ctx.fillRect(0,0,W,H);
+      // 회전 별빛 반짝임
+      ctx.globalAlpha=ft*0.7;
+      const spkColors=['#FFD700','#FF6B6B','#00FF88','#00CCFF','#FF69B4','#B06AFF'];
+      for(let k=0;k<18;k++){
+        const sa=(k/18)*Math.PI*2+(raceT-window._finaleT)*0.6;
+        const sd=W*0.42*(k%2?0.55:0.9);
+        const sx=W/2+Math.cos(sa)*sd,sy=H*0.5+Math.sin(sa)*sd*0.5;
+        const sr2=1.2+Math.abs(Math.sin((raceT-window._finaleT)*4+k*1.1))*1.5;
+        ctx.fillStyle=spkColors[k%6];ctx.shadowColor=spkColors[k%6];ctx.shadowBlur=8;
+        ctx.beginPath();ctx.arc(sx,sy,sr2,0,Math.PI*2);ctx.fill();
+      }
+      ctx.shadowBlur=0;
+      // 타이틀
+      ctx.globalAlpha=ft;
+      const ts=Math.max(22,Math.floor(W*0.088));
+      ctx.font=`bold ${ts}px sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.shadowColor='#FFD700';ctx.shadowBlur=38+12*Math.sin(raceT*4);
+      ctx.fillStyle='#FFD700';ctx.fillText('🏁 RACE COMPLETE',W/2,H*0.155);ctx.shadowBlur=0;
+      // 서브타이틀
+      ctx.font=`bold ${Math.floor(ts*0.38)}px sans-serif`;
+      ctx.fillStyle='rgba(160,210,255,0.7)';ctx.fillText('이달의 궤도 챔피언',W/2,H*0.155+ts*1.15);
+      // 수상자 카드 (슬라이드인)
+      const mc=['🥇','🥈','🥉'],gc=['#FFD700','#C0C0C0','#CD7F32'];
+      const cH=Math.max(46,Math.floor(H*0.138)),cW=Math.min(W*0.82,300),cGap=cH*1.12,cY0=H*0.35;
+      sorted.forEach((w,i)=>{
+        const cf=Math.max(0,Math.min(1,(raceT-window._finaleT-0.3-i*0.38)/0.42));
+        if(cf<=0)return;
+        const cy=cY0+i*cGap,cx=W/2-cW/2+(1-cf)*W*0.16,mid=cy+cH/2;
+        ctx.save();ctx.globalAlpha=cf*ft;
+        ctx.shadowColor=gc[i];ctx.shadowBlur=18*cf;
+        ctx.fillStyle='rgba(4,3,20,0.97)';ctx.beginPath();ctx.roundRect(cx,cy,cW,cH,10);ctx.fill();
+        ctx.strokeStyle=gc[i];ctx.lineWidth=2;ctx.beginPath();ctx.roundRect(cx,cy,cW,cH,10);ctx.stroke();
+        ctx.shadowBlur=0;
+        ctx.font=`bold ${Math.floor(cH*0.58)}px sans-serif`;ctx.textAlign='left';ctx.textBaseline='middle';
+        ctx.fillText(mc[i]||'🏅',cx+cH*0.1,mid);
+        ctx.font=`bold ${Math.floor(cH*0.26)}px sans-serif`;ctx.fillStyle=gc[i];
+        ctx.fillText((i+1)+'등 당첨',cx+cH*0.85,mid-cH*0.19);
+        ctx.font=`bold ${Math.floor(cH*(i===0?0.41:0.35))}px sans-serif`;
+        ctx.fillStyle='#fff';ctx.shadowColor=gc[i];ctx.shadowBlur=7;
+        ctx.fillText(w.name,cx+cH*0.85,mid+cH*0.18);ctx.shadowBlur=0;
+        ctx.fillStyle=w.color;ctx.shadowColor=w.color;ctx.shadowBlur=10;
+        ctx.beginPath();ctx.arc(cx+cW-cH*0.28,mid,cH*0.19,0,Math.PI*2);ctx.fill();
+        ctx.shadowBlur=0;ctx.restore();
+      });
+      ctx.restore();
+    }
   }
 
   // 이벤트 메시지
@@ -2734,11 +3220,44 @@ function raceDraw(){
   const alive=raceSats.filter(s=>s.state==='orbit').length;
   if(!raceDone&&racePhase==='race'&&alive>0){
     const total=raceSats.length;
+    const nonWinAlive=raceSats.filter(s=>s.state==='orbit'&&!s.isWinner).length;
+    const dangerMode=nonWinAlive<=3;
     ctx.fillStyle='rgba(0,0,0,0.5)';ctx.fillRect(0,0,W,26);
-    ctx.fillStyle='#FF4444';ctx.fillRect(0,22,W*(alive/total),4);
+    const barColor=dangerMode?`rgba(255,${Math.floor(80+80*Math.sin(raceT*6))},0,0.9)`:'#FF4444';
+    ctx.fillStyle=barColor;ctx.fillRect(0,22,W*(alive/total),4);
+    if(dangerMode){ctx.shadowColor='#FF4400';ctx.shadowBlur=8;}
     ctx.fillStyle='rgba(255,255,255,0.8)';ctx.font='bold 11px sans-serif';ctx.textAlign='left';ctx.fillText('생존: '+alive+'기',8,17);
-    ctx.fillStyle='rgba(255,255,255,0.5)';ctx.textAlign='right';ctx.fillText('탈락: '+(total-alive)+'기',W-8,17);
+    if(dangerMode)ctx.fillStyle=`rgba(255,180,0,${0.7+0.3*Math.sin(raceT*6)})`;
+    else ctx.fillStyle='rgba(255,255,255,0.5)';
+    ctx.textAlign='right';ctx.fillText('탈락: '+(total-alive)+'기',W-8,17);
+    ctx.shadowBlur=0;
+    // 내 위성 상태 (상단 바 우측)
+    if(app.name){
+      const _ms=raceSats.find(s=>s.name===app.name);
+      if(_ms){
+        const _mState=_ms.state==='orbit'?{t:'🛸 생존 중',c:'#00ff88'}:_ms.isWinner?{t:'🏆 우승!',c:'#FFD700'}:{t:'💥 탈락됨',c:'#ff4444'};
+        ctx.fillStyle='rgba(0,0,0,0.55)';ctx.beginPath();ctx.roundRect(W-110,3,107,20,5);ctx.fill();
+        ctx.fillStyle=_mState.c;ctx.shadowColor=_mState.c;ctx.shadowBlur=6;
+        ctx.font='bold 10px sans-serif';ctx.textAlign='right';ctx.textBaseline='middle';
+        ctx.fillText('나: '+_mState.t,W-5,13);ctx.shadowBlur=0;
+      }
+    }
   }
+
+  // ── 이벤트 중 테두리 펄스 ──
+  if(racePhase==='race'){
+    const hasActiveEvent=raceEvents.meteor?.active||raceEvents.blackHole||raceEvents.solarWind?.phase==='blast'||raceEvents.debris;
+    if(hasActiveEvent){
+      const pulse=0.35+0.35*Math.sin(raceT*9);
+      ctx.strokeStyle=`rgba(255,60,0,${pulse})`;ctx.lineWidth=7;ctx.strokeRect(3,3,W-6,H-6);
+    }
+    // 근접 경고 테두리 (빨간 번쩍임)
+    if(raceEvents.proximityWarn?.alpha>0){
+      const pa=raceEvents.proximityWarn.alpha;
+      ctx.strokeStyle=`rgba(255,30,30,${pa*0.9})`;ctx.lineWidth=9;ctx.strokeRect(2,2,W-4,H-4);
+    }
+  }
+
   ctx.restore();
 }
 
@@ -2746,11 +3265,38 @@ function raceDrawWinner(){raceDraw();}
 
 function showRaceWinner(winners){
   const arr=Array.isArray(winners)?winners:[winners];
-  const rank1=arr.find(w=>w.rank===1)||arr[0];
-  const rank2=arr.find(w=>w.rank===2);
-  const rank3=arr.find(w=>w.rank===3);
+  const sorted=[...arr].sort((a,b)=>(a.rank||1)-(b.rank||1));
+  const rank1=sorted[0], rank2=sorted[1], rank3=sorted[2];
   document.getElementById('race-admin-winner').textContent=rank1.name;
-  document.getElementById('race-winner-announce').style.display='block';
+
+  // 리워드 스타일 결과 카드 렌더링
+  const announceEl=document.getElementById('race-winner-announce');
+  const medals=['🥇','🥈','🥉'];
+  const colors=['#FFD700','#C0C0C0','#CD7F32'];
+  const bgColors=['rgba(40,30,0,0.9)','rgba(25,25,25,0.9)','rgba(30,18,5,0.9)'];
+  const borderColors=['rgba(255,200,0,0.7)','rgba(190,190,190,0.5)','rgba(180,110,40,0.5)'];
+  const winnerCards=sorted.map((w,i)=>`
+    <div style="display:flex;align-items:center;gap:12px;padding:12px 16px;background:${bgColors[i]||'rgba(20,20,20,0.9)'};border:1.5px solid ${borderColors[i]||'rgba(100,100,100,0.4)'};border-radius:12px;margin-bottom:8px;box-shadow:0 0 12px ${borderColors[i]||'transparent'};">
+      <span style="font-size:28px;line-height:1;">${medals[i]||'🏅'}</span>
+      <div style="flex:1;">
+        <div style="font-size:11px;color:${colors[i]||'#aaa'};font-weight:700;letter-spacing:1px;margin-bottom:2px;">${i+1}등 당첨</div>
+        <div style="font-size:18px;font-weight:900;color:#fff;text-shadow:0 0 8px ${colors[i]||'#fff'};">${w.name}</div>
+      </div>
+      <div style="width:14px;height:14px;border-radius:50%;background:${w.color};box-shadow:0 0 8px ${w.color};"></div>
+    </div>`).join('');
+
+  announceEl.innerHTML=`
+    <div style="font-size:11px;color:rgba(255,200,0,0.7);letter-spacing:3px;margin-bottom:12px;font-weight:700;">✦ RACE COMPLETE ✦</div>
+    ${winnerCards}
+    <button class="btn-main" style="background:var(--green);width:auto;padding:10px 24px;margin-top:4px;" onclick="saveRaceWinner()">결과 저장 & 발표 (1~${sorted.length}등)</button>`;
+  announceEl.style.display='block';
+
+  // 자동운영: 버튼 없이 결과 자동 저장
+  if(window._autoSaveResult){
+    window._autoSaveResult=false;
+    setTimeout(()=>saveRaceWinner(),1200);
+  }
+
   let statusText='🥇 '+rank1.name;
   if(rank2)statusText+=' | 🥈 '+rank2.name;
   if(rank3)statusText+=' | 🥉 '+rank3.name;
@@ -2759,14 +3305,15 @@ function showRaceWinner(winners){
 
 async function saveRaceWinner(){
   const winners=window._raceWinnersList;
-  if(!winners||!winners.length)return;
+  if(!winners||!winners.length){showToast('❌ 우승자 정보가 없습니다 — 레이스를 다시 실행해주세요');return;}
   const ym=getYM();
   let allOk=true;
   for(const w of winners){
     const ok=await SB.post('race_results',{year_month:ym,winner_name:w.name,race_seed:raceSeed,race_names:JSON.stringify(raceSatNames),rank:w.rank||1});
     if(!ok)allOk=false;
   }
-  if(allOk){showToast('🎉 결과 저장 완료! 1~'+winners.length+'등 발표되었습니다');loadRacePage();}
+  if(allOk){showToast('🎉 결과 저장 완료! 1~'+winners.length+'등 발표');loadRacePage();}
+  else{showToast('❌ 저장 실패 — 이미 이번 달 결과가 있거나 권한 문제입니다');loadRacePage();}
 }
 
 // ── 궤도레이스 자동 운영 ──
@@ -2885,12 +3432,55 @@ async function loadAdminRaceEntries(){
   const entries=await SB.get('race_entries','year_month=eq.'+ym+'&order=created_at.asc');
   const el=document.getElementById('admin-race-entry-list');
   if(!el)return;
-  if(!entries.length){el.innerHTML='<div style="font-size:13px;color:var(--text-hint);padding:8px 0;">아직 참여자가 없습니다</div>';return;}
-  el.innerHTML=`<div style="font-size:12px;color:var(--text-hint);margin-bottom:8px;">총 ${entries.length}명</div>`+entries.map(e=>`
-    <div style="display:flex;align-items:center;justify-content:space-between;padding:9px 12px;background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:10px;margin-bottom:6px;">
-      <span style="font-size:13px;color:#fff;">${e.name}</span>
-      <button onclick="excludeRaceEntry('${e.id}','${e.name}')" style="padding:4px 10px;font-size:11px;font-weight:700;font-family:inherit;border-radius:7px;border:1px solid rgba(226,75,74,0.4);background:rgba(226,75,74,0.1);color:var(--red);cursor:pointer;">제외</button>
-    </div>`).join('');
+  const addRow=`<div style="display:flex;gap:8px;margin-bottom:8px;">
+    <input id="admin-add-entry-input" type="text" placeholder="이름 직접 입력..." style="flex:1;padding:9px 12px;font-size:13px;font-family:inherit;border:1px solid var(--border);border-radius:10px;outline:none;background:rgba(0,0,0,0.35);color:#fff;" onkeydown="if(event.key==='Enter')addRaceEntryAdmin()"/>
+    <button onclick="addRaceEntryAdmin()" style="padding:9px 16px;font-size:13px;font-weight:700;font-family:inherit;border-radius:10px;border:1px solid rgba(0,200,255,0.4);background:rgba(0,150,255,0.15);color:#00eeff;cursor:pointer;white-space:nowrap;">+ 추가</button>
+  </div>
+  <button onclick="addAllEmployeesToRace()" style="width:100%;padding:10px 0;font-size:13px;font-weight:700;font-family:inherit;border-radius:10px;border:1.5px solid rgba(0,220,120,0.4);background:rgba(0,180,100,0.12);color:#00ff88;cursor:pointer;margin-bottom:6px;">👥 전직원 참여하기</button>
+  <button onclick="resetAllRaceEntries()" style="width:100%;padding:8px 0;font-size:12px;font-weight:700;font-family:inherit;border-radius:10px;border:1px solid rgba(226,75,74,0.35);background:rgba(226,75,74,0.07);color:var(--red);cursor:pointer;margin-bottom:12px;">🗑️ 참여자 전체 리셋</button>`;
+  if(!entries.length){el.innerHTML=addRow+'<div style="font-size:13px;color:var(--text-hint);padding:8px 0;">아직 참여자가 없습니다</div>';return;}
+  const rows=entries.map(e=>`
+    <label style="display:flex;align-items:center;gap:10px;padding:9px 12px;background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:10px;margin-bottom:6px;cursor:pointer;" onchange="updateExcludeBtn()">
+      <input type="checkbox" class="race-entry-chk" data-id="${e.id}" data-name="${e.name}" style="width:16px;height:16px;accent-color:#ff4444;cursor:pointer;flex-shrink:0;">
+      <span style="font-size:13px;color:#fff;flex:1;">${e.name}</span>
+    </label>`).join('');
+  const bulkBar=`<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 2px;margin-bottom:6px;">
+    <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-sub);cursor:pointer;">
+      <input type="checkbox" id="race-chk-all" style="width:15px;height:15px;accent-color:#aaa;cursor:pointer;" onchange="toggleAllRaceChk(this.checked)">
+      전체선택
+    </label>
+    <button id="race-exclude-btn" onclick="excludeSelectedEntries()" disabled style="padding:6px 14px;font-size:12px;font-weight:700;font-family:inherit;border-radius:8px;border:1px solid rgba(226,75,74,0.35);background:rgba(226,75,74,0.08);color:var(--red);cursor:pointer;opacity:0.4;transition:opacity .15s;" >선택 제외 (0)</button>
+  </div>`;
+  el.innerHTML=addRow+`<div style="font-size:12px;color:var(--text-hint);margin-bottom:8px;">총 ${entries.length}명</div>`+bulkBar+rows;
+}
+
+function toggleAllRaceChk(checked){
+  document.querySelectorAll('.race-entry-chk').forEach(c=>c.checked=checked);
+  updateExcludeBtn();
+}
+
+function updateExcludeBtn(){
+  const chks=[...document.querySelectorAll('.race-entry-chk:checked')];
+  const btn=document.getElementById('race-exclude-btn');
+  const all=document.getElementById('race-chk-all');
+  if(btn){btn.textContent='선택 제외 ('+chks.length+')';btn.disabled=chks.length===0;btn.style.opacity=chks.length?'1':'0.4';}
+  if(all){const total=document.querySelectorAll('.race-entry-chk').length;all.indeterminate=chks.length>0&&chks.length<total;all.checked=chks.length===total&&total>0;}
+}
+
+async function excludeSelectedEntries(){
+  const chks=[...document.querySelectorAll('.race-entry-chk:checked')];
+  if(!chks.length)return;
+  const names=chks.map(c=>c.dataset.name).join(', ');
+  if(!confirm(chks.length+'명을 제외할까요?\n\n'+names))return;
+  let ok=0;
+  for(const c of chks){const r=await SB.del('race_entries',c.dataset.id);if(r)ok++;}
+  showToast(ok+'명 제외 완료');
+  loadAdminRaceEntries();
+  const ym=getYM();
+  SB.get('race_entries','year_month=eq.'+ym).then(all=>{
+    const ec=document.getElementById('race-entry-count-admin');if(ec)ec.textContent=all.length;
+    const ec2=document.getElementById('race-entry-count');if(ec2)ec2.textContent=all.length;
+  });
 }
 
 async function excludeRaceEntry(id,name){
@@ -2898,6 +3488,63 @@ async function excludeRaceEntry(id,name){
   const ok=await SB.del('race_entries',id);
   if(ok){showToast('✅ '+name+'님이 제외되었습니다');loadAdminRaceEntries();}
   else showToast('❌ 제외 실패');
+}
+
+async function resetAllRaceEntries(){
+  const ym=getYM();
+  const entries=await SB.get('race_entries','year_month=eq.'+ym);
+  if(!entries.length){showToast('참여자가 없습니다');return;}
+  if(!confirm('이번 달 참여자 '+entries.length+'명을 전체 초기화하시겠습니까?\n\n이 작업은 되돌릴 수 없습니다.'))return;
+  const ok=await SB.delWhere('race_entries','year_month=eq.'+ym);
+  if(ok){
+    showToast('✅ 참여자 명단 초기화 완료');
+    loadAdminRaceEntries();
+    const ec=document.getElementById('race-entry-count-admin');if(ec)ec.textContent='0';
+    const ec2=document.getElementById('race-entry-count');if(ec2)ec2.textContent='0';
+  } else showToast('❌ 초기화 실패');
+}
+
+async function addRaceEntryAdmin(){
+  const input=document.getElementById('admin-add-entry-input');
+  const name=input?.value?.trim();
+  if(!name){showToast('❌ 이름을 입력해주세요');return;}
+  const ym=getYM();
+  const existing=await SB.get('race_entries','year_month=eq.'+ym+'&name=eq.'+encodeURIComponent(name));
+  if(existing.length>0){showToast('❌ 이미 참여 중인 참여자입니다');return;}
+  const ok=await SB.post('race_entries',{year_month:ym,name});
+  if(ok){
+    showToast('✅ '+name+'님 추가 완료!');
+    if(input)input.value='';
+    loadAdminRaceEntries();
+    SB.get('race_entries','year_month=eq.'+ym).then(all=>{
+      const ec=document.getElementById('race-entry-count-admin');if(ec)ec.textContent=all.length;
+      const ec2=document.getElementById('race-entry-count');if(ec2)ec2.textContent=all.length;
+    });
+  } else showToast('❌ 추가 실패');
+}
+
+async function addAllEmployeesToRace(){
+  const ym=getYM();
+  const [emps, entries]=await Promise.all([
+    SB.get('employees','is_active=eq.true&order=name.asc'),
+    SB.get('race_entries','year_month=eq.'+ym)
+  ]);
+  const alreadyIn=new Set(entries.map(e=>e.name));
+  const toAdd=emps.filter(e=>!alreadyIn.has(e.name));
+  if(!toAdd.length){showToast('✅ 전직원이 이미 모두 참여 중입니다');return;}
+  let added=0;
+  for(const e of toAdd){
+    const ok=await SB.post('race_entries',{year_month:ym,name:e.name});
+    if(ok)added++;
+  }
+  if(added>0){
+    showToast('🚀 '+added+'명 전직원 참여 완료!');
+    loadAdminRaceEntries();
+    SB.get('race_entries','year_month=eq.'+ym).then(all=>{
+      const ec=document.getElementById('race-entry-count-admin');if(ec)ec.textContent=all.length;
+      const ec2=document.getElementById('race-entry-count');if(ec2)ec2.textContent=all.length;
+    });
+  } else showToast('❌ 추가 실패');
 }
 
 function loadRaceAutoDaySetting(){
@@ -2930,29 +3577,17 @@ function loadRaceAutoDaySetting(){
 }
 
 async function autoRunRace(names,ym){
-  const seed=parseInt(ym.replace('-',''))+7;
-  const rng1=makeRaceRNG(seed);
-  const win1=names[Math.floor(rng1()*names.length)];
-  const winners=[{year_month:ym,winner_name:win1,race_seed:seed,race_names:JSON.stringify(names),rank:1}];
-  const rem1=names.filter(n=>n!==win1);
-  if(rem1.length>0){
-    const rng2=makeRaceRNG(seed+997);
-    const win2=rem1[Math.floor(rng2()*rem1.length)];
-    winners.push({year_month:ym,winner_name:win2,race_seed:seed+997,race_names:JSON.stringify(names),rank:2});
-    const rem2=rem1.filter(n=>n!==win2);
-    if(rem2.length>0){
-      const rng3=makeRaceRNG(seed+1994);
-      const win3=rem2[Math.floor(rng3()*rem2.length)];
-      winners.push({year_month:ym,winner_name:win3,race_seed:seed+1994,race_names:JSON.stringify(names),rank:3});
-    }
-  }
-  let allOk=true;
-  for(const w of winners){const ok=await SB.post('race_results',w);if(!ok)allOk=false;}
-  if(allOk){
-    showToast('🛸 자동 레이스 완료! 🥇 '+win1+' 외 '+winners.length+'명 당첨!');
-    sendRacePushNotification();
-    loadRacePage();
-  }
+  // 수동운영과 동일하게 실제 레이스 실행 — 결과는 레이스 종료 후 자동 저장
+  window._autoSaveResult=true;
+  showToast('🚀 자동 레이스 시작!');
+  startOrbitalRace(); // 비동기 — rAF 루프로 진행, 종료 시 showRaceWinner에서 자동 저장
+}
+
+async function runAutoRaceNow(){
+  const ym=getYM();
+  const entries=await SB.get('race_entries','year_month=eq.'+ym+'&order=created_at.asc');
+  if(!entries.length){showToast('❌ 참여자가 없습니다');return;}
+  await autoRunRace(entries.map(e=>e.name),ym);
 }
 
 // 당첨자 목록 렌더링 (1~3등)
