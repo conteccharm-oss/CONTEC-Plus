@@ -3521,7 +3521,7 @@ function raceUpdate(){
       const _p23=raceSats.filter(s=>s.podiumRank);
       setTimeout(()=>startWinnersFinale([..._p23,lastSat]),1200);
     }
-    // 마지막 5기 → departure 압축 (리플레이 보호 위성 제외)
+    // 마지막 5기 → departure 압축 (이름 보이는 속도로 줄이되 빠른 탈락 유도)
     if(!raceEvents._final5Triggered&&aliveNow<=5&&aliveNow>3){
       raceEvents._final5Triggered=true;
       nonWin.filter(s=>!window._replayProtectedNames?.has(s.name)).forEach((s,i)=>{const t=s.departTimer+7+i*4;if(t<s.departDelay)s.departDelay=t;});
