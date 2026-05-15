@@ -2096,14 +2096,15 @@ async function loadFAQPage(){
       listEl.innerHTML=items.map(item=>_faqAccordionHTML(item.q,item.a)).join('');
     }else if(staticSec){staticSec.style.display='none';}
   }
-  // 답변된 직원 질문
+  // 답변된 직원 질문 — is_public이 false인 것만 제외 (컬럼 없으면 전체 공개)
   const answeredEl=document.getElementById('qa-answered-list');
   const answeredEmpty=document.getElementById('qa-answered-empty');
   if(answeredEl){
     const qa=await SB.get('qa_items','status=eq.answered&order=created_at.desc');
-    if(qa.length){
+    const publicQa=qa.filter(r=>r.is_public!==false);
+    if(publicQa.length){
       if(answeredEmpty)answeredEmpty.style.display='none';
-      answeredEl.innerHTML=qa.map(r=>_faqAccordionHTML(r.question,r.answer)).join('');
+      answeredEl.innerHTML=publicQa.map(r=>_faqAccordionHTML(r.question,r.answer)).join('');
     }else{
       answeredEl.innerHTML='';
       if(answeredEmpty)answeredEmpty.style.display='block';
@@ -2118,22 +2119,30 @@ async function loadFAQPage(){
       mySection.style.display='block';
       myList.innerHTML=mine.map(r=>{
         const isPending=r.status==='pending';
+        const isPublic=r.is_public!==false;
         return`<div style="background:var(--card);border:1px solid ${isPending?'rgba(255,200,0,0.25)':'rgba(0,200,120,0.25)'};border-radius:12px;padding:12px 14px;">
           <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:6px;">
             <div style="flex:1;min-width:0;">
               <div style="font-size:13px;color:#fff;font-weight:600;margin-bottom:3px;">${r.question}</div>
               ${!isPending&&r.answer?`<div style="font-size:12px;color:var(--text-sub);line-height:1.5;margin-top:4px;padding-top:6px;border-top:1px solid var(--border);">A. ${r.answer}</div>`:''}
             </div>
-            ${isPending?`<div style="display:flex;gap:4px;flex-shrink:0;">
+            <div style="display:flex;gap:4px;flex-shrink:0;flex-wrap:wrap;justify-content:flex-end;">
+              ${!isPending?`<button onclick="toggleQAPublic('${r.id}',${!isPublic})" style="padding:4px 8px;background:${isPublic?'rgba(0,200,255,0.1)':'rgba(120,120,120,0.15)'};color:${isPublic?'#00eeff':'var(--text-hint)'};border:1px solid ${isPublic?'rgba(0,200,255,0.3)':'rgba(120,120,120,0.3)'};border-radius:6px;font-size:11px;font-family:inherit;cursor:pointer;">${isPublic?'👁️ 공개':'🔒 비공개'}</button>`:''}
               <button onclick="openQAEdit('${r.id}')" style="padding:4px 8px;background:rgba(0,150,255,0.15);color:var(--sky);border:1px solid rgba(0,150,255,0.3);border-radius:6px;font-size:11px;font-family:inherit;cursor:pointer;">✏️</button>
               <button onclick="deleteMyQA('${r.id}')" style="padding:4px 8px;background:rgba(226,75,74,0.15);color:var(--red);border:1px solid rgba(226,75,74,0.3);border-radius:6px;font-size:11px;font-family:inherit;cursor:pointer;">🗑️</button>
-            </div>`:'<span style="font-size:11px;padding:3px 8px;background:rgba(0,200,120,0.15);color:#00ff88;border-radius:99px;flex-shrink:0;">답변완료</span>'}
+            </div>
           </div>
           <div style="font-size:11px;color:var(--text-hint);">${isPending?'⏳ 답변 대기 중':'✅ 답변 완료'} · ${new Date(r.created_at).toLocaleDateString('ko-KR')}</div>
         </div>`;
       }).join('');
     }else if(mySection){mySection.style.display='none';}
   }
+}
+
+async function toggleQAPublic(id, makePublic){
+  const ok=await SB.patch('qa_items',id,{is_public:makePublic});
+  if(ok){showToast(makePublic?'👁️ 공개로 전환됐습니다':'🔒 비공개로 전환됐습니다');loadFAQPage();}
+  else{showToast('❌ 변경 실패');}
 }
 
 async function openQAEdit(id){
@@ -3985,8 +3994,11 @@ function loadRaceAutoDaySetting(){
       if(r.length){
         const listEl=document.getElementById('race-admin-done-list');
         const medals2=['🥇','🥈','🥉'];
-        const sorted2=[...r].sort((a,b)=>(a.rank||1)-(b.rank||1));
-        if(listEl)listEl.innerHTML=sorted2.map((w,i)=>{const medal=medals2[(w.rank||i+1)-1]||'🏅';const label=(w.rank||i+1)+'등';return`<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid rgba(0,220,120,0.1);">
+        // 최신 회차 결과만 표시 (rank 기준 중복 제거, 최대 3명)
+        const latest2=getLatestRaceRun([...r]).sort((a,b)=>(a.rank||1)-(b.rank||1));
+        const deduped2=[]; const seenRank2=new Set();
+        for(const w of latest2){const k=w.rank||1;if(!seenRank2.has(k)&&k<=3){seenRank2.add(k);deduped2.push(w);}}
+        if(listEl)listEl.innerHTML=deduped2.map((w,i)=>{const medal=medals2[(w.rank||i+1)-1]||'🏅';const label=(w.rank||i+1)+'등';return`<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid rgba(0,220,120,0.1);">
           <span style="font-size:11px;font-weight:700;color:rgba(0,220,120,0.6);min-width:36px;">${medal} ${label}</span>
           <span style="font-size:13px;font-weight:700;color:#00ff88;">${w.winner_name}</span>
         </div>`;}).join('');
