@@ -1968,6 +1968,7 @@ async function submitFunny(){
     document.getElementById('funny-file').value='';
     document.getElementById('funny-preview').style.display='none';
     document.getElementById('funny-btn').textContent='📸 사진/영상 업로드';
+    sendNotificationEmail({type:'funny',submitter:app.name,title});
     loadFunnyList();
   }else{showToast('❌ 제출 실패. 다시 시도해주세요');}
 }
@@ -2083,19 +2084,19 @@ async function submitQAQuestion(){
   if(ok){
     showToast('✅ 질문이 등록되었습니다! 관리자 답변 후 공개됩니다');
     document.getElementById('qa-question-input').value='';
-    sendQANotificationEmail(q,_qaCategory,app.name);
+    sendNotificationEmail({type:'qa',submitter:app.name,question:q,category:_qaCategory});
     loadFAQPage();
   }else{showToast('❌ 등록 실패');}
 }
 
-async function sendQANotificationEmail(question,category,submitter){
+function sendNotificationEmail(payload){
   try{
     fetch(CONFIG.supabaseUrl+'/functions/v1/send-qa-email',{
       method:'POST',
       headers:{'Content-Type':'application/json','Authorization':'Bearer '+CONFIG.supabaseKey},
-      body:JSON.stringify({question,category,submitter})
+      body:JSON.stringify(payload)
     });
-  }catch(e){console.warn('[QA 이메일]',e);}
+  }catch(e){console.warn('[알림 이메일]',e);}
 }
 
 let _qaAdminFilter='all';
@@ -2452,7 +2453,13 @@ async function submitIdea(){
   showToast('📤 제출 중...');
   let fileUrl=null;if(file){fileUrl=await SB.upload(file);if(!fileUrl){showToast('❌ 파일 업로드 실패');return;}}
   const ok=await SB.post('idea_submissions',{name:app.name,year_month:getYM(),title,content,file_url:fileUrl,status:'submitted'});
-  if(ok){showToast('✅ 아이디어 제출 완료! 관리자 승인 후 공개됩니다');document.getElementById('idea-title').value='';document.getElementById('idea-content').value='';document.getElementById('idea-btn').textContent='📎 파일 첨부';}
+  if(ok){
+    showToast('✅ 아이디어 제출 완료! 관리자 승인 후 공개됩니다');
+    document.getElementById('idea-title').value='';
+    document.getElementById('idea-content').value='';
+    document.getElementById('idea-btn').textContent='📎 파일 첨부';
+    sendNotificationEmail({type:'idea',submitter:app.name,title,content});
+  }
 }
 async function loadIdeaList(){
   const ym=getYM();

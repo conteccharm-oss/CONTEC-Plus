@@ -18,10 +18,72 @@ Deno.serve(async (req) => {
     });
   }
 
-  const { question, category, submitter } = await req.json();
+  const body = await req.json();
+  const { type, submitter } = body;
 
-  const categoryIcon: Record<string, string> = { 시스템: "💻", 복지: "🎁", 기타: "📋" };
-  const icon = categoryIcon[category] ?? "❓";
+  let subject = "";
+  let html = "";
+
+  if (type === "qa") {
+    const { question, category } = body;
+    const categoryIcon: Record<string, string> = { 시스템: "💻", 복지: "🎁", 기타: "📋" };
+    const icon = categoryIcon[category] ?? "❓";
+    subject = `[CONTEC+ Q&A] ${icon} ${category} 카테고리 새 질문`;
+    html = `
+      <div style="font-family:sans-serif;max-width:520px;margin:0 auto;background:#f8f9fa;padding:24px;border-radius:12px;">
+        <div style="background:#0D1B3E;border-radius:10px;padding:20px 24px;margin-bottom:20px;">
+          <h2 style="color:#fff;margin:0;font-size:18px;">📩 새 Q&A 질문이 등록됐습니다</h2>
+        </div>
+        <table style="width:100%;border-collapse:collapse;background:#fff;border-radius:10px;overflow:hidden;">
+          <tr><td style="padding:12px 16px;font-weight:bold;color:#555;width:90px;background:#f5f5f5;">카테고리</td>
+              <td style="padding:12px 16px;">${icon} ${category}</td></tr>
+          <tr><td style="padding:12px 16px;font-weight:bold;color:#555;background:#f5f5f5;">질문자</td>
+              <td style="padding:12px 16px;">${submitter}</td></tr>
+          <tr><td style="padding:12px 16px;font-weight:bold;color:#555;vertical-align:top;background:#f5f5f5;">질문 내용</td>
+              <td style="padding:12px 16px;line-height:1.7;">${question.replace(/\n/g, "<br>")}</td></tr>
+        </table>
+        <p style="color:#888;font-size:12px;margin-top:16px;text-align:center;">CONTEC+ 관리자 페이지에서 답변을 등록해주세요.</p>
+      </div>`;
+  } else if (type === "funny") {
+    const { title } = body;
+    subject = `[CONTEC+ 웃수저] 😂 새 제출물 승인 요청`;
+    html = `
+      <div style="font-family:sans-serif;max-width:520px;margin:0 auto;background:#f8f9fa;padding:24px;border-radius:12px;">
+        <div style="background:#c0392b;border-radius:10px;padding:20px 24px;margin-bottom:20px;">
+          <h2 style="color:#fff;margin:0;font-size:18px;">😂 웃수저 제출물 승인 요청</h2>
+        </div>
+        <table style="width:100%;border-collapse:collapse;background:#fff;border-radius:10px;overflow:hidden;">
+          <tr><td style="padding:12px 16px;font-weight:bold;color:#555;width:90px;background:#f5f5f5;">제출자</td>
+              <td style="padding:12px 16px;">${submitter}</td></tr>
+          <tr><td style="padding:12px 16px;font-weight:bold;color:#555;background:#f5f5f5;">제목</td>
+              <td style="padding:12px 16px;">${title}</td></tr>
+        </table>
+        <p style="color:#888;font-size:12px;margin-top:16px;text-align:center;">CONTEC+ 관리자 페이지에서 승인/거절 처리해주세요.</p>
+      </div>`;
+  } else if (type === "idea") {
+    const { title, content } = body;
+    subject = `[CONTEC+ 아이디어] 💡 새 아이디어 제출`;
+    html = `
+      <div style="font-family:sans-serif;max-width:520px;margin:0 auto;background:#f8f9fa;padding:24px;border-radius:12px;">
+        <div style="background:#27ae60;border-radius:10px;padding:20px 24px;margin-bottom:20px;">
+          <h2 style="color:#fff;margin:0;font-size:18px;">💡 새 아이디어가 제출됐습니다</h2>
+        </div>
+        <table style="width:100%;border-collapse:collapse;background:#fff;border-radius:10px;overflow:hidden;">
+          <tr><td style="padding:12px 16px;font-weight:bold;color:#555;width:90px;background:#f5f5f5;">제출자</td>
+              <td style="padding:12px 16px;">${submitter}</td></tr>
+          <tr><td style="padding:12px 16px;font-weight:bold;color:#555;background:#f5f5f5;">제목</td>
+              <td style="padding:12px 16px;">${title}</td></tr>
+          <tr><td style="padding:12px 16px;font-weight:bold;color:#555;vertical-align:top;background:#f5f5f5;">내용</td>
+              <td style="padding:12px 16px;line-height:1.7;">${(content||'').replace(/\n/g, "<br>")}</td></tr>
+        </table>
+        <p style="color:#888;font-size:12px;margin-top:16px;text-align:center;">CONTEC+ 관리자 페이지에서 투표 공개 처리해주세요.</p>
+      </div>`;
+  } else {
+    return new Response(JSON.stringify({ error: "알 수 없는 type" }), {
+      status: 400,
+      headers: { "Content-Type": "application/json", ...CORS },
+    });
+  }
 
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",
@@ -32,20 +94,8 @@ Deno.serve(async (req) => {
     body: JSON.stringify({
       from: "CONTEC+ <onboarding@resend.dev>",
       to: [RECIPIENT_EMAIL],
-      subject: `[CONTEC+ Q&A] ${icon} ${category} 카테고리 새 질문`,
-      html: `
-        <div style="font-family:sans-serif;max-width:480px;margin:0 auto;">
-          <h2 style="color:#0D1B3E;">📩 새 Q&A 질문이 등록됐습니다</h2>
-          <table style="width:100%;border-collapse:collapse;">
-            <tr><td style="padding:8px;font-weight:bold;color:#555;width:80px;">카테고리</td>
-                <td style="padding:8px;">${icon} ${category}</td></tr>
-            <tr style="background:#f5f5f5;"><td style="padding:8px;font-weight:bold;color:#555;">질문자</td>
-                <td style="padding:8px;">${submitter}</td></tr>
-            <tr><td style="padding:8px;font-weight:bold;color:#555;vertical-align:top;">질문 내용</td>
-                <td style="padding:8px;line-height:1.6;">${question.replace(/\n/g, "<br>")}</td></tr>
-          </table>
-          <p style="color:#888;font-size:12px;margin-top:24px;">CONTEC+ 관리자 페이지에서 답변을 등록해주세요.</p>
-        </div>`,
+      subject,
+      html,
     }),
   });
 
