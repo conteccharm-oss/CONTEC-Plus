@@ -75,13 +75,18 @@ Deno.serve(async (req) => {
 
   const ym = `${year}-${String(month + 1).padStart(2, "0")}`;
 
-  // 이미 이번 달 레이스 결과 있는지 확인
+  // 오늘(KST) 이미 자동실행 됐는지 확인 (수동 내역은 무시)
+  // 오늘 KST 자정 = UTC 전날 15:00
+  const kstOffsetMs = 9 * 60 * 60 * 1000;
+  const todayKSTStartMs = Date.UTC(nowKST.getFullYear(), nowKST.getMonth(), nowKST.getDate()) - kstOffsetMs;
+  const todayKSTStartISO = new Date(todayKSTStartMs).toISOString();
+
   const existing: { id: string }[] = await dbGet(
     "race_results",
-    `year_month=eq.${ym}&select=id&limit=1`
+    `year_month=eq.${ym}&created_at=gte.${todayKSTStartISO}&select=id&limit=1`
   );
   if (existing.length > 0) {
-    return respond({ skipped: "already ran this month" });
+    return respond({ skipped: "already ran today" });
   }
 
   // 참여자 목록
