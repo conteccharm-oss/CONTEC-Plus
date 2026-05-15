@@ -737,9 +737,14 @@
     <!-- FAQ 탭 -->
     <div id="admin-tab-faq" style="display:none;">
       <!-- 직원 질문 답변 -->
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
         <div class="sec-title" style="margin:0;">💬 직원 질문 <span id="qa-pending-badge" style="display:none;background:var(--red);color:#fff;font-size:10px;font-weight:700;padding:2px 7px;border-radius:99px;margin-left:4px;">0</span></div>
-        <button onclick="loadPendingQuestions()" style="padding:5px 10px;background:rgba(255,255,255,0.07);color:var(--text-sub);border:1px solid var(--border);border-radius:8px;font-size:11px;font-family:inherit;cursor:pointer;">새로고침</button>
+        <button onclick="loadAllQAAdmin()" style="padding:5px 10px;background:rgba(255,255,255,0.07);color:var(--text-sub);border:1px solid var(--border);border-radius:8px;font-size:11px;font-family:inherit;cursor:pointer;">새로고침</button>
+      </div>
+      <div style="display:flex;gap:6px;margin-bottom:10px;">
+        <button id="qa-filter-all" onclick="setQAFilter('all')" style="padding:6px 13px;font-size:12px;font-weight:700;font-family:inherit;border-radius:8px;border:1.5px solid rgba(0,200,255,0.4);background:rgba(0,200,255,0.15);color:#00eeff;cursor:pointer;">전체</button>
+        <button id="qa-filter-pending" onclick="setQAFilter('pending')" style="padding:6px 13px;font-size:12px;font-weight:700;font-family:inherit;border-radius:8px;border:1px solid var(--border);background:rgba(255,255,255,0.07);color:var(--text-sub);cursor:pointer;">⏳ 대기 중</button>
+        <button id="qa-filter-answered" onclick="setQAFilter('answered')" style="padding:6px 13px;font-size:12px;font-weight:700;font-family:inherit;border-radius:8px;border:1px solid var(--border);background:rgba(255,255,255,0.07);color:var(--text-sub);cursor:pointer;">✅ 답변 완료</button>
       </div>
       <div id="qa-pending-list" style="display:flex;flex-direction:column;gap:8px;margin-bottom:1.5rem;"></div>
 
@@ -872,6 +877,8 @@
           <span style="font-size:13px;color:var(--text-sub);white-space:nowrap;">오전/오후</span>
           <input type="number" id="race-auto-hour-input" min="0" max="23" oninput="updateEffectiveDatePreview()" style="width:64px;padding:9px 10px;font-size:15px;font-family:inherit;border:1px solid var(--border);border-radius:10px;outline:none;background:rgba(0,0,0,0.3);color:#fff;text-align:center;" value="10"/>
           <span style="font-size:13px;color:var(--text-sub);white-space:nowrap;">시</span>
+          <input type="number" id="race-auto-minute-input" min="0" max="59" oninput="updateEffectiveDatePreview()" style="width:64px;padding:9px 10px;font-size:15px;font-family:inherit;border:1px solid var(--border);border-radius:10px;outline:none;background:rgba(0,0,0,0.3);color:#fff;text-align:center;" value="0"/>
+          <span style="font-size:13px;color:var(--text-sub);white-space:nowrap;">분</span>
         </div>
 
         <!-- 주말 안내 -->
@@ -2091,40 +2098,103 @@ async function sendQANotificationEmail(question,category,submitter){
   }catch(e){console.warn('[QA 이메일]',e);}
 }
 
-async function loadPendingQuestions(){
+let _qaAdminFilter='all';
+
+function setQAFilter(f){
+  _qaAdminFilter=f;
+  ['all','pending','answered'].forEach(k=>{
+    const btn=document.getElementById('qa-filter-'+k);if(!btn)return;
+    const on=k===f;
+    btn.style.background=on?'rgba(0,200,255,0.15)':'rgba(255,255,255,0.07)';
+    btn.style.borderColor=on?'rgba(0,200,255,0.4)':'var(--border)';
+    btn.style.color=on?'#00eeff':'var(--text-sub)';
+    btn.style.borderWidth=on?'1.5px':'1px';
+  });
+  loadAllQAAdmin();
+}
+
+async function loadAllQAAdmin(){
   const listEl=document.getElementById('qa-pending-list');
   const badge=document.getElementById('qa-pending-badge');
   if(!listEl)return;
-  const rows=await SB.get('qa_items','status=eq.pending&order=created_at.asc');
-  if(badge){if(rows.length){badge.textContent=rows.length;badge.style.display='inline';}else{badge.style.display='none';}}
-  if(!rows.length){listEl.innerHTML='<div class="rank-empty">대기 중인 질문이 없습니다</div>';return;}
-  listEl.innerHTML=rows.map(r=>`
-    <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px 14px;">
+  const all=await SB.get('qa_items','order=created_at.desc');
+  const pendingCnt=all.filter(r=>r.status==='pending').length;
+  if(badge){if(pendingCnt){badge.textContent=pendingCnt;badge.style.display='inline';}else{badge.style.display='none';}}
+  const rows=_qaAdminFilter==='all'?all:all.filter(r=>r.status===_qaAdminFilter);
+  if(!rows.length){listEl.innerHTML='<div class="rank-empty">'+(_qaAdminFilter==='pending'?'대기 중인 질문이 없습니다':_qaAdminFilter==='answered'?'답변 완료된 질문이 없습니다':'등록된 질문이 없습니다')+'</div>';return;}
+  listEl.innerHTML=rows.map(r=>{
+    const isPending=r.status==='pending';
+    const isPublic=r.is_public!==false;
+    return`<div style="background:var(--card);border:1.5px solid ${isPending?'rgba(255,200,0,0.2)':'rgba(0,200,120,0.2)'};border-radius:12px;padding:12px 14px;">
       <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:8px;">
-        <div>
-          ${r.category?`<span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:99px;background:rgba(0,200,255,0.12);color:#00eeff;border:1px solid rgba(0,200,255,0.25);margin-bottom:4px;display:inline-block;">${r.category}</span>`:''}
-          <div style="font-size:13px;font-weight:600;color:#fff;margin-bottom:2px;">${r.question}</div>
+        <div style="flex:1;min-width:0;">
+          <div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;margin-bottom:5px;">
+            ${r.category?`<span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:99px;background:rgba(0,200,255,0.12);color:#00eeff;border:1px solid rgba(0,200,255,0.25);">${r.category}</span>`:''}
+            <span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:99px;background:${isPending?'rgba(255,200,0,0.12)':'rgba(0,200,120,0.12)'};color:${isPending?'#FFD700':'#00ff88'};border:1px solid ${isPending?'rgba(255,200,0,0.3)':'rgba(0,200,120,0.3)'};">${isPending?'⏳ 대기 중':'✅ 답변 완료'}</span>
+            ${!isPublic?`<span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:99px;background:rgba(120,120,120,0.1);color:var(--text-hint);border:1px solid rgba(120,120,120,0.2);">🔒 비공개</span>`:''}
+          </div>
+          <div style="font-size:13px;font-weight:600;color:#fff;margin-bottom:3px;">${r.question}</div>
           <div style="font-size:11px;color:var(--text-hint);">by ${r.submitted_by} · ${new Date(r.created_at).toLocaleDateString('ko-KR')}</div>
         </div>
         <button onclick="deleteQAItem('${r.id}')" style="padding:4px 8px;background:rgba(226,75,74,0.15);color:var(--red);border:1px solid rgba(226,75,74,0.3);border-radius:6px;font-size:11px;font-family:inherit;cursor:pointer;flex-shrink:0;">🗑️</button>
       </div>
-      <textarea id="qa-ans-${r.id}" placeholder="답변을 입력하세요" rows="2" style="width:100%;background:rgba(255,255,255,0.07);border:1px solid var(--border);border-radius:8px;color:#fff;padding:8px 10px;font-family:inherit;font-size:12px;resize:vertical;box-sizing:border-box;margin-bottom:6px;"></textarea>
-      <button onclick="answerQAItem('${r.id}')" class="btn-main" style="width:100%;padding:8px 0;font-size:12px;">💬 답변 등록</button>
-    </div>`).join('');
+      ${isPending?`
+        <textarea id="qa-ans-${r.id}" placeholder="답변을 입력하세요" rows="2" style="width:100%;background:rgba(255,255,255,0.07);border:1px solid var(--border);border-radius:8px;color:#fff;padding:8px 10px;font-family:inherit;font-size:12px;resize:vertical;box-sizing:border-box;margin-bottom:6px;"></textarea>
+        <button onclick="answerQAItem('${r.id}')" class="btn-main" style="width:100%;padding:8px 0;font-size:12px;">💬 답변 등록</button>
+      `:`
+        <div id="qa-ans-display-${r.id}" style="font-size:12px;color:var(--text-sub);line-height:1.6;padding:8px 10px;background:rgba(0,200,120,0.05);border:1px solid rgba(0,200,120,0.15);border-radius:8px;margin-bottom:8px;white-space:pre-wrap;">A. ${r.answer||''}</div>
+        <div id="qa-ans-edit-wrap-${r.id}" style="display:none;margin-bottom:8px;">
+          <textarea id="qa-ans-${r.id}" rows="2" style="width:100%;background:rgba(255,255,255,0.07);border:1px solid var(--border);border-radius:8px;color:#fff;padding:8px 10px;font-family:inherit;font-size:12px;resize:vertical;box-sizing:border-box;margin-bottom:6px;">${r.answer||''}</textarea>
+          <div style="display:flex;gap:6px;">
+            <button onclick="saveQAAnswer('${r.id}')" class="btn-main" style="flex:1;padding:8px 0;font-size:12px;">💾 저장</button>
+            <button onclick="closeQAAnswerEdit('${r.id}')" style="flex:1;padding:8px 0;font-size:12px;font-weight:700;font-family:inherit;border-radius:10px;border:1px solid var(--border);background:rgba(255,255,255,0.07);color:var(--text-sub);cursor:pointer;">취소</button>
+          </div>
+        </div>
+        <div style="display:flex;gap:6px;">
+          <button onclick="openQAAnswerEdit('${r.id}')" style="flex:1;padding:7px 0;font-size:12px;font-weight:700;font-family:inherit;border-radius:8px;border:1px solid rgba(0,150,255,0.3);background:rgba(0,150,255,0.1);color:var(--sky);cursor:pointer;">✏️ 답변 수정</button>
+          <button onclick="revertQAItemPending('${r.id}')" style="flex:1;padding:7px 0;font-size:12px;font-weight:700;font-family:inherit;border-radius:8px;border:1px solid rgba(255,200,0,0.3);background:rgba(255,200,0,0.08);color:#FFD700;cursor:pointer;">↩️ 대기로 전환</button>
+        </div>
+      `}
+    </div>`;
+  }).join('');
+}
+
+function openQAAnswerEdit(id){
+  document.getElementById('qa-ans-display-'+id).style.display='none';
+  document.getElementById('qa-ans-edit-wrap-'+id).style.display='block';
+}
+
+function closeQAAnswerEdit(id){
+  document.getElementById('qa-ans-edit-wrap-'+id).style.display='none';
+  document.getElementById('qa-ans-display-'+id).style.display='block';
+}
+
+async function saveQAAnswer(id){
+  const ans=document.getElementById('qa-ans-'+id)?.value.trim();
+  if(!ans){showToast('❌ 답변을 입력해주세요');return;}
+  const ok=await SB.patch('qa_items',id,{answer:ans,status:'answered'});
+  if(ok){showToast('✅ 답변이 수정됐습니다');loadAllQAAdmin();}
+  else{showToast('❌ 저장 실패');}
 }
 
 async function answerQAItem(id){
   const ans=document.getElementById('qa-ans-'+id)?.value.trim();
   if(!ans){showToast('❌ 답변을 입력해주세요');return;}
   const ok=await SB.patch('qa_items',id,{answer:ans,status:'answered'});
-  if(ok){showToast('✅ 답변이 등록되었습니다');loadPendingQuestions();}
+  if(ok){showToast('✅ 답변이 등록되었습니다');loadAllQAAdmin();}
   else{showToast('❌ 저장 실패');}
+}
+
+async function revertQAItemPending(id){
+  const ok=await SB.patch('qa_items',id,{status:'pending',answer:null});
+  if(ok){showToast('↩️ 대기 중으로 전환됐습니다');loadAllQAAdmin();}
+  else{showToast('❌ 실패');}
 }
 
 async function deleteQAItem(id){
   if(!confirm('이 질문을 삭제하시겠습니까?'))return;
   const ok=await SB.del('qa_items',id);
-  if(ok){showToast('🗑️ 삭제됨');loadPendingQuestions();}
+  if(ok){showToast('🗑️ 삭제됨');loadAllQAAdmin();}
 }
 
 function _faqAccordionHTML(q,a){
@@ -2464,7 +2534,7 @@ async function loadRacePage(){
 
   // 배너 태그 업데이트
   const autoTag=document.getElementById('race-auto-day-tag');
-  if(autoTag)autoTag.textContent=formatKorDateTime(effectiveDate,getRaceAutoHour());
+  if(autoTag)autoTag.textContent=formatKorDateTime(effectiveDate,getRaceAutoHour(),getRaceAutoMinute());
 
   // 경품 목록
   const rewards=await SB.get('rewards','year_month=eq.'+ym+'&order=votes.desc');
@@ -2491,7 +2561,7 @@ async function loadRacePage(){
   else{document.getElementById('race-joined-badge').style.display='none';}
   // joined badge 자동운영일 항상 표시
   const subEl=document.getElementById('race-joined-sub');
-  if(subEl)subEl.textContent=formatKorDateTime(effectiveDate,getRaceAutoHour())+' 자동 운영 예정';
+  if(subEl)subEl.textContent=formatKorDateTime(effectiveDate,getRaceAutoHour(),getRaceAutoMinute())+' 자동 운영 예정';
 
   // 결과 확인 (이번 달 전체)
   const allResults=await SB.get('race_results','year_month=eq.'+ym+'&order=created_at.asc');
@@ -2501,7 +2571,10 @@ async function loadRacePage(){
   if(app.isAdmin && !allResults.length){
     const today=new Date();
     const autoHour=getRaceAutoHour();
-    if(today.toDateString()===effectiveDate.toDateString() && today.getHours()>=autoHour){
+    const autoMinute=getRaceAutoMinute();
+    const todayMins=today.getHours()*60+today.getMinutes();
+    const autoMins=autoHour*60+autoMinute;
+    if(today.toDateString()===effectiveDate.toDateString() && todayMins>=autoMins){
       const allEntries=await SB.get('race_entries','year_month=eq.'+ym+'&order=created_at.asc');
       if(allEntries.length>=1){
         await autoRunRace(allEntries.map(e=>e.name),ym);
@@ -2525,7 +2598,7 @@ async function loadRacePage(){
         const runCount=new Set(allResults.map(r=>r.race_seed)).size;
         descEl.textContent='이번 달 레이스 '+runCount+'회 완료. 추가 실행 가능합니다.';
       } else {
-        descEl.textContent=formatKorDateTime(effectiveDate,getRaceAutoHour())+'에 자동으로 레이스가 진행됩니다.';
+        descEl.textContent=formatKorDateTime(effectiveDate,getRaceAutoHour(),getRaceAutoMinute())+'에 자동으로 레이스가 진행됩니다.';
       }
     }
   } else {
@@ -2740,7 +2813,7 @@ function switchAdminTab(btn,tab){
   if(tab==='quiz-mgmt'){populateWeekSelect();quizHistoryMonth=getYM();loadQuizAdminList();renderPrizeTiers();loadElimList();loadSurvivorList();loadQuizTimeDisplay();}
   if(tab==='race-mgmt'){loadAdminRewardList();loadRaceAutoDaySetting();loadRaceHistory();SB.get('race_entries','year_month=eq.'+getYM()).then(r=>{const ec=document.getElementById('race-entry-count-admin');if(ec)ec.textContent=r.length;});}
   if(tab==='emp-mgmt'){document.getElementById('emp-list-wrap').style.display='none';document.getElementById('emp-list-toggle-btn').textContent='▼';loadEmployeeList();}
-  if(tab==='faq'){loadFAQAdmin();loadPendingQuestions();}
+  if(tab==='faq'){loadFAQAdmin();loadAllQAAdmin();}
 }
 
 async function loadAdminPending(){
@@ -3831,14 +3904,16 @@ async function saveRaceWinner(){
 }
 
 // ── 궤도레이스 자동 운영 ──
-const raceConfig={day:null,hour:null};
+const raceConfig={day:null,hour:null,minute:null};
 function getRaceAutoDay(){return raceConfig.day!==null?raceConfig.day:parseInt(localStorage.getItem('contec_race_auto_day')||'25');}
 function getRaceAutoHour(){return raceConfig.hour!==null?raceConfig.hour:parseInt(localStorage.getItem('contec_race_auto_hour')||'10');}
+function getRaceAutoMinute(){return raceConfig.minute!==null?raceConfig.minute:parseInt(localStorage.getItem('contec_race_auto_minute')||'0');}
 async function loadRaceConfig(){
-  const rows=await SB.get('app_settings','key=in.(race_auto_day,race_auto_hour)');
+  const rows=await SB.get('app_settings','key=in.(race_auto_day,race_auto_hour,race_auto_minute)');
   rows.forEach(r=>{
     if(r.key==='race_auto_day'){raceConfig.day=parseInt(r.value);localStorage.setItem('contec_race_auto_day',r.value);}
     if(r.key==='race_auto_hour'){raceConfig.hour=parseInt(r.value);localStorage.setItem('contec_race_auto_hour',r.value);}
+    if(r.key==='race_auto_minute'){raceConfig.minute=parseInt(r.value);localStorage.setItem('contec_race_auto_minute',r.value);}
   });
 }
 function getMonthRaceMode(ym){return localStorage.getItem('contec_race_mode_'+ym)||'auto';}
@@ -3868,11 +3943,13 @@ function formatKorDate(d){
   return d.getFullYear()+'년 '+(d.getMonth()+1)+'월 '+d.getDate()+'일 ('+days[d.getDay()]+')';
 }
 
-function formatKorDateTime(d,hour){
+function formatKorDateTime(d,hour,minute){
   const h=parseInt(hour);
+  const m=parseInt(minute||0);
   const ampm=h<12?'오전':'오후';
   const h12=h===0?12:h>12?h-12:h;
-  return formatKorDate(d)+' '+ampm+' '+h12+'시';
+  const mStr=m>0?' '+m+'분':'';
+  return formatKorDate(d)+' '+ampm+' '+h12+'시'+mStr;
 }
 
 function updateEffectiveDatePreview(){
@@ -3880,28 +3957,35 @@ function updateEffectiveDatePreview(){
   if(!el)return;
   const day=parseInt(document.getElementById('race-auto-day-input')?.value||'25');
   const hour=parseInt(document.getElementById('race-auto-hour-input')?.value??'10');
+  const minute=parseInt(document.getElementById('race-auto-minute-input')?.value??'0');
   if(!day||day<1||day>31){el.textContent='-';return;}
-  el.textContent=formatKorDateTime(getEffectiveDateWithDay(day,getYM()),hour);
+  el.textContent=formatKorDateTime(getEffectiveDateWithDay(day,getYM()),hour,minute);
 }
 
 async function saveRaceAutoSettings(){
   const day=parseInt(document.getElementById('race-auto-day-input').value);
   const hour=parseInt(document.getElementById('race-auto-hour-input').value);
+  const minute=parseInt(document.getElementById('race-auto-minute-input')?.value??'0');
   if(!day||day<1||day>31){showToast('❌ 날짜는 1~31 사이로 입력하세요');return;}
   if(isNaN(hour)||hour<0||hour>23){showToast('❌ 시간은 0~23 사이로 입력하세요');return;}
+  if(isNaN(minute)||minute<0||minute>59){showToast('❌ 분은 0~59 사이로 입력하세요');return;}
   localStorage.setItem('contec_race_auto_day',String(day));
   localStorage.setItem('contec_race_auto_hour',String(hour));
-  raceConfig.day=day;raceConfig.hour=hour;
+  localStorage.setItem('contec_race_auto_minute',String(minute));
+  raceConfig.day=day;raceConfig.hour=hour;raceConfig.minute=minute;
   await Promise.all([
     SB.upsert('app_settings',{key:'race_auto_day',value:String(day)}),
-    SB.upsert('app_settings',{key:'race_auto_hour',value:String(hour)})
+    SB.upsert('app_settings',{key:'race_auto_hour',value:String(hour)}),
+    SB.upsert('app_settings',{key:'race_auto_minute',value:String(minute)})
   ]);
   const tag=document.getElementById('race-auto-day-tag');
-  if(tag)tag.textContent=formatKorDateTime(getEffectiveDateWithDay(day,getYM()),hour);
+  if(tag)tag.textContent=formatKorDateTime(getEffectiveDateWithDay(day,getYM()),hour,minute);
   const subEl=document.getElementById('race-joined-sub');
-  if(subEl)subEl.textContent=formatKorDateTime(getEffectiveDateWithDay(day,getYM()),hour)+' 자동 운영 예정';
+  if(subEl)subEl.textContent=formatKorDateTime(getEffectiveDateWithDay(day,getYM()),hour,minute)+' 자동 운영 예정';
   updateEffectiveDatePreview();
-  showToast('✅ 저장 완료! 매월 '+day+'일 '+(hour<12?'오전':'오후')+' '+(hour===0?12:hour>12?hour-12:hour)+'시');
+  const h12=hour===0?12:hour>12?hour-12:hour;
+  const mStr=minute>0?' '+minute+'분':'';
+  showToast('✅ 저장 완료! 매월 '+day+'일 '+(hour<12?'오전':'오후')+' '+h12+'시'+mStr);
 }
 
 // 하위호환: 기존 saveRaceAutoDay 호출 대비
@@ -4088,15 +4172,17 @@ function loadRaceAutoDaySetting(){
   const ym=getYM();
   const inp=document.getElementById('race-auto-day-input');
   const hourInp=document.getElementById('race-auto-hour-input');
+  const minInp=document.getElementById('race-auto-minute-input');
   if(inp)inp.value=getRaceAutoDay();
   if(hourInp)hourInp.value=getRaceAutoHour();
+  if(minInp)minInp.value=getRaceAutoMinute();
   updateRaceModeUI(getMonthRaceMode(ym));
   updateEffectiveDatePreview();
   // 관리탭 자동운영 설명 업데이트
   const descEl=document.getElementById('race-mgmt-auto-desc');
   if(descEl){
     const effectiveDate=getEffectiveRaceDate(ym);
-    descEl.textContent=formatKorDateTime(effectiveDate,getRaceAutoHour())+'에 자동으로 레이스가 진행됩니다.';
+    descEl.textContent=formatKorDateTime(effectiveDate,getRaceAutoHour(),getRaceAutoMinute())+'에 자동으로 레이스가 진행됩니다.';
   }
   SB.get('race_results','year_month=eq.'+ym+'&order=created_at.asc').then(r=>{
     const doneEl=document.getElementById('race-admin-done-notice');
