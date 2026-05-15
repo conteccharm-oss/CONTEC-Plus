@@ -547,6 +547,7 @@
         <div style="font-size:12px;color:rgba(180,230,255,0.55);margin-top:6px;">참여자: <strong id="race-entry-count" style="color:#00eeff;">0</strong>명</div>
         <div style="display:flex;gap:8px;margin-top:10px;">
           <button onclick="runAutoRaceNow()" style="flex:1;padding:9px 0;font-size:12px;font-weight:700;font-family:inherit;border-radius:8px;border:1.5px solid rgba(0,220,120,0.5);background:rgba(0,180,100,0.15);color:#00ff88;cursor:pointer;">🚀 지금 바로 실행</button>
+          <button onclick="resetAutoRunDate()" style="flex:1;padding:9px 0;font-size:12px;font-weight:700;font-family:inherit;border-radius:8px;border:1px solid rgba(255,100,100,0.4);background:rgba(255,60,60,0.1);color:rgba(255,150,150,0.9);cursor:pointer;">🔄 자동실행 초기화</button>
         </div>
       </div>
       <!-- 캔버스 래퍼 — race-winner-announce가 캔버스 위에 overlay로 표시됨 -->
@@ -887,7 +888,7 @@
           <span style="font-size:11px;color:rgba(255,220,100,0.8);line-height:1.5;">운영일이 <strong>주말</strong>인 경우 <strong>이전 평일(금요일)</strong>에 자동으로 진행됩니다</span>
         </div>
 
-        <button class="btn-main" style="background:var(--purple);margin-bottom:12px;" onclick="saveRaceAutoSettings()">저장</button>
+        <button class="btn-main" style="background:var(--purple);margin-bottom:8px;" onclick="saveRaceAutoSettings()">저장</button>
 
         <!-- 예정일 미리보기 -->
         <div style="background:rgba(0,0,0,0.3);border-radius:8px;padding:10px 12px;">
@@ -895,6 +896,9 @@
           <div id="race-effective-date" style="font-size:14px;font-weight:700;color:#00eeff;">-</div>
         </div>
       </div>
+
+      <!-- 자동실행 기록 초기화 -->
+      <button onclick="resetAutoRunDate()" style="width:100%;padding:10px;font-size:12px;font-family:inherit;border:1px solid rgba(255,100,100,0.35);border-radius:10px;background:rgba(255,60,60,0.08);color:rgba(255,150,150,0.9);cursor:pointer;margin-bottom:1rem;">🔄 오늘 자동실행 기록 초기화 (재실행 허용)</button>
 
       <!-- 이번 달 완료 표시 -->
       <div id="race-admin-done-notice" style="display:none;background:linear-gradient(135deg,#001a10,#002a18);border:1.5px solid rgba(0,220,120,0.4);border-radius:12px;padding:1rem;margin-bottom:1rem;">
@@ -1363,12 +1367,15 @@ function switchInstallTab(os,btn){
 }catch(e){}})();
 
 // ── PAGE SWITCH ──
+let _raceAutoCheckInterval=null;
 function switchPage(page){
   if(quizActive&&page!=='quiz'){showToast('⚠️ 퀴즈 진행 중! 먼저 답을 제출하세요');return;}
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   const el=document.getElementById('page-'+page);if(el)el.classList.add('active');
   document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
   document.querySelectorAll('.nav-btn').forEach(b=>{if(b.getAttribute('onclick')&&b.getAttribute('onclick').includes("'"+page+"'"))b.classList.add('active');});
+  // 레이스 페이지 이탈 시 자동 운영 체크 타이머 제거
+  if(_raceAutoCheckInterval){clearInterval(_raceAutoCheckInterval);_raceAutoCheckInterval=null;}
   if(page==='home'){
     if(!app.isAdmin)loadHomeWinners();
     loadFAQItems();
@@ -1376,7 +1383,27 @@ function switchPage(page){
   if(page==='quiz')loadQuizPage();
   if(page==='funny')loadFunnyList();
   if(page==='idea')loadIdeaList();
-  if(page==='race')loadRacePage();
+  if(page==='race'){
+    loadRacePage();
+    // 관리자: 레이스 페이지 체류 중 자동 운영 시간 도달 시 트리거
+    if(app.isAdmin){
+      _raceAutoCheckInterval=setInterval(async()=>{
+        if(!raceDone&&racePhase!=='ready')return; // 애니메이션 진행 중 스킵
+        const ym=getYM();
+        const existing=await SB.get('race_results','year_month=eq.'+ym+'&order=created_at.asc&limit=1');
+        if(existing.length)return; // 이미 결과 있음
+        const effectiveDate=getEffectiveRaceDate(ym);
+        const today=new Date();
+        if(today.toDateString()!==effectiveDate.toDateString())return;
+        const todayMins=today.getHours()*60+today.getMinutes();
+        const autoMins=getRaceAutoHour()*60+getRaceAutoMinute();
+        if(todayMins<autoMins)return;
+        clearInterval(_raceAutoCheckInterval);_raceAutoCheckInterval=null;
+        const entries=await SB.get('race_entries','year_month=eq.'+ym+'&order=created_at.asc');
+        if(entries.length>=1)await autoRunRace(entries.map(e=>e.name),ym);
+      },60000);
+    }
+  }
   if(page==='admin')loadAdminPage();
   if(page==='mypage')loadMyPage();
   if(page==='faq')loadFAQPage();
@@ -2597,16 +2624,29 @@ async function loadRacePage(){
     document.getElementById('race-admin-start-section').style.display='block';
     document.getElementById('race-vote-section').style.display='none';
 
-    // 관리자는 항상 배지+버튼 표시 (결과 유무 무관)
-    document.getElementById('race-admin-auto-badge').style.display='block';
-    const descEl=document.getElementById('race-admin-auto-desc');
-    if(descEl){
-      if(allResults.length>0){
-        const runCount=new Set(allResults.map(r=>r.race_seed)).size;
-        descEl.textContent='이번 달 레이스 '+runCount+'회 완료. 추가 실행 가능합니다.';
-      } else {
-        descEl.textContent=formatKorDateTime(effectiveDate,getRaceAutoHour(),getRaceAutoMinute())+'에 자동으로 레이스가 진행됩니다.';
-      }
+    // 관리자 배지: 자동실행 완료 여부에 따라 예정/완료 표시
+    const autoBadge=document.getElementById('race-admin-auto-badge');
+    autoBadge.style.display='block';
+    const autoRan=allResults.find(r=>r.is_auto);
+    if(autoRan){
+      // 완료 상태 — 초록 계열
+      autoBadge.style.border='1.5px solid rgba(0,220,120,0.5)';
+      autoBadge.style.background='linear-gradient(135deg,#001a10,#002a18)';
+      autoBadge.querySelector('span[style*="color:#00eeff"]').textContent='자동운영 완료';
+      autoBadge.querySelector('span[style*="font-size:16px"]').textContent='✅';
+      const rawTs=autoRan.created_at;
+      const d=new Date(rawTs.includes('+')||rawTs.endsWith('Z')?rawTs:rawTs+'+00:00');
+      const runTime=d.toLocaleString('ko-KR',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hour12:false,timeZone:'Asia/Seoul'});
+      const descEl=document.getElementById('race-admin-auto-desc');
+      if(descEl){descEl.style.color='rgba(100,255,180,0.8)';descEl.textContent=runTime+' 자동으로 레이스가 완료되었습니다.';}
+    } else {
+      // 예정 상태 — 파랑 계열 (기본)
+      autoBadge.style.border='1.5px solid rgba(0,200,255,0.35)';
+      autoBadge.style.background='linear-gradient(135deg,#000c20,#001030)';
+      autoBadge.querySelector('span[style*="color:#00eeff"]').textContent='자동운영 모드';
+      autoBadge.querySelector('span[style*="font-size:16px"]').textContent='🤖';
+      const descEl=document.getElementById('race-admin-auto-desc');
+      if(descEl){descEl.style.color='rgba(180,230,255,0.7)';descEl.textContent=formatKorDateTime(effectiveDate,getRaceAutoHour(),getRaceAutoMinute())+' 자동 레이스 예정';}
     }
   } else {
     document.getElementById('race-admin-start-section').style.display='none';
@@ -2636,7 +2676,8 @@ async function loadRacePage(){
         roundSel.style.display='flex';
         const latestSeed=String(results[results.length-1]?.race_seed||'');
         roundSel.innerHTML=runs2.map((run,i)=>{const isActive=String(run.seed)===latestSeed;
-          return`<button onclick="selectRaceRound('${run.seed}')" id="round-btn-${run.seed}" style="padding:6px 14px;font-size:12px;font-weight:700;font-family:inherit;border-radius:8px;border:${isActive?'1.5px':'1px'} solid ${isActive?'rgba(0,200,255,0.4)':'var(--border)'};background:${isActive?'rgba(0,200,255,0.15)':'rgba(255,255,255,0.07)'};color:${isActive?'#00eeff':'var(--text-sub)'};cursor:pointer;">${i+1}회차</button>`;}).join('');
+          const isAuto=run.rows?.some(r=>r.is_auto);
+          return`<button onclick="selectRaceRound('${run.seed}')" id="round-btn-${run.seed}" style="padding:6px 14px;font-size:12px;font-weight:700;font-family:inherit;border-radius:8px;border:${isActive?'1.5px':'1px'} solid ${isActive?'rgba(0,200,255,0.4)':'var(--border)'};background:${isActive?'rgba(0,200,255,0.15)':'rgba(255,255,255,0.07)'};color:${isActive?'#00eeff':'var(--text-sub)'};cursor:pointer;">${i+1}회차${isAuto?'<span style="margin-left:4px;font-size:9px;padding:1px 5px;border-radius:4px;background:rgba(0,200,255,0.2);color:#00eeff;vertical-align:middle;">자동</span>':''}</button>`;}).join('');
       }else if(roundSel){roundSel.style.display='none';}
     } else {
       document.getElementById('race-result-section').style.display='block';
@@ -3012,7 +3053,22 @@ function buildRaceState(names,seed){
   const collide1=sr();const collide2=sr();
   const swCnt=sr();
   const bhOffX=(sr()-0.5)*0.7;const bhOffY=(sr()-0.5)*0.7;
-  return{sats,meteorAngle,collide1,collide2,swCnt,bhOffX,bhOffY};
+  // 추가 이벤트 파라미터 (서버 simulateRaceWinners 와 동일 순서)
+  const debris1Frac=sr();
+  const meteor2Angle=sr()*Math.PI*2;
+  const debris2Frac=sr();
+  const coll2Frac1=sr();
+  const coll2Frac2=sr();
+  const debris3Frac=sr();
+  const sw2Cnt=sr();
+  const debris4Frac=sr();
+  const meteor3Angle=sr()*Math.PI*2;
+  const coll3Frac1=sr();
+  const coll3Frac2=sr();
+  const debris5Frac=sr();
+  return{sats,meteorAngle,collide1,collide2,swCnt,bhOffX,bhOffY,
+    debris1Frac,meteor2Angle,debris2Frac,coll2Frac1,coll2Frac2,
+    debris3Frac,sw2Cnt,debris4Frac,meteor3Angle,coll3Frac1,coll3Frac2,debris5Frac};
 }
 let raceAnimId=null,raceSats=[],raceStars=[],raceNebula=[],raceDone=false,raceWinner=null,raceT=0,raceW=0,raceH=0,raceCX=0,raceCY=0,raceParticles=[],racePhase='ready',raceCd=3,raceCdTimer=0,raceSpeedMult=1;
 function getRaceSpeedMult(remaining){if(remaining<=5)return 0.75;if(remaining<=8)return 1.1;if(remaining<=15)return 1.3;if(remaining<=25)return 1.1;return 1.0;}
@@ -3066,7 +3122,7 @@ async function startOrbitalRace(){
   window._raceWinnersList=null; window._winnersFinaleCalled=false; window._finaleT=null;
   window._podiumState={active:false,rank:3};
   window._finaleStarted=false; window._finaleBaseT=null;
-  window._raceResultShown=false;
+  window._raceResultShown=false; window._replayFinaleTriggered=false;
   const _sbWrap=document.getElementById('race-save-btn-wrap');if(_sbWrap)_sbWrap.style.display='none';
   window._userSpeedBoost=1.0; window._eventSlowEndTime=0;
   const _sc=document.getElementById('race-speed-ctrl');if(_sc)_sc.style.display='flex';
@@ -3086,7 +3142,7 @@ async function startOrbitalRace(){
       mss.style.display='none';
     }
   }
-  raceEvents={meteor:null,solarWind:null,blackHole:null,debris:null,eventMsg:{text:'',alpha:0,timer:0},shake:0,proximityWarn:null,_lastAlive:undefined,_meteorCount:0,_lastStatusT:-1,_final5Triggered:false};
+  raceEvents={meteor:null,solarWind:null,blackHole:null,debris:null,eventMsg:{text:'',alpha:0,timer:0},shake:0,proximityWarn:null,_lastAlive:undefined,_meteorCount:0,_debrisCount:0,_collisionCount:0,_solarWindCount:0,_lastStatusT:-1,_final5Triggered:false};
   raceEventsDone=new Set();
   raceEventQueue=buildRaceEventQueue(names.length);
 
@@ -3105,7 +3161,7 @@ async function startOrbitalRace(){
   const _isReplay2=!!(window._replayMode&&window._replaySeed);
   raceSeed=_isReplay2?Number(window._replaySeed):Date.now(); // Number() — DB bigint는 문자열로 반환됨
   if(_isReplay2){window._replayMode=false;window._replaySeed=null;window._replayNames=null;}
-  else{window._wasReplay=false;} // 신규 레이스: 이전 리플레이 플래그 반드시 초기화
+  else{window._wasReplay=false;window._replayProtectedName=null;window._replayProtectedNames=null;window._replayDBRanks=null;window._replayFinaleTriggered=false;} // 신규 레이스: 이전 리플레이 플래그 반드시 초기화
   window._raceRNG=makeRaceRNG(raceSeed+7777); // 결정론적 레이스 RNG
   window._raceExtraAcc=0; // 소수점 속도 누산기 (Math.random 대체)
   raceSatNames=[...names];
@@ -3120,6 +3176,10 @@ async function startOrbitalRace(){
     const speed=dir*Math.abs(s.speed)*Math.sqrt(refR/orbitR);
     return{...s,orbitR,speed};
   });
+  // 리플레이: DB 1·2·3등 위성은 자연탈락 안 되도록 departDelay 최대화 (피날레에서 순서대로 탈락 강제)
+  if(window._wasReplay&&window._replayProtectedNames){
+    raceSats.forEach(s=>{if(window._replayProtectedNames.has(s.name))s.departDelay=9999;});
+  }
 
   if(raceAnimId)cancelAnimationFrame(raceAnimId);
   raceLoop();
@@ -3164,7 +3224,8 @@ function setUserSpeedBoost(v){
 }
 function addRaceP(x,y,col,cnt=12){for(let i=0;i<cnt;i++){const a=Math.random()*Math.PI*2,s=2+Math.random()*4;raceParticles.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,col,life:1,r:2+Math.random()*3});}}
 function addRaceW(x,y,c,mr=38){raceParticles.push({type:'wave',x,y,r:6,maxR:mr,col:c,life:1});}
-function raceExplode(s){
+function raceExplode(s,_natural=false){
+  if(!_natural&&window._replayProtectedNames?.has(s.name))return; // 리플레이: 이벤트로 DB 당첨자 탈락 방지
   if(s.state!=='orbit')return; // 중복 탈락 방지
   s.state='exploding';s.explodeT=0;addRaceP(s.x,s.y,s.color,14);addRaceW(s.x,s.y,s.color);
   if(s.name===app.name) updateMySatStatus('eliminated');
@@ -3223,16 +3284,25 @@ function triggerRaceEvent(type){
   if(type==='debris'){
     window._eventSlowEndTime=Date.now()+3000;
     const _rr=window._raceRNG||Math.random;
+    raceEvents._debrisCount=(raceEvents._debrisCount||0)+1;
     const cnt=5+Math.floor(_rr()*5);
     const aliveTargets=raceSats.filter(s=>s.state==='orbit'&&!s.isWinner);
-    const target=aliveTargets.length>0?aliveTargets[Math.floor(_rr()*aliveTargets.length)]:null;
+    // buildRaceState 파라미터로 타겟 결정 (서버와 동일)
+    const _debrisKeys=['debris1Frac','debris2Frac','debris3Frac','debris4Frac','debris5Frac'];
+    const _frac=sd[_debrisKeys[raceEvents._debrisCount-1]]??_rr();
+    const target=aliveTargets.length>0?aliveTargets[Math.floor(_frac*aliveTargets.length)%aliveTargets.length]:null;
+    // 타겟 즉시 탈락 (서버 시뮬레이션과 동일)
+    if(target){raceExplode(target);showRaceMsg('💥 우주쓰레기 직격!');raceEvents.shake=22;}
+    else{showRaceMsg('🗑️ 우주쓰레기 군집 접근!');raceEvents.shake=6;}
+    // 시각적 파편 생성 (충돌 판정 없음)
+    const tx=target?.x||raceCX,ty=target?.y||raceCY;
     const pieces=Array.from({length:cnt},(_,i)=>{
-      if(i===0&&target){
-        const spawnAng=Math.atan2(target.y-raceCY,target.x-raceCX)+Math.PI+(_rr()-0.5)*0.25;
+      if(i===0){
+        const spawnAng=Math.atan2(ty-raceCY,tx-raceCX)+Math.PI+(_rr()-0.5)*0.25;
         const spawnDist=raceW*0.72;
         const sx=raceCX+Math.cos(spawnAng)*spawnDist,sy=raceCY+Math.sin(spawnAng)*spawnDist;
         const spd=7+_rr()*3;
-        const dx2=target.x-sx,dy2=target.y-sy,dl=Math.sqrt(dx2*dx2+dy2*dy2)||1;
+        const dx2=tx-sx,dy2=ty-sy,dl=Math.sqrt(dx2*dx2+dy2*dy2)||1;
         return{x:sx,y:sy,vx:(dx2/dl)*spd,vy:(dy2/dl)*spd,
           r:10,rot:_rr()*Math.PI*2,rotV:(_rr()-0.5)*0.25,
           pts:Array.from({length:7},(_,k)=>({a:(Math.PI*2/7)*k,r:0.7+_rr()*0.6})),
@@ -3248,8 +3318,6 @@ function triggerRaceEvent(type){
         trail:[],active:true,isBig:false};
     });
     raceEvents.debris={pieces,timer:0};
-    showRaceMsg('🗑️ 우주쓰레기 군집 접근!');
-    raceEvents.shake=6;
     return;
   }
   if(alive.length<2)return;
@@ -3258,11 +3326,9 @@ function triggerRaceEvent(type){
   if(type==='meteor'){
     raceEvents._meteorCount=(raceEvents._meteorCount||0)+1;
     if(raceEvents._meteorCount>=2){
-      // 2차 운석: 결정론적 방향
-      const _rr2=window._raceRNG||Math.random;
-      const angle2=_rr2()*Math.PI*2;
-      const spd2=16+_rr2()*6;
-      raceEvents.meteor={x:raceCX+Math.cos(angle2)*(raceW*0.85),y:raceCY+Math.sin(angle2)*(raceH*0.85),vx:-Math.cos(angle2)*spd2,vy:-Math.sin(angle2)*spd2,r:24,trail:[],active:true,isBig:true};
+      // 2차/3차 운석: buildRaceState 파라미터 사용 (서버와 동일)
+      const _ang=raceEvents._meteorCount===2?(sd.meteor2Angle??Math.random()*Math.PI*2):(sd.meteor3Angle??Math.random()*Math.PI*2);
+      raceEvents.meteor={x:raceCX+Math.cos(_ang)*(raceW*0.85),y:raceCY+Math.sin(_ang)*(raceH*0.85),vx:-Math.cos(_ang)*19,vy:-Math.sin(_ang)*19,r:24,trail:[],active:true,isBig:true};
       showRaceMsg('🔥 초대형 운석 낙하!');
       raceEvents.shake=10;
     } else {
@@ -3271,14 +3337,20 @@ function triggerRaceEvent(type){
       showRaceMsg('☄️ 거대 운석 낙하!');
     }
   } else if(type==='collision'){
+    raceEvents._collisionCount=(raceEvents._collisionCount||0)+1;
+    const _cc=raceEvents._collisionCount;
+    const _c1=_cc===1?(sd.collide1??Math.random()):(_cc===2?(sd.coll2Frac1??Math.random()):(sd.coll3Frac1??Math.random()));
+    const _c2=_cc===1?(sd.collide2??Math.random()):(_cc===2?(sd.coll2Frac2??Math.random()):(sd.coll3Frac2??Math.random()));
     if(alive.length>=2){
-      const a=alive[Math.floor((sd.collide1??Math.random())*alive.length)];
+      const a=alive[Math.floor(_c1*alive.length)];
       const rest=alive.filter(s=>s!==a);
-      const b=rest[Math.floor((sd.collide2??Math.random())*rest.length)];
+      const b=rest[Math.floor(_c2*rest.length)];
       if(a&&b){raceExplode(a);raceExplode(b);addRaceW((a.x+b.x)/2,(a.y+b.y)/2,'#FF3300',110);addRaceW((a.x+b.x)/2,(a.y+b.y)/2,'#FF8C00',75);addRaceP((a.x+b.x)/2,(a.y+b.y)/2,'#FF4400',45);addRaceP((a.x+b.x)/2,(a.y+b.y)/2,'#FFFFFF',25);raceEvents.shake=18;showRaceMsg('💥 대형 위성 충돌!');}
     }
   } else if(type==='solarWind'){
-    raceEvents.solarWind={timer:0,phase:'warning'};
+    raceEvents._solarWindCount=(raceEvents._solarWindCount||0)+1;
+    const _swf=raceEvents._solarWindCount===1?(sd.swCnt??Math.random()):(sd.sw2Cnt??Math.random());
+    raceEvents.solarWind={timer:0,phase:'warning',swCnt:_swf};
     showRaceMsg('⚡ 태양풍 경보!');
   } else if(type==='blackHole'){
     const bx=raceCX+(sd.bhOffX??((Math.random()-0.5)*0.7))*raceW*0.5;
@@ -3340,7 +3412,7 @@ function raceUpdate(){
     if(sw.phase==='warning'&&sw.timer>2){
       sw.phase='blast';sw.blastT=0;showRaceMsg('⚡ 강력한 태양풍 강타!');
       const alive=raceSats.filter(s=>s.state==='orbit'&&!s.isWinner);
-      const swf=(window._raceSeedData?.swCnt??Math.random());
+      const swf=(sw.swCnt??window._raceSeedData?.swCnt??Math.random());
       const cnt=Math.min(alive.length-1,2+Math.floor(swf*2));
       for(let i=0;i<cnt;i++){const idx=Math.floor((i===0?swf:1-swf)*alive.length)%alive.length;if(alive[idx]){raceExplode(alive[idx]);alive.splice(idx,1);}}
       raceSats.filter(s=>s.state==='orbit').forEach(s=>s.wobble=2.5);
@@ -3369,23 +3441,7 @@ function raceUpdate(){
       d.rot+=d.rotV;
       d.trail.push({x:d.x,y:d.y});if(d.trail.length>10)d.trail.shift();
       d.x+=d.vx;d.y+=d.vy;
-      raceSats.forEach(s=>{
-        if(s.state!=='orbit')return;
-        const dx=s.x-d.x,dy=s.y-d.y;
-        if(Math.sqrt(dx*dx+dy*dy)<d.r+8){
-          if(!s.isWinner){
-            raceExplode(s);
-            if(d.isBig){
-              addRaceP(d.x,d.y,'#dddddd',30);addRaceP(d.x,d.y,'#FF8800',18);
-              addRaceW(d.x,d.y,'#aaaaaa',90);addRaceW(d.x,d.y,'#FF4400',60);
-              raceEvents.shake=22;showRaceMsg('💥 우주쓰레기 직격!');
-            } else {
-              addRaceP(d.x,d.y,'#aaaaaa',8);raceEvents.shake=12;
-            }
-          }
-          d.active=false;
-        }
-      });
+      // 충돌 판정 없음 — 탈락은 triggerRaceEvent 에서 즉시 처리됨
       if(d.x<-120||d.x>raceW+120||d.y<-120||d.y>raceH+120)d.active=false;
     });
     if(!anyActive&&raceEvents.debris.timer>1)raceEvents.debris=null;
@@ -3406,7 +3462,7 @@ function raceUpdate(){
       s.trail.push({x:s.x,y:s.y});
       if(s.trail.length>trailLen)s.trail.shift();
       s.departTimer+=1/60;
-      if(s.departTimer>s.departDelay&&!s.isWinner){raceExplode(s);}
+      if(s.departTimer>s.departDelay&&!s.isWinner){raceExplode(s,true);} // _natural=true: 보호 대상도 자연탈락은 허용
     } else if(s.state==='exploding'){
       s.explodeT+=1/60;s.scale=Math.max(0,1-s.explodeT*3);s.opacity=Math.max(0,1-s.explodeT*2.5);
       if(s.explodeT>0.5){s.state='done';}
@@ -3465,10 +3521,21 @@ function raceUpdate(){
       const _p23=raceSats.filter(s=>s.podiumRank);
       setTimeout(()=>startWinnersFinale([..._p23,lastSat]),1200);
     }
-    // 마지막 5기 → departure 압축 (이름 보이는 속도로 줄이되 빠른 탈락 유도)
+    // 마지막 5기 → departure 압축 (리플레이 보호 위성 제외)
     if(!raceEvents._final5Triggered&&aliveNow<=5&&aliveNow>3){
       raceEvents._final5Triggered=true;
-      nonWin.forEach((s,i)=>{const t=s.departTimer+7+i*4;if(t<s.departDelay)s.departDelay=t;});
+      nonWin.filter(s=>!window._replayProtectedNames?.has(s.name)).forEach((s,i)=>{const t=s.departTimer+7+i*4;if(t<s.departDelay)s.departDelay=t;});
+    }
+    // 리플레이 피날레: 남은 위성이 모두 DB 당첨자일 때 순위대로 탈락 강제
+    if(window._wasReplay&&window._replayProtectedNames&&!window._replayFinaleTriggered){
+      const _orbitNow=raceSats.filter(s=>s.state==='orbit');
+      if(_orbitNow.length>=1&&_orbitNow.length<=3&&_orbitNow.every(s=>window._replayProtectedNames.has(s.name))){
+        window._replayFinaleTriggered=true;
+        const _rk=window._replayDBRanks;
+        // 높은 rank 번호(3등)부터 먼저 탈락하도록 정렬
+        const _s3=[..._orbitNow].sort((a,b)=>(_rk?.get(b.name)||1)-(_rk?.get(a.name)||1));
+        _s3.forEach((s,i)=>{if(i<_s3.length-1)s.departDelay=s.departTimer+4+i*4;}); // 마지막(1등)은 9999 유지
+      }
     }
   }
 }
@@ -3854,25 +3921,31 @@ function showRaceWinner(winners){
     </div>`).join('');
 
   const _wasReplay=window._wasReplay;window._wasReplay=false;
-  // 리플레이 시 DB 저장값으로 당첨자 덮어쓰기 (자동실행과 애니메이션 결과 불일치 방지)
-  if(_wasReplay&&window._replayDBWinners){
-    const dbW=window._replayDBWinners;window._replayDBWinners=null;
-    const dbMedals=['🥇','🥈','🥉'];const dbColors=['#FFD700','#C0C0C0','#CD7F32'];
-    const dbBg=['rgba(40,30,0,0.9)','rgba(25,25,25,0.9)','rgba(30,18,5,0.9)'];
-    const dbBorder=['rgba(255,200,0,0.7)','rgba(190,190,190,0.5)','rgba(180,110,40,0.5)'];
-    const dbCards=dbW.map((w,i)=>`<div style="display:flex;align-items:center;gap:12px;padding:12px 16px;background:${dbBg[i]||'rgba(20,20,20,0.9)'};border:1.5px solid ${dbBorder[i]||'rgba(100,100,100,0.4)'};border-radius:12px;margin-bottom:8px;box-shadow:0 0 12px ${dbBorder[i]||'transparent'};"><span style="font-size:28px;line-height:1;">${dbMedals[i]||'🏅'}</span><div style="flex:1;"><div style="font-size:11px;color:${dbColors[i]||'#aaa'};font-weight:700;letter-spacing:1px;margin-bottom:2px;">${w.rank}등 당첨</div><div style="font-size:18px;font-weight:900;color:#fff;text-shadow:0 0 8px ${dbColors[i]||'#fff'};">${w.name}</div></div></div>`).join('');
-    document.getElementById('race-admin-winner').textContent=dbW[0]?.name||rank1.name;
-    announceEl.innerHTML=`<div style="font-size:11px;color:rgba(255,200,0,0.7);letter-spacing:3px;margin-bottom:12px;font-weight:700;">✦ RACE COMPLETE ✦</div>${dbCards}<button class="btn-main" style="background:linear-gradient(135deg,#1a0a00,#2a1500);border:1.5px solid rgba(255,200,0,0.5);color:#FFD700;width:auto;padding:10px 24px;margin-top:8px;" onclick="showRaceResultOnly()">🏆 결과 확인</button>`;
-    announceEl.style.display='flex';announceEl.style.flexDirection='column';announceEl.style.alignItems='center';announceEl.style.justifyContent='center';
-    window._autoSaveResult=false;return;
-  }
+  const _replayDBSeed=window._replayDBSeed;window._replayDBSeed=null;
+  window._replayDBWinners=null;
+  // 리플레이: 애니메이션 결과 무시하고 항상 DB 당첨자로 표시
   if(_wasReplay){
     window._autoSaveResult=false;
-    // 직원 리플레이: 저장 버튼 없이 결과만 표시
-    announceEl.innerHTML=`
-      <div style="font-size:11px;color:rgba(255,200,0,0.7);letter-spacing:3px;margin-bottom:12px;font-weight:700;">✦ RACE COMPLETE ✦</div>
-      ${winnerCards}
-      <button class="btn-main" style="background:linear-gradient(135deg,#1a0a00,#2a1500);border:1.5px solid rgba(255,200,0,0.5);color:#FFD700;width:auto;padding:10px 24px;margin-top:8px;" onclick="showRaceResultOnly()">🏆 결과 확인</button>`;
+    const _medals=['🥇','🥈','🥉'];const _colors=['#FFD700','#C0C0C0','#CD7F32'];
+    const _bg=['rgba(40,30,0,0.9)','rgba(25,25,25,0.9)','rgba(30,18,5,0.9)'];
+    const _bd=['rgba(255,200,0,0.7)','rgba(190,190,190,0.5)','rgba(180,110,40,0.5)'];
+    const _renderReplay=(w)=>`<div style="display:flex;align-items:center;gap:12px;padding:12px 16px;background:${_bg[w._i]||'rgba(20,20,20,0.9)'};border:1.5px solid ${_bd[w._i]||'rgba(100,100,100,0.4)'};border-radius:12px;margin-bottom:8px;box-shadow:0 0 12px ${_bd[w._i]||'transparent'};"><span style="font-size:28px;line-height:1;">${_medals[w._i]||'🏅'}</span><div style="flex:1;"><div style="font-size:11px;color:${_colors[w._i]||'#aaa'};font-weight:700;letter-spacing:1px;margin-bottom:2px;">${w.rank||w._i+1}등 당첨</div><div style="font-size:18px;font-weight:900;color:#fff;text-shadow:0 0 8px ${_colors[w._i]||'#fff'};">${w.name}</div></div></div>`;
+    announceEl.innerHTML=`<div style="font-size:11px;color:rgba(255,200,0,0.7);letter-spacing:3px;margin-bottom:12px;font-weight:700;">✦ RACE COMPLETE ✦</div><div style="color:rgba(255,255,255,0.5);padding:12px;">결과 확인 중...</div>`;
+    announceEl.style.display='flex';announceEl.style.flexDirection='column';announceEl.style.alignItems='center';announceEl.style.justifyContent='center';
+    SB.get('race_results','race_seed=eq.'+_replayDBSeed+'&order=rank.asc').then(rows=>{
+      const dbW=[];const seenRk=new Set();
+      (rows||[]).forEach(r=>{const k=r.rank||1;if(!seenRk.has(k)&&k<=3){seenRk.add(k);dbW.push({name:r.winner_name,rank:k,_i:seenRk.size-1});}});
+      const finalW=dbW.length?dbW:sorted.map((w,i)=>({...w,_i:i}));
+      document.getElementById('race-admin-winner').textContent=finalW[0]?.name||rank1.name;
+      let st='🥇 '+finalW[0].name;if(finalW[1])st+=' | 🥈 '+finalW[1].name;if(finalW[2])st+=' | 🥉 '+finalW[2].name;
+      document.getElementById('race-status').textContent=st;
+      const dbCards=finalW.map(_renderReplay).join('');
+      announceEl.innerHTML=`<div style="font-size:11px;color:rgba(255,200,0,0.7);letter-spacing:3px;margin-bottom:12px;font-weight:700;">✦ RACE COMPLETE ✦</div>${dbCards}<button class="btn-main" style="background:linear-gradient(135deg,#1a0a00,#2a1500);border:1.5px solid rgba(255,200,0,0.5);color:#FFD700;width:auto;padding:10px 24px;margin-top:8px;" onclick="showRaceResultOnly()">🏆 결과 확인</button>`;
+    }).catch(()=>{
+      const fbCards=sorted.map((w,i)=>_renderReplay({...w,_i:i})).join('');
+      announceEl.innerHTML=`<div style="font-size:11px;color:rgba(255,200,0,0.7);letter-spacing:3px;margin-bottom:12px;font-weight:700;">✦ RACE COMPLETE ✦</div>${fbCards}<button class="btn-main" style="background:linear-gradient(135deg,#1a0a00,#2a1500);border:1.5px solid rgba(255,200,0,0.5);color:#FFD700;width:auto;padding:10px 24px;margin-top:8px;" onclick="showRaceResultOnly()">🏆 결과 확인</button>`;
+    });
+    return;
   } else {
     announceEl.innerHTML=`
       <div style="font-size:11px;color:rgba(255,200,0,0.7);letter-spacing:3px;margin-bottom:12px;font-weight:700;">✦ RACE COMPLETE ✦</div>
@@ -3903,14 +3976,16 @@ async function saveRaceWinner(){
   const winners=window._raceWinnersList;
   if(!winners||!winners.length){showToast('❌ 우승자 정보가 없습니다 — 레이스를 다시 실행해주세요');return;}
   const ym=getYM();
+  const _isAuto=!!window._isAutoRun;window._isAutoRun=false;
   let allOk=true;
   for(const w of winners){
-    const ok=await SB.post('race_results',{year_month:ym,winner_name:w.name,race_seed:raceSeed,race_names:JSON.stringify(raceSatNames),rank:w.rank||1});
+    const ok=await SB.post('race_results',{year_month:ym,winner_name:w.name,race_seed:raceSeed,race_names:JSON.stringify(raceSatNames),rank:w.rank||1,is_auto:_isAuto});
     if(!ok)allOk=false;
   }
   const sb=document.getElementById('race-save-btn-wrap');if(sb)sb.style.display='none';
   if(allOk){
     showToast('🎉 결과 저장 완료! 직원들이 확인할 수 있습니다');
+    if(_isAuto)sendRacePushNotification('🏆 이달의 궤도 레이스 결과가 발표됐습니다!'); // 자동운영: 결과 저장 후 직원들에게 알림
     const announce=document.getElementById('race-winner-announce');
     if(announce)announce.style.display='none';
     loadRacePage();
@@ -4009,6 +4084,12 @@ async function saveRaceAutoSettings(){
 
 // 하위호환: 기존 saveRaceAutoDay 호출 대비
 function saveRaceAutoDay(){saveRaceAutoSettings();}
+
+async function resetAutoRunDate(){
+  if(!confirm('오늘 자동실행 기록을 초기화합니다.\n이 달에 다시 자동실행이 가능해집니다.\n계속하시겠습니까?'))return;
+  await SB.upsert('app_settings',{key:'last_auto_run_date',value:''});
+  showToast('✅ 자동실행 기록 초기화 완료. 다음 크론 주기에 재실행됩니다.');
+}
 
 function setMonthRaceMode(mode){
   localStorage.setItem('contec_race_mode_'+getYM(),mode);
@@ -4228,22 +4309,19 @@ function loadRaceAutoDaySetting(){
 }
 
 async function autoRunRace(names,ym){
-  // 수동운영과 동일하게 실제 레이스 실행 — 결과는 레이스 종료 후 자동 저장
   window._autoSaveResult=true;
+  window._isAutoRun=true;
   showToast('🚀 자동 레이스 시작!');
-  startOrbitalRace(); // 비동기 — rAF 루프로 진행, 종료 시 showRaceWinner에서 자동 저장
+  startOrbitalRace();
 }
 
 async function runAutoRaceNow(){
-  const ym=getYM();
-  const entries=await SB.get('race_entries','year_month=eq.'+ym+'&order=created_at.asc');
-  if(!entries.length){showToast('❌ 참여자가 없습니다');return;}
-  // 관리자: nav 그대로 유지하고 race 페이지만 전환 (사용자 모드로 전환 안 함)
+  // 수동 실행: _isAutoRun/_autoSaveResult 설정 없이 일반 레이스로 시작
   if(app.isAdmin){
     switchPage('race');
-    setTimeout(()=>autoRunRace(entries.map(e=>e.name),ym),400);
+    setTimeout(()=>startOrbitalRace(),400);
   } else {
-    await autoRunRace(entries.map(e=>e.name),ym);
+    startOrbitalRace();
   }
 }
 
@@ -4353,6 +4431,7 @@ async function loadRaceHistory(){
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
         <div>
           <span style="font-size:12px;font-weight:700;color:#00eeff;">${i+1}회차</span>
+          ${run.rows.some(r=>r.is_auto)?'<span style="margin-left:5px;font-size:9px;padding:2px 6px;border-radius:4px;background:rgba(0,200,255,0.15);color:#00eeff;font-weight:700;vertical-align:middle;">자동</span>':''}
           <span style="font-size:11px;color:var(--text-hint);margin-left:8px;">${dateStr}</span>
         </div>
         <button onclick="deleteRaceRun(${JSON.stringify(run.seed)})" style="padding:4px 10px;background:rgba(226,75,74,0.15);color:var(--red);border:1px solid rgba(226,75,74,0.3);border-radius:8px;font-size:11px;font-family:inherit;cursor:pointer;">🗑️ 삭제</button>
@@ -4724,30 +4803,33 @@ function runDemoRace(){
 // ── USER RACE REPLAY ──
 let userRaceAnimId=null;
 
-function startUserRaceReveal(){
+async function startUserRaceReveal(){
   const res=window._raceResult;
   if(!res){showToast('❌ 레이스 데이터가 없습니다');return;}
   const names=res.race_names?JSON.parse(res.race_names):[];
   if(!names.length){showToast('❌ 참여자 데이터가 없습니다');return;}
   document.getElementById('race-result-teaser').style.display='none';
   document.getElementById('race-result-box').style.display='none';
-  // 직원: race-canvas-wrap이 admin section 안에 있어 임시로 섹션 표시 (타이틀·자동운영 배지는 숨김)
-  if(!app.isAdmin){
-    document.getElementById('race-admin-start-section').style.display='block';
-    const t=document.getElementById('race-admin-ctrl-title');if(t)t.style.display='none';
-    const badge=document.getElementById('race-admin-auto-badge');if(badge)badge.style.display='none';
-    window._autoSaveResult=false;
-  }
-  // 리플레이 플래그 설정 — startOrbitalRace가 저장된 시드/참여자로 동일 레이스 재현
-  window._replayMode=true;
+  // DB에서 1·2·3등 모두 조회 → 리플레이 보호 Set 구성
+  const _dbRows=await SB.get('race_results','race_seed=eq.'+res.race_seed+'&order=rank.asc');
+  const _winners=(_dbRows||[]).filter(r=>(r.rank||1)<=3);
+  // 리플레이 플래그: startOrbitalRace()가 동일 시드·동일 참여자로 재실행
   window._wasReplay=true;
-  window._replaySeed=Number(res.race_seed);
+  window._replayMode=true;
+  window._replaySeed=res.race_seed;
   window._replayNames=names;
-  // DB 저장 당첨자를 미리 보관 (애니메이션 결과와 불일치 방지)
-  const allRunRows=window._allRaceRuns?.find(r=>String(r.seed)===String(res.race_seed))?.rows||[];
-  const dbWinners=[];const seenR=new Set();
-  [...allRunRows].sort((a,b)=>(a.rank||1)-(b.rank||1)).forEach(r=>{const k=r.rank||1;if(!seenR.has(k)&&k<=3){seenR.add(k);dbWinners.push({name:r.winner_name,rank:k,color:'#FFD700'});}});
-  window._replayDBWinners=dbWinners.length?dbWinners:null;
+  window._replayDBSeed=res.race_seed;
+  window._replayProtectedNames=new Set(_winners.map(w=>w.winner_name));
+  const _rk=new Map();_winners.forEach(w=>_rk.set(w.winner_name,w.rank||1));
+  window._replayDBRanks=_rk;
+  window._replayFinaleTriggered=false;
+  // 캔버스가 있는 섹션 표시 (직원도 동일 캔버스 사용)
+  const _adminSec=document.getElementById('race-admin-start-section');
+  if(_adminSec)_adminSec.style.display='block';
+  const _ctrlTitle=document.getElementById('race-admin-ctrl-title');
+  if(_ctrlTitle)_ctrlTitle.style.display='none';
+  const _autoBadge=document.getElementById('race-admin-auto-badge');
+  if(_autoBadge)_autoBadge.style.display='none';
   startOrbitalRace();
 }
 
@@ -4971,11 +5053,12 @@ async function subscribePush(){
   }catch(e){}
 }
 
-async function sendRacePushNotification(){
+async function sendRacePushNotification(msg=''){
   try{
     await fetch('https://ifytanvhskqmbvmjoohi.supabase.co/functions/v1/send-race-push',{
       method:'POST',
-      headers:{'Authorization':'Bearer '+CONFIG.supabaseKey,'Content-Type':'application/json'}
+      headers:{'Authorization':'Bearer '+CONFIG.supabaseKey,'Content-Type':'application/json'},
+      body:msg?JSON.stringify({body:msg}):undefined
     });
   }catch(e){}
 }
