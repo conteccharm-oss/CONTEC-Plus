@@ -577,6 +577,8 @@
 
     <!-- 레이스 결과 -->
     <div id="race-result-section" style="display:none;margin-top:1rem;">
+      <!-- 회차 선택 (직원용, 복수 회차일 때만 표시) -->
+      <div id="race-round-selector" style="display:none;display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;"></div>
       <!-- 티저: 확인하기 전 -->
       <div id="race-result-teaser" style="background:linear-gradient(135deg,#000820,#0a0a2e,#0D1B3E);border-radius:16px;border:2px solid rgba(0,200,255,0.4);padding:1.75rem 1.5rem;text-align:center;box-shadow:0 0 24px rgba(0,150,255,0.15);">
         <div style="font-size:42px;margin-bottom:10px;">🛸</div>
@@ -961,10 +963,25 @@
     </div>
     <!-- 질문 제출 폼 -->
     <div class="card" style="margin-top:1rem;margin-bottom:1rem;">
-      <div style="font-size:13px;font-weight:700;margin-bottom:10px;">✏️ 질문 등록</div>
+      <div style="font-size:13px;font-weight:700;margin-bottom:12px;">✏️ 질문 등록</div>
+      <div style="margin-bottom:12px;">
+        <div style="font-size:11px;color:var(--text-sub);font-weight:600;margin-bottom:7px;">카테고리</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;">
+          <button id="qa-cat-system" onclick="selectQACategory('시스템')" style="padding:7px 14px;font-size:12px;font-weight:700;font-family:inherit;border-radius:8px;border:1.5px solid rgba(0,200,255,0.4);background:rgba(0,200,255,0.15);color:#00eeff;cursor:pointer;">💻 시스템</button>
+          <button id="qa-cat-welfare" onclick="selectQACategory('복지')" style="padding:7px 14px;font-size:12px;font-weight:700;font-family:inherit;border-radius:8px;border:1px solid var(--border);background:rgba(255,255,255,0.07);color:var(--text-sub);cursor:pointer;">🎁 복지</button>
+          <button id="qa-cat-etc" onclick="selectQACategory('기타')" style="padding:7px 14px;font-size:12px;font-weight:700;font-family:inherit;border-radius:8px;border:1px solid var(--border);background:rgba(255,255,255,0.07);color:var(--text-sub);cursor:pointer;">📋 기타</button>
+        </div>
+      </div>
       <div class="m-field">
         <label>질문 내용</label>
         <textarea id="qa-question-input" placeholder="궁금한 점을 입력하세요" rows="3" style="width:100%;background:rgba(255,255,255,0.07);border:1px solid var(--border);border-radius:8px;color:#fff;padding:10px;font-family:inherit;font-size:13px;resize:vertical;box-sizing:border-box;"></textarea>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+        <span style="font-size:12px;color:var(--text-sub);font-weight:600;">공개 설정</span>
+        <div style="display:flex;gap:6px;">
+          <button id="qa-vis-public" onclick="setQAVisibility(true)" style="padding:6px 13px;font-size:12px;font-weight:700;font-family:inherit;border-radius:8px;border:1.5px solid rgba(0,200,255,0.4);background:rgba(0,200,255,0.15);color:#00eeff;cursor:pointer;">👁️ 공개</button>
+          <button id="qa-vis-private" onclick="setQAVisibility(false)" style="padding:6px 13px;font-size:12px;font-weight:700;font-family:inherit;border-radius:8px;border:1px solid var(--border);background:rgba(255,255,255,0.07);color:var(--text-sub);cursor:pointer;">🔒 비공개</button>
+        </div>
       </div>
       <button onclick="submitQAQuestion()" class="btn-main" style="width:100%;margin-top:4px;">📩 질문 제출</button>
     </div>
@@ -2029,15 +2046,49 @@ async function loadHomeWinners(){
 
 // ── FAQ ──
 // ── 직원 Q&A ──
+let _qaCategory='시스템', _qaIsPublic=true;
+
+function selectQACategory(cat){
+  _qaCategory=cat;
+  const map={시스템:'system',복지:'welfare',기타:'etc'};
+  Object.entries(map).forEach(([c,key])=>{
+    const btn=document.getElementById('qa-cat-'+key);if(!btn)return;
+    const on=c===cat;
+    btn.style.background=on?'rgba(0,200,255,0.15)':'rgba(255,255,255,0.07)';
+    btn.style.borderColor=on?'rgba(0,200,255,0.4)':'var(--border)';
+    btn.style.color=on?'#00eeff':'var(--text-sub)';
+    btn.style.borderWidth=on?'1.5px':'1px';
+  });
+}
+
+function setQAVisibility(isPublic){
+  _qaIsPublic=isPublic;
+  const pub=document.getElementById('qa-vis-public');
+  const pri=document.getElementById('qa-vis-private');
+  if(pub){pub.style.background=isPublic?'rgba(0,200,255,0.15)':'rgba(255,255,255,0.07)';pub.style.borderColor=isPublic?'rgba(0,200,255,0.4)':'var(--border)';pub.style.color=isPublic?'#00eeff':'var(--text-sub)';pub.style.borderWidth=isPublic?'1.5px':'1px';}
+  if(pri){pri.style.background=!isPublic?'rgba(255,80,80,0.12)':'rgba(255,255,255,0.07)';pri.style.borderColor=!isPublic?'rgba(255,80,80,0.4)':'var(--border)';pri.style.color=!isPublic?'#ff7070':'var(--text-sub)';pri.style.borderWidth=!isPublic?'1.5px':'1px';}
+}
+
 async function submitQAQuestion(){
   const q=document.getElementById('qa-question-input').value.trim();
   if(!q){showToast('❌ 질문 내용을 입력해주세요');return;}
-  const ok=await SB.post('qa_items',{question:q,submitted_by:app.name,status:'pending'});
+  const ok=await SB.post('qa_items',{question:q,submitted_by:app.name,status:'pending',category:_qaCategory,is_public:_qaIsPublic});
   if(ok){
     showToast('✅ 질문이 등록되었습니다! 관리자 답변 후 공개됩니다');
     document.getElementById('qa-question-input').value='';
+    sendQANotificationEmail(q,_qaCategory,app.name);
     loadFAQPage();
   }else{showToast('❌ 등록 실패');}
+}
+
+async function sendQANotificationEmail(question,category,submitter){
+  try{
+    fetch(CONFIG.supabaseUrl+'/functions/v1/send-qa-email',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+CONFIG.supabaseKey},
+      body:JSON.stringify({question,category,submitter})
+    });
+  }catch(e){console.warn('[QA 이메일]',e);}
 }
 
 async function loadPendingQuestions(){
@@ -2051,6 +2102,7 @@ async function loadPendingQuestions(){
     <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px 14px;">
       <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:8px;">
         <div>
+          ${r.category?`<span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:99px;background:rgba(0,200,255,0.12);color:#00eeff;border:1px solid rgba(0,200,255,0.25);margin-bottom:4px;display:inline-block;">${r.category}</span>`:''}
           <div style="font-size:13px;font-weight:600;color:#fff;margin-bottom:2px;">${r.question}</div>
           <div style="font-size:11px;color:var(--text-hint);">by ${r.submitted_by} · ${new Date(r.created_at).toLocaleDateString('ko-KR')}</div>
         </div>
@@ -2137,6 +2189,28 @@ async function loadFAQPage(){
       }).join('');
     }else if(mySection){mySection.style.display='none';}
   }
+}
+
+function selectRaceRound(seed){
+  const runs=window._allRaceRuns||[];
+  const run=runs.find(r=>String(r.seed)===String(seed));
+  if(!run)return;
+  // 버튼 스타일 업데이트
+  runs.forEach(r=>{
+    const btn=document.getElementById('round-btn-'+r.seed);if(!btn)return;
+    const on=String(r.seed)===String(seed);
+    btn.style.background=on?'rgba(0,200,255,0.15)':'rgba(255,255,255,0.07)';
+    btn.style.borderColor=on?'rgba(0,200,255,0.4)':'var(--border)';
+    btn.style.color=on?'#00eeff':'var(--text-sub)';
+    btn.style.borderWidth=on?'1.5px':'1px';
+  });
+  // 선택 회차 결과 적용
+  window._raceResult=run.rows[0];
+  renderWinnerDisplay(run.rows);
+  document.getElementById('race-result-teaser').style.display='block';
+  document.getElementById('race-result-box').style.display='none';
+  const cv=document.getElementById('user-race-canvas');if(cv)cv.style.display='none';
+  const st=document.getElementById('user-race-status');if(st)st.textContent='';
 }
 
 async function toggleQAPublic(id, makePublic){
@@ -2472,6 +2546,18 @@ async function loadRacePage(){
       document.getElementById('user-race-canvas').style.display='none';
       document.getElementById('user-race-status').textContent='';
       document.getElementById('race-admin-result-actions').style.display='none';
+      // 회차 선택기: race_seed 기준 그룹화
+      const runsMap2=new Map();
+      for(const r of allResults){const k=String(r.race_seed||'_');if(!runsMap2.has(k))runsMap2.set(k,{seed:r.race_seed,rows:[],minTs:r.created_at});const g=runsMap2.get(k);g.rows.push(r);if(r.created_at<g.minTs)g.minTs=r.created_at;}
+      const runs2=[...runsMap2.values()].sort((a,b)=>a.minTs.localeCompare(b.minTs));
+      window._allRaceRuns=runs2;
+      const roundSel=document.getElementById('race-round-selector');
+      if(roundSel&&runs2.length>1){
+        roundSel.style.display='flex';
+        const latestSeed=String(results[results.length-1]?.race_seed||'');
+        roundSel.innerHTML=runs2.map((run,i)=>{const isActive=String(run.seed)===latestSeed;
+          return`<button onclick="selectRaceRound('${run.seed}')" id="round-btn-${run.seed}" style="padding:6px 14px;font-size:12px;font-weight:700;font-family:inherit;border-radius:8px;border:${isActive?'1.5px':'1px'} solid ${isActive?'rgba(0,200,255,0.4)':'var(--border)'};background:${isActive?'rgba(0,200,255,0.15)':'rgba(255,255,255,0.07)'};color:${isActive?'#00eeff':'var(--text-sub)'};cursor:pointer;">${i+1}회차</button>`;}).join('');
+      }else if(roundSel){roundSel.style.display='none';}
     } else {
       document.getElementById('race-result-section').style.display='block';
       document.getElementById('race-result-teaser').style.display='none';
@@ -2884,6 +2970,8 @@ async function startOrbitalRace(){
     const _ec=document.getElementById('race-entry-count');if(_ec)_ec.textContent=entries.length;
     if(entries.length<2){showToast('❌ 최소 2명 이상 참여해야 합니다');return;}
     const _badge=document.getElementById('race-admin-auto-badge');if(_badge)_badge.style.display='none';
+    // 새 레이스 시작 시 이전 회차 결과 숨김
+    const _prevResult=document.getElementById('race-result-section');if(_prevResult)_prevResult.style.display='none';
     names=entries.map(e=>e.name);
   }
   const canvas=document.getElementById('race-canvas');
@@ -3855,29 +3943,52 @@ function toggleRaceEntryList(){
 
 async function loadAdminRaceEntries(){
   const ym=getYM();
-  const entries=await SB.get('race_entries','year_month=eq.'+ym+'&order=created_at.asc');
+  const [emps,entries]=await Promise.all([
+    SB.get('employees','is_active=eq.true&order=name.asc'),
+    SB.get('race_entries','year_month=eq.'+ym+'&order=created_at.asc')
+  ]);
   const el=document.getElementById('admin-race-entry-list');
   if(!el)return;
-  const addRow=`<div style="display:flex;gap:8px;margin-bottom:8px;">
-    <input id="admin-add-entry-input" type="text" placeholder="이름 직접 입력..." style="flex:1;padding:9px 12px;font-size:13px;font-family:inherit;border:1px solid var(--border);border-radius:10px;outline:none;background:rgba(0,0,0,0.35);color:#fff;" onkeydown="if(event.key==='Enter')addRaceEntryAdmin()"/>
-    <button onclick="addRaceEntryAdmin()" style="padding:9px 16px;font-size:13px;font-weight:700;font-family:inherit;border-radius:10px;border:1px solid rgba(0,200,255,0.4);background:rgba(0,150,255,0.15);color:#00eeff;cursor:pointer;white-space:nowrap;">+ 추가</button>
-  </div>
-  <button onclick="addAllEmployeesToRace()" style="width:100%;padding:10px 0;font-size:13px;font-weight:700;font-family:inherit;border-radius:10px;border:1.5px solid rgba(0,220,120,0.4);background:rgba(0,180,100,0.12);color:#00ff88;cursor:pointer;margin-bottom:6px;">👥 전직원 참여하기</button>
-  <button onclick="resetAllRaceEntries()" style="width:100%;padding:8px 0;font-size:12px;font-weight:700;font-family:inherit;border-radius:10px;border:1px solid rgba(226,75,74,0.35);background:rgba(226,75,74,0.07);color:var(--red);cursor:pointer;margin-bottom:12px;">🗑️ 참여자 전체 리셋</button>`;
-  if(!entries.length){el.innerHTML=addRow+'<div style="font-size:13px;color:var(--text-hint);padding:8px 0;">아직 참여자가 없습니다</div>';return;}
+  const entryNames=new Set(entries.map(e=>e.name));
+  const notJoined=emps.filter(e=>!entryNames.has(e.name));
+  // 미참여 직원 선택 섹션
+  const pickerSection=notJoined.length?`
+    <div style="margin-bottom:10px;">
+      <div style="font-size:11px;color:var(--text-sub);font-weight:600;margin-bottom:6px;">미참여 직원 (${notJoined.length}명)</div>
+      <div style="max-height:160px;overflow-y:auto;background:rgba(0,0,0,0.2);border:1px solid var(--border);border-radius:10px;padding:6px 8px;">
+        ${notJoined.map(e=>`<label style="display:flex;align-items:center;gap:8px;padding:5px 6px;border-radius:7px;cursor:pointer;">
+          <input type="checkbox" class="emp-add-chk" data-name="${e.name}" style="width:15px;height:15px;accent-color:#00eeff;cursor:pointer;flex-shrink:0;">
+          <span style="font-size:13px;color:#fff;">${e.name}</span>
+        </label>`).join('')}
+      </div>
+      <button onclick="addSelectedEmpsToRace()" style="width:100%;padding:9px 0;font-size:13px;font-weight:700;font-family:inherit;border-radius:10px;border:1px solid rgba(0,200,255,0.4);background:rgba(0,150,255,0.15);color:#00eeff;cursor:pointer;margin-top:6px;">+ 선택 추가</button>
+    </div>`:`<div style="font-size:12px;color:var(--text-hint);margin-bottom:10px;padding:6px 0;">모든 직원이 참여 중입니다</div>`;
+  const actionBtns=`
+    <button onclick="addAllEmployeesToRace()" style="width:100%;padding:10px 0;font-size:13px;font-weight:700;font-family:inherit;border-radius:10px;border:1.5px solid rgba(0,220,120,0.4);background:rgba(0,180,100,0.12);color:#00ff88;cursor:pointer;margin-bottom:6px;">👥 전직원 참여하기</button>
+    <button onclick="resetAllRaceEntries()" style="width:100%;padding:8px 0;font-size:12px;font-weight:700;font-family:inherit;border-radius:10px;border:1px solid rgba(226,75,74,0.35);background:rgba(226,75,74,0.07);color:var(--red);cursor:pointer;margin-bottom:12px;">🗑️ 참여자 전체 리셋</button>`;
+  if(!entries.length){el.innerHTML=pickerSection+actionBtns+'<div style="font-size:13px;color:var(--text-hint);padding:6px 0;">아직 참여자가 없습니다</div>';return;}
+  const bulkBar=`<div style="display:flex;align-items:center;justify-content:space-between;padding:6px 2px;margin-bottom:6px;">
+    <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-sub);cursor:pointer;">
+      <input type="checkbox" id="race-chk-all" style="width:15px;height:15px;accent-color:#aaa;cursor:pointer;" onchange="toggleAllRaceChk(this.checked)">전체선택
+    </label>
+    <button id="race-exclude-btn" onclick="excludeSelectedEntries()" disabled style="padding:6px 14px;font-size:12px;font-weight:700;font-family:inherit;border-radius:8px;border:1px solid rgba(226,75,74,0.35);background:rgba(226,75,74,0.08);color:var(--red);cursor:pointer;opacity:0.4;transition:opacity .15s;">선택 제외 (0)</button>
+  </div>`;
   const rows=entries.map(e=>`
     <label style="display:flex;align-items:center;gap:10px;padding:9px 12px;background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:10px;margin-bottom:6px;cursor:pointer;" onchange="updateExcludeBtn()">
       <input type="checkbox" class="race-entry-chk" data-id="${e.id}" data-name="${e.name}" style="width:16px;height:16px;accent-color:#ff4444;cursor:pointer;flex-shrink:0;">
       <span style="font-size:13px;color:#fff;flex:1;">${e.name}</span>
     </label>`).join('');
-  const bulkBar=`<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 2px;margin-bottom:6px;">
-    <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-sub);cursor:pointer;">
-      <input type="checkbox" id="race-chk-all" style="width:15px;height:15px;accent-color:#aaa;cursor:pointer;" onchange="toggleAllRaceChk(this.checked)">
-      전체선택
-    </label>
-    <button id="race-exclude-btn" onclick="excludeSelectedEntries()" disabled style="padding:6px 14px;font-size:12px;font-weight:700;font-family:inherit;border-radius:8px;border:1px solid rgba(226,75,74,0.35);background:rgba(226,75,74,0.08);color:var(--red);cursor:pointer;opacity:0.4;transition:opacity .15s;" >선택 제외 (0)</button>
-  </div>`;
-  el.innerHTML=addRow+`<div style="font-size:12px;color:var(--text-hint);margin-bottom:8px;">총 ${entries.length}명</div>`+bulkBar+rows;
+  el.innerHTML=pickerSection+actionBtns+`<div style="font-size:12px;color:var(--text-hint);margin-bottom:6px;">참여 중 ${entries.length}명</div>`+bulkBar+rows;
+}
+
+async function addSelectedEmpsToRace(){
+  const chks=[...document.querySelectorAll('.emp-add-chk:checked')];
+  if(!chks.length){showToast('❌ 추가할 직원을 선택해주세요');return;}
+  const ym=getYM();
+  let added=0;
+  for(const c of chks){const ok=await SB.post('race_entries',{year_month:ym,name:c.dataset.name});if(ok)added++;}
+  if(added>0){showToast('✅ '+added+'명 추가 완료!');loadAdminRaceEntries();SB.get('race_entries','year_month=eq.'+ym).then(all=>{const ec=document.getElementById('race-entry-count-admin');if(ec)ec.textContent=all.length;const ec2=document.getElementById('race-entry-count');if(ec2)ec2.textContent=all.length;});}
+  else showToast('❌ 추가 실패');
 }
 
 function toggleAllRaceChk(checked){
