@@ -3678,6 +3678,7 @@ function showRaceWinner(winners){
 
   const _wasReplay=window._wasReplay;window._wasReplay=false;
   if(_wasReplay){
+    window._autoSaveResult=false;
     // 직원 리플레이: 저장 버튼 없이 결과만 표시
     announceEl.innerHTML=`
       <div style="font-size:11px;color:rgba(255,200,0,0.7);letter-spacing:3px;margin-bottom:12px;font-weight:700;">✦ RACE COMPLETE ✦</div>
@@ -4116,7 +4117,7 @@ async function loadRaceHistory(){
     return`<div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px 14px;margin-bottom:8px;">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
         <div>
-          <span style="font-size:12px;font-weight:700;color:#00eeff;">${runs.length-i}차 레이스</span>
+          <span style="font-size:12px;font-weight:700;color:#00eeff;">${runs.length-i}회차</span>
           <span style="font-size:11px;color:var(--text-hint);margin-left:8px;">${dateStr}</span>
         </div>
         <button onclick="deleteRaceRun(${JSON.stringify(run.seed)})" style="padding:4px 10px;background:rgba(226,75,74,0.15);color:var(--red);border:1px solid rgba(226,75,74,0.3);border-radius:8px;font-size:11px;font-family:inherit;cursor:pointer;">🗑️ 삭제</button>
@@ -4495,10 +4496,12 @@ function startUserRaceReveal(){
   if(!names.length){showToast('❌ 참여자 데이터가 없습니다');return;}
   document.getElementById('race-result-teaser').style.display='none';
   document.getElementById('race-result-box').style.display='none';
-  // 직원: race-canvas-wrap이 admin section 안에 있어 임시로 섹션 표시 (타이틀은 숨김)
+  // 직원: race-canvas-wrap이 admin section 안에 있어 임시로 섹션 표시 (타이틀·자동운영 배지는 숨김)
   if(!app.isAdmin){
     document.getElementById('race-admin-start-section').style.display='block';
     const t=document.getElementById('race-admin-ctrl-title');if(t)t.style.display='none';
+    const badge=document.getElementById('race-admin-auto-badge');if(badge)badge.style.display='none';
+    window._autoSaveResult=false;
   }
   // 리플레이 플래그 설정 — startOrbitalRace가 저장된 시드/참여자로 동일 레이스 재현
   window._replayMode=true;
