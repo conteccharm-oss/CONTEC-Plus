@@ -102,15 +102,32 @@ Deno.serve(async (req) => {
     return respond({ skipped: "no entries" });
   }
 
-  // 셔플 후 당첨자 선정 (최대 3명)
+  // 클라이언트 애니메이션과 동일한 시드 기반 알고리즘으로 당첨자 선정
+  // buildRaceState(names, seed)와 정확히 동일한 RNG 호출 순서로 departDelay 계산
   const names = entries.map((e) => e.name);
-  const shuffled = [...names].sort(() => Math.random() - 0.5);
   const seed = Date.now();
-  const winnerCount = Math.min(3, shuffled.length);
+
+  function makeRaceRNG(s: number) {
+    let _s = Math.abs(Math.floor(s) % 233280) || 1234;
+    return () => { _s = (_s * 9301 + 49297) % 233280; return _s / 233280; };
+  }
+
+  const sr = makeRaceRNG(seed);
+  const satsWithDelay = names.map((name, i) => {
+    sr(); // orbitFrac
+    sr(); sr(); // spd (두 번 호출)
+    sr(); // angle
+    const departDelay = 38 + i * 3 + sr() * 20; // 클라이언트와 동일
+    return { name, departDelay };
+  });
+
+  // departDelay 높은 순 = 마지막까지 생존 = 높은 등수
+  const ranked = [...satsWithDelay].sort((a, b) => b.departDelay - a.departDelay);
+  const winnerCount = Math.min(3, names.length);
 
   const rows = Array.from({ length: winnerCount }, (_, i) => ({
     year_month: ym,
-    winner_name: shuffled[i],
+    winner_name: ranked[i].name,
     rank: i + 1,
     race_seed: seed,
     race_names: JSON.stringify(names),
@@ -136,5 +153,5 @@ Deno.serve(async (req) => {
     });
   } catch (_) { /* ignore */ }
 
-  return respond({ ok: true, ym, winners: shuffled.slice(0, winnerCount), seed });
+  return respond({ ok: true, ym, winners: ranked.slice(0, winnerCount).map(r => r.name), seed });
 });
