@@ -3854,6 +3854,18 @@ function showRaceWinner(winners){
     </div>`).join('');
 
   const _wasReplay=window._wasReplay;window._wasReplay=false;
+  // 리플레이 시 DB 저장값으로 당첨자 덮어쓰기 (자동실행과 애니메이션 결과 불일치 방지)
+  if(_wasReplay&&window._replayDBWinners){
+    const dbW=window._replayDBWinners;window._replayDBWinners=null;
+    const dbMedals=['🥇','🥈','🥉'];const dbColors=['#FFD700','#C0C0C0','#CD7F32'];
+    const dbBg=['rgba(40,30,0,0.9)','rgba(25,25,25,0.9)','rgba(30,18,5,0.9)'];
+    const dbBorder=['rgba(255,200,0,0.7)','rgba(190,190,190,0.5)','rgba(180,110,40,0.5)'];
+    const dbCards=dbW.map((w,i)=>`<div style="display:flex;align-items:center;gap:12px;padding:12px 16px;background:${dbBg[i]||'rgba(20,20,20,0.9)'};border:1.5px solid ${dbBorder[i]||'rgba(100,100,100,0.4)'};border-radius:12px;margin-bottom:8px;box-shadow:0 0 12px ${dbBorder[i]||'transparent'};"><span style="font-size:28px;line-height:1;">${dbMedals[i]||'🏅'}</span><div style="flex:1;"><div style="font-size:11px;color:${dbColors[i]||'#aaa'};font-weight:700;letter-spacing:1px;margin-bottom:2px;">${w.rank}등 당첨</div><div style="font-size:18px;font-weight:900;color:#fff;text-shadow:0 0 8px ${dbColors[i]||'#fff'};">${w.name}</div></div></div>`).join('');
+    document.getElementById('race-admin-winner').textContent=dbW[0]?.name||rank1.name;
+    announceEl.innerHTML=`<div style="font-size:11px;color:rgba(255,200,0,0.7);letter-spacing:3px;margin-bottom:12px;font-weight:700;">✦ RACE COMPLETE ✦</div>${dbCards}<button class="btn-main" style="background:linear-gradient(135deg,#1a0a00,#2a1500);border:1.5px solid rgba(255,200,0,0.5);color:#FFD700;width:auto;padding:10px 24px;margin-top:8px;" onclick="showRaceResultOnly()">🏆 결과 확인</button>`;
+    announceEl.style.display='flex';announceEl.style.flexDirection='column';announceEl.style.alignItems='center';announceEl.style.justifyContent='center';
+    window._autoSaveResult=false;return;
+  }
   if(_wasReplay){
     window._autoSaveResult=false;
     // 직원 리플레이: 저장 버튼 없이 결과만 표시
@@ -4731,6 +4743,11 @@ function startUserRaceReveal(){
   window._wasReplay=true;
   window._replaySeed=Number(res.race_seed);
   window._replayNames=names;
+  // DB 저장 당첨자를 미리 보관 (애니메이션 결과와 불일치 방지)
+  const allRunRows=window._allRaceRuns?.find(r=>String(r.seed)===String(res.race_seed))?.rows||[];
+  const dbWinners=[];const seenR=new Set();
+  [...allRunRows].sort((a,b)=>(a.rank||1)-(b.rank||1)).forEach(r=>{const k=r.rank||1;if(!seenR.has(k)&&k<=3){seenR.add(k);dbWinners.push({name:r.winner_name,rank:k,color:'#FFD700'});}});
+  window._replayDBWinners=dbWinners.length?dbWinners:null;
   startOrbitalRace();
 }
 
