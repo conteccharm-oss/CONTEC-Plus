@@ -26,6 +26,15 @@ async function dbPost(table: string, data: unknown) {
   return r.ok;
 }
 
+async function dbUpsert(table: string, data: unknown) {
+  const r = await fetch(SUPABASE_URL + "/rest/v1/" + table, {
+    method: "POST",
+    headers: { ...dbH(), "Prefer": "return=minimal,resolution=merge-duplicates" },
+    body: JSON.stringify(data),
+  });
+  return r.ok;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: CORS });
@@ -37,10 +46,10 @@ Deno.serve(async (req) => {
       headers: { "Content-Type": "application/json", ...CORS },
     });
 
-  // 레이스 설정 읽기
+  // 레이스 설정 읽기 (last_auto_run_date 포함)
   const settings: { key: string; value: string }[] = await dbGet(
     "app_settings",
-    "key=in.(race_auto_day,race_auto_hour,race_auto_minute)"
+    "key=in.(race_auto_day,race_auto_hour,race_auto_minute,last_auto_run_date)"
   );
   const get = (key: string, def: string) =>
     settings.find((r) => r.key === key)?.value ?? def;
@@ -48,6 +57,7 @@ Deno.serve(async (req) => {
   const autoDay = parseInt(get("race_auto_day", "25"));
   const autoHour = parseInt(get("race_auto_hour", "10"));
   const autoMinute = parseInt(get("race_auto_minute", "0"));
+  const lastAutoRunDate = get("last_auto_run_date", "");
 
   // 현재 KST 시간
   const nowKST = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Seoul" }));
@@ -75,18 +85,12 @@ Deno.serve(async (req) => {
 
   const ym = `${year}-${String(month + 1).padStart(2, "0")}`;
 
-  // 오늘(KST) 이미 자동실행 됐는지 확인 (수동 내역은 무시)
-  // 오늘 KST 자정 = UTC 전날 15:00
-  const kstOffsetMs = 9 * 60 * 60 * 1000;
-  const todayKSTStartMs = Date.UTC(nowKST.getFullYear(), nowKST.getMonth(), nowKST.getDate()) - kstOffsetMs;
-  const todayKSTStartISO = new Date(todayKSTStartMs).toISOString();
+  // 자동실행 날짜 키 (예: "2026-05-15")
+  const todayKey = `${ym}-${String(nowKST.getDate()).padStart(2, "0")}`;
 
-  const existing: { id: string }[] = await dbGet(
-    "race_results",
-    `year_month=eq.${ym}&created_at=gte.${todayKSTStartISO}&select=id&limit=1`
-  );
-  if (existing.length > 0) {
-    return respond({ skipped: "already ran today" });
+  // 오늘 자동실행 이미 했으면 스킵 (수동 레이스와 무관하게 별도 기록으로 판단)
+  if (lastAutoRunDate === todayKey) {
+    return respond({ skipped: "auto already ran today" });
   }
 
   // 참여자 목록
@@ -116,6 +120,9 @@ Deno.serve(async (req) => {
   if (!ok) {
     return respond({ error: "DB 저장 실패" }, 500);
   }
+
+  // 자동실행 날짜 기록 (다음 크론에서 중복 방지)
+  await dbUpsert("app_settings", { key: "last_auto_run_date", value: todayKey });
 
   // 푸시 알림 발송 (실패해도 무시)
   try {
