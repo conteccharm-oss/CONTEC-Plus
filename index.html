@@ -2094,6 +2094,7 @@ async function submitFunny(){
   if(!title){showToast('❌ 제목을 입력해주세요');return;}
   let url=null,isVid=false;
   if(file){
+    if(file.size>50*1024*1024){showToast('❌ 파일이 너무 큽니다 (최대 50MB)');return;}
     showToast('📤 업로드 중...');
     url=await SB.upload(file);
     if(!url){showToast('❌ 사진 업로드 실패 (저장 없이 제목만 제출합니다)');}
@@ -2166,10 +2167,8 @@ async function loadFunnyList(){
 
 async function voteFunny(submissionId){
   const ym=getYM();
-  const existing=await SB.get('funny_votes','year_month=eq.'+ym+'&voter_name=eq.'+encodeURIComponent(app.name)+'&submission_id=eq.'+submissionId);
-  if(existing.length>0){showToast('❌ 이미 투표하셨습니다');return;}
-  const ok=await SB.post('funny_votes',{year_month:ym,submission_id:submissionId,voter_name:app.name});
-  if(!ok){showToast('❌ 투표 실패 (F12 콘솔 확인)');return;}
+  const ok=await SB.insertIgnore('funny_votes',{year_month:ym,submission_id:submissionId,voter_name:app.name});
+  if(!ok){showToast('❌ 이미 투표하셨거나 오류가 발생했습니다');return;}
   const sub=await SB.get('funny_submissions','id=eq.'+submissionId);
   if(sub[0])await SB.patch('funny_submissions',submissionId,{votes:(sub[0].votes||0)+1});
   showToast('❤️ 투표 완료!');
@@ -2588,6 +2587,7 @@ async function submitIdea(){
   const content=document.getElementById('idea-content').value.trim();
   const file=document.getElementById('idea-file').files[0];
   if(!title||!content){showToast('❌ 제목과 내용을 입력해주세요');return;}
+  if(file&&file.size>50*1024*1024){showToast('❌ 파일이 너무 큽니다 (최대 50MB)');return;}
   showToast('📤 제출 중...');
   let fileUrl=null;if(file){fileUrl=await SB.upload(file);if(!fileUrl){showToast('❌ 파일 업로드 실패');return;}}
   const ok=await SB.post('idea_submissions',{name:app.name,year_month:getYM(),title,content,file_url:fileUrl,status:'submitted'});
@@ -2648,10 +2648,8 @@ async function loadIdeaList(){
 }
 async function voteIdea(submissionId){
   const ym=getYM();
-  const existing=await SB.get('idea_votes','year_month=eq.'+ym+'&voter_name=eq.'+encodeURIComponent(app.name)+'&submission_id=eq.'+submissionId);
-  if(existing.length>0){showToast('❌ 이미 투표하셨습니다');return;}
-  const ok=await SB.post('idea_votes',{year_month:ym,submission_id:submissionId,voter_name:app.name});
-  if(!ok){showToast('❌ 투표 실패 (F12 콘솔 확인)');return;}
+  const ok=await SB.insertIgnore('idea_votes',{year_month:ym,submission_id:submissionId,voter_name:app.name});
+  if(!ok){showToast('❌ 이미 투표하셨거나 오류가 발생했습니다');return;}
   const sub=await SB.get('idea_submissions','id=eq.'+submissionId);
   if(sub[0])await SB.patch('idea_submissions',submissionId,{votes:(sub[0].votes||0)+1});
   showToast('💡 투표 완료!');
@@ -2805,10 +2803,8 @@ async function loadRacePage(){
 
 async function voteReward(rewardId){
   const ym=getYM();
-  const existing=await SB.get('reward_votes','year_month=eq.'+ym+'&name=eq.'+encodeURIComponent(app.name));
-  if(existing.length>0){showToast('❌ 이미 투표하셨습니다');return;}
-  await SB.post('reward_votes',{year_month:ym,reward_id:rewardId,name:app.name});
-  // 투표수 증가
+  const ok=await SB.insertIgnore('reward_votes',{year_month:ym,reward_id:rewardId,name:app.name});
+  if(!ok){showToast('❌ 이미 투표하셨거나 오류가 발생했습니다');return;}
   const reward=await SB.get('rewards','id=eq.'+rewardId);
   if(reward[0])await SB.patch('rewards',rewardId,{votes:(reward[0].votes||0)+1});
   showToast('✅ 투표 완료!');
@@ -2823,7 +2819,7 @@ async function joinRace(){
     document.getElementById('race-joined-badge').style.display='block';
     return;
   }
-  const ok=await SB.post('race_entries',{year_month:ym,name:app.name});
+  const ok=await SB.insertIgnore('race_entries',{year_month:ym,name:app.name});
   if(ok){
     showToast('🚀 레이스 참여 완료!');
     document.getElementById('race-join-section').style.display='none';
