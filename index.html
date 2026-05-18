@@ -1501,8 +1501,15 @@ async function loadQuizPage(){
     return;
   }
 
-  // 이번 달 전체 문제 풀 로드
-  const allPool=await SB.get('quiz_relay','year_month=eq.'+ym+'&is_active=eq.true&order=created_at.asc');
+  // 이번 달 전체 문제 풀 + 설정값 병렬 로드
+  const [allPool,_cfgRows]=await Promise.all([
+    SB.get('quiz_relay','year_month=eq.'+ym+'&is_active=eq.true&order=created_at.asc'),
+    SB.get('app_settings','key=in.(quiz_week_count,quiz_time)')
+  ]);
+  _cfgRows.forEach(r=>{
+    if(r.key==='quiz_week_count')localStorage.setItem('quiz_week_count',r.value);
+    if(r.key==='quiz_time')localStorage.setItem('quiz_time',r.value);
+  });
 
   let html='';
   if(!allPool.length){
@@ -1639,6 +1646,7 @@ function saveQuizTime(){
   localStorage.setItem('quiz_time',v);
   document.getElementById('quiz-time-display').textContent=v+'초';
   document.getElementById('quiz-time-input').value='';
+  SB.upsert('app_settings',{key:'quiz_time',value:String(v)});
   showToast('✅ 제한 시간 '+v+'초로 저장됨');
 }
 function getQuizWeekCount(){return Math.max(1,Math.min(10,parseInt(localStorage.getItem('quiz_week_count')||'1')));}
@@ -1648,9 +1656,15 @@ function saveQuizWeekCount(){
   localStorage.setItem('quiz_week_count',v);
   document.getElementById('quiz-week-count-display').textContent=v+'문제';
   document.getElementById('quiz-week-count-input').value='';
+  SB.upsert('app_settings',{key:'quiz_week_count',value:String(v)});
   showToast('✅ 주당 '+v+'문제로 저장됨');
 }
-function loadQuizTimeDisplay(){
+async function loadQuizTimeDisplay(){
+  const rows=await SB.get('app_settings','key=in.(quiz_time,quiz_week_count)');
+  rows.forEach(r=>{
+    if(r.key==='quiz_time')localStorage.setItem('quiz_time',r.value);
+    if(r.key==='quiz_week_count')localStorage.setItem('quiz_week_count',r.value);
+  });
   const el=document.getElementById('quiz-time-display');
   if(el)el.textContent=getQuizTime()+'초';
   const el2=document.getElementById('quiz-week-count-display');
