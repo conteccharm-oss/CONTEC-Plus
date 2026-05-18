@@ -1252,7 +1252,8 @@ const SB = {
   async upload(file){const ext=(file.name.split('.').pop()||'jpg').toLowerCase();const path=Date.now()+'_'+Math.random().toString(36).slice(2)+'.'+ext;const ct=file.type||'application/octet-stream';const r=await fetch(CONFIG.supabaseUrl+'/storage/v1/object/challenge-images/'+path,{method:'POST',headers:{'apikey':CONFIG.supabaseKey,'Authorization':'Bearer '+CONFIG.supabaseKey,'Content-Type':ct,'x-upsert':'true'},body:file});if(!r.ok){const e=await r.text().catch(()=>'');console.error('Upload failed:',r.status,e);}return r.ok?CONFIG.supabaseUrl+'/storage/v1/object/public/challenge-images/'+path:null;},
   async listStorage(bucket){const r=await fetch(CONFIG.supabaseUrl+'/storage/v1/object/list/'+bucket,{method:'POST',headers:{...this.h},body:JSON.stringify({prefix:'',limit:10000,offset:0,sortBy:{column:'created_at',order:'asc'}})});return r.ok?r.json():[];},
   async deleteStorageFiles(bucket,paths){const r=await fetch(CONFIG.supabaseUrl+'/storage/v1/object/'+bucket,{method:'DELETE',headers:{...this.h},body:JSON.stringify({prefixes:paths})});return r.ok;},
-  async upsert(table,data){const r=await fetch(CONFIG.supabaseUrl+'/rest/v1/'+table,{method:'POST',headers:{...this.h,'Prefer':'return=minimal,resolution=merge-duplicates'},body:JSON.stringify(data)});return r.ok;}
+  async upsert(table,data){const r=await fetch(CONFIG.supabaseUrl+'/rest/v1/'+table,{method:'POST',headers:{...this.h,'Prefer':'return=minimal,resolution=merge-duplicates'},body:JSON.stringify(data)});return r.ok;},
+  async insertIgnore(table,data){const r=await fetch(CONFIG.supabaseUrl+'/rest/v1/'+table,{method:'POST',headers:{...this.h,'Prefer':'return=minimal,resolution=ignore-duplicates'},body:JSON.stringify(data)});return r.ok;}
 };
 
 const app={name:'',isAdmin:false,empId:null,empNo:''};
@@ -1541,25 +1542,47 @@ async function loadQuizPage(){
     el.innerHTML=html;return;
   }
 
-  // 현재 슬롯 문제 배정 (슬롯별 독립 localStorage 키)
+  // 현재 슬롯 문제 배정 (DB 우선, localStorage는 캐시)
   const slotKey='quiz_assign_v2_'+wk+'_'+app.name+'_'+currentSlot;
   let assignedId=localStorage.getItem(slotKey);
   let quiz=null;
 
+  // ① localStorage 캐시 유효하면 바로 사용
   if(assignedId&&allPool.find(q=>q.id===assignedId)&&!myAnsweredIds.has(assignedId)){
     quiz=allPool.find(q=>q.id===assignedId);
   } else {
-    // 이번 주 이미 배정된 슬롯 ID들 제외하고 새 배정
-    const alreadyAssignedThisWeek=new Set(
-      Array.from({length:currentSlot},(_,i)=>localStorage.getItem('quiz_assign_v2_'+wk+'_'+app.name+'_'+i)).filter(Boolean)
+    // ② DB에서 이 슬롯 기존 배정 확인 (다른 기기에서 이미 배정했을 수 있음)
+    const dbAssign=await SB.get('quiz_assignments',
+      'name=eq.'+encodeURIComponent(app.name)+'&year_month=eq.'+ym+'&week_key=eq.'+wk+'&slot=eq.'+currentSlot
     );
-    const freshPool=remainingPool.filter(q=>!alreadyAssignedThisWeek.has(q.id));
-    if(!freshPool.length){
-      html=`<div class="quiz-card" style="text-align:center;padding:2rem;"><div style="font-size:32px;margin-bottom:8px;">🏆</div><div style="font-size:14px;font-weight:700;color:#fff;">이번 달 문제를 모두 풀었어요!</div><div style="font-size:12px;color:var(--text-hint);margin-top:4px;">다음 달 퀴즈를 기다려주세요</div></div>`;
-      el.innerHTML=html;return;
+    if(dbAssign.length&&allPool.find(q=>q.id===dbAssign[0].quiz_id)&&!myAnsweredIds.has(dbAssign[0].quiz_id)){
+      // DB에 배정 기록 있음 → 기기 관계없이 동일 문제
+      assignedId=dbAssign[0].quiz_id;
+      localStorage.setItem(slotKey,assignedId);
+      quiz=allPool.find(q=>q.id===assignedId);
+    } else {
+      // ③ DB에도 없음 → 새 문제 선택 후 DB에 저장
+      // 이번 주 이미 배정된 다른 슬롯 ID들 제외 (DB 기준)
+      const prevAssigns=await SB.get('quiz_assignments',
+        'name=eq.'+encodeURIComponent(app.name)+'&year_month=eq.'+ym+'&week_key=eq.'+wk+'&slot=lt.'+currentSlot
+      );
+      const alreadyAssignedThisWeek=new Set(prevAssigns.map(a=>a.quiz_id));
+      const freshPool=remainingPool.filter(q=>!alreadyAssignedThisWeek.has(q.id));
+      if(!freshPool.length){
+        html=`<div class="quiz-card" style="text-align:center;padding:2rem;"><div style="font-size:32px;margin-bottom:8px;">🏆</div><div style="font-size:14px;font-weight:700;color:#fff;">이번 달 문제를 모두 풀었어요!</div><div style="font-size:12px;color:var(--text-hint);margin-top:4px;">다음 달 퀴즈를 기다려주세요</div></div>`;
+        el.innerHTML=html;return;
+      }
+      const picked=freshPool[Math.floor(Math.random()*freshPool.length)];
+      // DB에 저장 (동시 요청 시 먼저 저장된 것 유지 — ignore-duplicates)
+      await SB.insertIgnore('quiz_assignments',{name:app.name,year_month:ym,week_key:wk,slot:currentSlot,quiz_id:picked.id});
+      // 실제 저장된 값 다시 읽기 (동시 요청으로 다른 기기가 먼저 배정했을 경우 대비)
+      const actual=await SB.get('quiz_assignments',
+        'name=eq.'+encodeURIComponent(app.name)+'&year_month=eq.'+ym+'&week_key=eq.'+wk+'&slot=eq.'+currentSlot
+      );
+      assignedId=actual.length?actual[0].quiz_id:picked.id;
+      localStorage.setItem(slotKey,assignedId);
+      quiz=allPool.find(q=>q.id===assignedId)||allPool.find(q=>q.id===picked.id);
     }
-    quiz=freshPool[Math.floor(Math.random()*freshPool.length)];
-    localStorage.setItem(slotKey,quiz.id);
   }
 
   // 진행도 배지 (주당 2문제 이상일 때 표시)
