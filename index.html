@@ -2808,8 +2808,22 @@ async function voteReward(rewardId){
   if(!ok){showToast('❌ 이미 투표하셨거나 오류가 발생했습니다');return;}
   const reward=await SB.get('rewards','id=eq.'+rewardId);
   if(reward[0])await SB.patch('rewards',rewardId,{votes:(reward[0].votes||0)+1});
-  showToast('✅ 투표 완료!');
-  loadRacePage();
+  await loadRacePage();
+  // 이미 참여한 경우엔 팝업 생략
+  const entry=await SB.get('race_entries','year_month=eq.'+ym+'&name=eq.'+encodeURIComponent(app.name));
+  if(entry.length>0){showToast('✅ 투표 완료!');return;}
+  // 참여 안 한 경우 팝업
+  const overlay=document.createElement('div');
+  overlay.id='join-nudge-overlay';
+  overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.65);z-index:600;display:flex;align-items:center;justify-content:center;padding:1.5rem;';
+  overlay.innerHTML=`<div style="background:linear-gradient(135deg,#0a1628,#0d1f3c);border:1.5px solid rgba(0,200,255,0.3);border-radius:20px;padding:2rem 1.5rem;text-align:center;max-width:320px;width:100%;box-shadow:0 0 40px rgba(0,150,255,0.2);">
+    <div style="font-size:40px;margin-bottom:12px;">🚀</div>
+    <div style="font-size:16px;font-weight:800;color:#fff;margin-bottom:8px;">경품 투표 완료!</div>
+    <div style="font-size:13px;color:rgba(255,255,255,0.7);line-height:1.6;margin-bottom:20px;">투표만 하면 끝이 아니에요!<br><strong style="color:#00eeff;">레이스 참여하기</strong>도 눌러야<br>경품 대상에 포함됩니다 🎁</div>
+    <button onclick="document.getElementById('join-nudge-overlay').remove();joinRace();" style="width:100%;padding:13px;background:linear-gradient(135deg,#0050cc,#0080ff);color:#fff;font-size:14px;font-weight:800;font-family:inherit;border:none;border-radius:12px;cursor:pointer;margin-bottom:10px;">🛸 레이스 참여하기</button>
+    <button onclick="document.getElementById('join-nudge-overlay').remove();" style="width:100%;padding:10px;background:transparent;color:rgba(255,255,255,0.4);font-size:12px;font-family:inherit;border:1px solid rgba(255,255,255,0.15);border-radius:10px;cursor:pointer;">나중에 할게요</button>
+  </div>`;
+  document.body.appendChild(overlay);
 }
 
 async function joinRace(){
