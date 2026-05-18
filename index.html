@@ -1252,7 +1252,7 @@ const SB = {
   async upload(file){const ext=(file.name.split('.').pop()||'jpg').toLowerCase();const path=Date.now()+'_'+Math.random().toString(36).slice(2)+'.'+ext;const ct=file.type||'application/octet-stream';const r=await fetch(CONFIG.supabaseUrl+'/storage/v1/object/challenge-images/'+path,{method:'POST',headers:{'apikey':CONFIG.supabaseKey,'Authorization':'Bearer '+CONFIG.supabaseKey,'Content-Type':ct,'x-upsert':'true'},body:file});if(!r.ok){const e=await r.text().catch(()=>'');console.error('Upload failed:',r.status,e);}return r.ok?CONFIG.supabaseUrl+'/storage/v1/object/public/challenge-images/'+path:null;},
   async listStorage(bucket){const r=await fetch(CONFIG.supabaseUrl+'/storage/v1/object/list/'+bucket,{method:'POST',headers:{...this.h},body:JSON.stringify({prefix:'',limit:10000,offset:0,sortBy:{column:'created_at',order:'asc'}})});return r.ok?r.json():[];},
   async deleteStorageFiles(bucket,paths){const r=await fetch(CONFIG.supabaseUrl+'/storage/v1/object/'+bucket,{method:'DELETE',headers:{...this.h},body:JSON.stringify({prefixes:paths})});return r.ok;},
-  async upsert(table,data){const r=await fetch(CONFIG.supabaseUrl+'/rest/v1/'+table,{method:'POST',headers:{...this.h,'Prefer':'return=minimal,resolution=merge-duplicates'},body:JSON.stringify(data)});return r.ok;},
+  async upsert(table,data,onConflict=''){const prefer='return=minimal,resolution=merge-duplicates'+(onConflict?',on-conflict='+onConflict:'');const r=await fetch(CONFIG.supabaseUrl+'/rest/v1/'+table,{method:'POST',headers:{...this.h,'Prefer':prefer},body:JSON.stringify(data)});return r.ok;},
   async insertIgnore(table,data){const r=await fetch(CONFIG.supabaseUrl+'/rest/v1/'+table,{method:'POST',headers:{...this.h,'Prefer':'return=minimal,resolution=ignore-duplicates'},body:JSON.stringify(data)});return r.ok;}
 };
 
@@ -1669,7 +1669,7 @@ function saveQuizTime(){
   localStorage.setItem('quiz_time',v);
   document.getElementById('quiz-time-display').textContent=v+'초';
   document.getElementById('quiz-time-input').value='';
-  SB.upsert('app_settings',{key:'quiz_time',value:String(v)});
+  SB.upsert('app_settings',{key:'quiz_time',value:String(v)},'key');
   showToast('✅ 제한 시간 '+v+'초로 저장됨');
 }
 function getQuizWeekCount(){return Math.max(1,Math.min(10,parseInt(localStorage.getItem('quiz_week_count')||'1')));}
@@ -1679,7 +1679,7 @@ function saveQuizWeekCount(){
   localStorage.setItem('quiz_week_count',v);
   document.getElementById('quiz-week-count-display').textContent=v+'문제';
   document.getElementById('quiz-week-count-input').value='';
-  SB.upsert('app_settings',{key:'quiz_week_count',value:String(v)});
+  SB.upsert('app_settings',{key:'quiz_week_count',value:String(v)},'key');
   showToast('✅ 주당 '+v+'문제로 저장됨');
 }
 async function loadQuizTimeDisplay(){
