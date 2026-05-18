@@ -1695,26 +1695,31 @@ function startTimer(qid,ans){
   },50);
 }
 
+let _quizSubmitting=false;
 async function submitAnswer(qid,correct){
+  if(_quizSubmitting)return;
   const ans=document.getElementById('quiz-ans')?.value.trim();
   if(!ans){showToast('❌ 정답을 입력해주세요');return;}
+  _quizSubmitting=true;
+  const btn=document.querySelector('.btn-answer');if(btn)btn.disabled=true;
   if(quizTimer)clearInterval(quizTimer);
   unlockQuizScreen();
   const ok=ans.replace(/\s/g,'').toLowerCase()===correct.replace(/\s/g,'').toLowerCase();
   await SB.post('quiz_attempts',{year_month:getYM(),name:app.name,quiz_id:qid,is_correct:ok,eliminated_at:ok?null:new Date().toISOString()});
   showToast(ok?'🎉 정답입니다! 생존!':'💥 틀렸습니다! 탈락...');
-  setTimeout(()=>loadQuizPage(),1500);
+  setTimeout(()=>{_quizSubmitting=false;loadQuizPage();},1500);
 }
 
 async function submitAnswerChoice(qid,correct,chosen){
+  if(_quizSubmitting)return;
+  _quizSubmitting=true;
   if(quizTimer)clearInterval(quizTimer);
   unlockQuizScreen();
-  // 버튼 비활성화
   document.querySelectorAll('.btn-choice').forEach(b=>b.disabled=true);
   const ok=chosen.replace(/\s/g,'').toLowerCase()===correct.replace(/\s/g,'').toLowerCase();
   await SB.post('quiz_attempts',{year_month:getYM(),name:app.name,quiz_id:qid,is_correct:ok,eliminated_at:ok?null:new Date().toISOString()});
   showToast(ok?'🎉 정답입니다! 생존!':'💥 틀렸습니다! 탈락...');
-  setTimeout(()=>loadQuizPage(),1500);
+  setTimeout(()=>{_quizSubmitting=false;loadQuizPage();},1500);
 }
 
 let _quizType='subjective';
@@ -2775,6 +2780,12 @@ async function voteReward(rewardId){
 
 async function joinRace(){
   const ym=getYM();
+  const existing=await SB.get('race_entries','year_month=eq.'+ym+'&name=eq.'+encodeURIComponent(app.name));
+  if(existing.length>0){
+    document.getElementById('race-join-section').style.display='none';
+    document.getElementById('race-joined-badge').style.display='block';
+    return;
+  }
   const ok=await SB.post('race_entries',{year_month:ym,name:app.name});
   if(ok){
     showToast('🚀 레이스 참여 완료!');
