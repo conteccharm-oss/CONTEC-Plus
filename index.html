@@ -86,6 +86,15 @@
 
     /* CARDS */
     .card{background:var(--card);backdrop-filter:blur(10px);border-radius:16px;border:1px solid var(--border);padding:1.25rem;margin-bottom:1rem;box-shadow:0 6px 16px rgba(0,0,0,0.3);}
+    .as{border:1px solid var(--border);border-radius:12px;margin-bottom:8px;overflow:hidden;}
+    .as-hdr{display:flex;align-items:center;padding:11px 14px;cursor:pointer;background:rgba(255,255,255,0.03);gap:8px;user-select:none;}
+    .as-hdr:hover{background:rgba(255,255,255,0.06);}
+    .as-title{font-size:13px;font-weight:700;flex:1;color:#fff;}
+    .as-sum{font-size:11px;color:var(--text-hint);max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+    .as-chev{font-size:11px;color:var(--text-hint);transition:transform 0.2s;flex-shrink:0;}
+    .as-chev.open{transform:rotate(180deg);}
+    .as-body{display:none;padding:12px 14px;border-top:1px solid var(--border);}
+    .as-body.open{display:block;}
     .sec-title{font-size:12px;font-weight:700;color:var(--text-sub);margin-bottom:10px;letter-spacing:0.3px;text-shadow:0 0 5px rgba(255,255,255,0.2);}
     .month-banner { background: linear-gradient(135deg, rgba(13, 27, 62, 0.8), rgba(26, 45, 90, 0.6)); border: 1.5px solid rgba(0, 200, 255, 0.2); border-radius: 20px; padding: 1.5rem; margin-bottom: 1.5rem; color: #fff; display: flex; align-items: center; justify-content: space-between; backdrop-filter: blur(12px); box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3); }
     .mb-title { font-family: 'Outfit', sans-serif; font-size: 20px; font-weight: 900; letter-spacing: 0.5px; }
@@ -634,117 +643,126 @@
       <div id="admin-idea-all-content"></div>
     </div>
     <div id="admin-tab-quiz-mgmt" style="display:none;">
-      <!-- 경품 티어 설정 -->
-      <div class="card" style="margin-bottom:1rem;">
-        <div style="font-size:14px;font-weight:700;margin-bottom:1rem;">🎁 생존자 수별 경품 설정</div>
-        <div style="font-size:12px;color:var(--text-hint);margin-bottom:12px;">생존자가 적을수록 더 큰 경품!</div>
-        <div id="prize-tier-list"></div>
-        <button class="btn-main" style="background:var(--green);margin-top:10px;" onclick="savePrizeTiers()">경품 설정 저장</button>
-      </div>
-      <div class="card" style="margin-bottom:1rem;">
-        <div style="font-size:14px;font-weight:700;margin-bottom:1rem;">⏱ 퀴즈 제한 시간 설정</div>
-        <div style="display:flex;align-items:center;gap:10px;">
-          <input type="number" id="quiz-time-input" min="5" max="300" step="5" style="width:90px;padding:9px 12px;font-size:15px;font-family:inherit;border:1px solid var(--border);border-radius:10px;outline:none;background:rgba(0,0,0,0.3);color:#fff;text-align:center;" placeholder="10"/>
-          <span style="font-size:13px;color:var(--text-sub);">초</span>
-          <button class="btn-main" style="flex:1;margin:0;background:var(--purple);" onclick="saveQuizTime()">저장</button>
+      <!-- 현황 요약 (항상 표시) -->
+      <div style="display:flex;gap:8px;margin-bottom:10px;">
+        <div style="flex:1;background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:10px;padding:9px;text-align:center;">
+          <div style="font-size:20px;font-weight:900;color:#fff;" id="quiz-stat-total">-</div>
+          <div style="font-size:10px;color:var(--text-hint);margin-top:1px;">전체</div>
         </div>
-        <div style="font-size:11px;color:var(--text-hint);margin-top:8px;">현재 설정: <strong id="quiz-time-display" style="color:var(--sky);">10초</strong> · 5~300초 사이로 입력하세요</div>
-      </div>
-      <div class="card" style="margin-bottom:1rem;">
-        <div style="font-size:14px;font-weight:700;margin-bottom:1rem;">📚 주당 문제 수 설정</div>
-        <div style="display:flex;align-items:center;gap:10px;">
-          <input type="number" id="quiz-week-count-input" min="1" max="10" step="1" style="width:90px;padding:9px 12px;font-size:15px;font-family:inherit;border:1px solid var(--border);border-radius:10px;outline:none;background:rgba(0,0,0,0.3);color:#fff;text-align:center;" placeholder="1"/>
-          <span style="font-size:13px;color:var(--text-sub);">문제</span>
-          <button class="btn-main" style="flex:1;margin:0;background:var(--sky);color:#000;" onclick="saveQuizWeekCount()">저장</button>
+        <div style="flex:1;background:rgba(0,200,100,0.08);border:1px solid rgba(0,200,100,0.3);border-radius:10px;padding:9px;text-align:center;">
+          <div style="font-size:20px;font-weight:900;color:#00ff88;" id="quiz-stat-alive">-</div>
+          <div style="font-size:10px;color:rgba(0,220,120,0.6);margin-top:1px;">생존</div>
         </div>
-        <div style="font-size:11px;color:var(--text-hint);margin-top:8px;">현재 설정: <strong id="quiz-week-count-display" style="color:var(--sky);">1문제</strong> · 1~10 사이로 입력 (매주 N개 문제 순서대로 출제)</div>
-      </div>
-      <!-- AI 퀴즈 자동 생성 -->
-      <div class="card" style="margin-bottom:1rem;">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
-          <div style="font-size:14px;font-weight:700;">✨ AI 퀴즈 자동 생성</div>
-          <button id="quiz-ai-gen-btn" class="btn-main" style="margin:0;padding:8px 16px;font-size:12px;background:linear-gradient(135deg,#5b21b6,#2563eb);" onclick="generateAIQuizzes()">🤖 생성하기</button>
-        </div>
-        <!-- 주제 선택 -->
-        <div style="margin-bottom:10px;">
-          <div style="font-size:11px;color:var(--text-hint);margin-bottom:6px;font-weight:600;">📚 주제</div>
-          <div style="display:flex;gap:6px;flex-wrap:wrap;">
-            <button class="ai-opt-btn active" data-group="topic" data-val="mixed" onclick="selectAIOpt(this)">🔀 CONTEC+우주 혼합</button>
-            <button class="ai-opt-btn" data-group="topic" data-val="contec" onclick="selectAIOpt(this)">🛰️ CONTEC 중심</button>
-            <button class="ai-opt-btn" data-group="topic" data-val="space_basics" onclick="selectAIOpt(this)">🌌 기초 우주 지식</button>
-            <button class="ai-opt-btn" data-group="topic" data-val="trending" onclick="selectAIOpt(this)">🔥 최신 우주 트렌드</button>
-          </div>
-        </div>
-        <!-- 유형 선택 -->
-        <div style="margin-bottom:12px;">
-          <div style="font-size:11px;color:var(--text-hint);margin-bottom:6px;font-weight:600;">✏️ 유형</div>
-          <div style="display:flex;gap:6px;flex-wrap:wrap;">
-            <button class="ai-opt-btn active" data-group="qtype" data-val="mixed" onclick="selectAIOpt(this)">🔀 주관식+객관식 혼합</button>
-            <button class="ai-opt-btn" data-group="qtype" data-val="subjective" onclick="selectAIOpt(this)">✏️ 주관식만</button>
-            <button class="ai-opt-btn" data-group="qtype" data-val="multiple" onclick="selectAIOpt(this)">🔘 객관식만</button>
-          </div>
-        </div>
-        <div style="font-size:11px;color:var(--text-hint);margin-bottom:12px;">⚡ Powered by <strong style="color:#f97316;">Groq</strong> — 무료로 제공됩니다</div>
-        <div id="quiz-ai-drafts"></div>
-      </div>
-      <div class="card">
-        <div style="font-size:14px;font-weight:700;margin-bottom:1rem;">📝 퀴즈 등록</div>
-        <div style="font-size:12px;color:var(--text-hint);margin-bottom:12px;background:rgba(162,123,255,0.08);border:1px solid rgba(162,123,255,0.25);border-radius:8px;padding:8px 10px;">📋 한 달 문제 풀 등록 — 매주 자동으로 랜덤 배정됩니다 (중복 없음)</div>
-        <div style="font-size:12px;color:var(--sky);margin-bottom:12px;">이번 달 등록: <strong id="quiz-month-count" style="color:#fff;">-</strong> 문제</div>
-        <div class="m-field">
-          <label>퀴즈 유형</label>
-          <div style="display:flex;gap:8px;">
-            <button id="qtype-subj" class="quiz-type-btn active" onclick="setQuizType('subjective')">✏️ 주관식</button>
-            <button id="qtype-multi" class="quiz-type-btn inactive" onclick="setQuizType('multiple')">🔘 객관식</button>
-          </div>
-        </div>
-        <div class="m-field"><label>문제</label><textarea id="q-question" placeholder="퀴즈 문제를 입력하세요"></textarea></div>
-        <div class="m-field"><label>정답</label><input type="text" id="q-answer" placeholder="정답 입력"/></div>
-        <div id="q-options-wrap" style="display:none;">
-          <div style="font-size:11px;color:var(--sky);margin-bottom:8px;">💡 정답은 아래 보기 중 하나와 정확히 일치해야 합니다</div>
-          <div class="m-field"><label>보기 A</label><input type="text" id="q-opt-a" placeholder="보기 A 입력"/></div>
-          <div class="m-field"><label>보기 B</label><input type="text" id="q-opt-b" placeholder="보기 B 입력"/></div>
-          <div class="m-field"><label>보기 C</label><input type="text" id="q-opt-c" placeholder="보기 C 입력"/></div>
-          <div class="m-field"><label>보기 D</label><input type="text" id="q-opt-d" placeholder="보기 D 입력"/></div>
-        </div>
-        <div class="m-field"><label>힌트 (선택)</label><input type="text" id="q-hint" placeholder="예: 1969년 NASA 미션"/></div>
-        <button class="btn-main" style="background:var(--purple);" onclick="registerQuiz()">등록하기</button>
-      </div>
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-top:1.25rem;margin-bottom:0.75rem;background:rgba(0,0,0,0.2);border-radius:12px;padding:8px 12px;">
-        <button onclick="quizHistoryNav('prev')" style="background:none;border:none;color:var(--text-sub);font-size:18px;cursor:pointer;padding:2px 8px;font-family:inherit;">◀</button>
-        <span id="quiz-history-month-label" style="font-size:13px;font-weight:700;color:var(--sky);"></span>
-        <button onclick="quizHistoryNav('next')" id="quiz-history-next-btn" style="background:none;border:none;color:var(--text-sub);font-size:18px;cursor:pointer;padding:2px 8px;font-family:inherit;">▶</button>
-      </div>
-      <div id="quiz-admin-list"></div>
-      <!-- 생존자 현황 -->
-      <div class="sec-title" style="margin-top:1.25rem;">📊 이번 달 퀴즈 현황</div>
-      <div style="display:flex;gap:8px;margin-bottom:1rem;">
-        <div style="flex:1;background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:10px;padding:10px;text-align:center;">
-          <div style="font-size:22px;font-weight:900;color:#fff;" id="quiz-stat-total">-</div>
-          <div style="font-size:11px;color:var(--text-hint);margin-top:2px;">전체</div>
-        </div>
-        <div style="flex:1;background:rgba(0,200,100,0.08);border:1px solid rgba(0,200,100,0.3);border-radius:10px;padding:10px;text-align:center;">
-          <div style="font-size:22px;font-weight:900;color:#00ff88;" id="quiz-stat-alive">-</div>
-          <div style="font-size:11px;color:rgba(0,220,120,0.6);margin-top:2px;">🟢 생존</div>
-        </div>
-        <div style="flex:1;background:rgba(226,75,74,0.08);border:1px solid rgba(226,75,74,0.3);border-radius:10px;padding:10px;text-align:center;">
-          <div style="font-size:22px;font-weight:900;color:var(--red);" id="quiz-stat-elim">-</div>
-          <div style="font-size:11px;color:rgba(226,75,74,0.6);margin-top:2px;">💥 탈락</div>
+        <div style="flex:1;background:rgba(226,75,74,0.08);border:1px solid rgba(226,75,74,0.3);border-radius:10px;padding:9px;text-align:center;">
+          <div style="font-size:20px;font-weight:900;color:var(--red);" id="quiz-stat-elim">-</div>
+          <div style="font-size:10px;color:rgba(226,75,74,0.6);margin-top:1px;">탈락</div>
         </div>
       </div>
-      <!-- 생존자 목록 -->
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.5rem;">
-        <div style="font-size:13px;font-weight:700;color:#fff;">🟢 생존자 목록</div>
-        <button onclick="toggleSurvivorList()" id="survivor-toggle-btn" style="padding:4px 12px;background:rgba(255,255,255,0.07);color:var(--text-sub);border:1px solid var(--border);border-radius:8px;font-size:12px;font-family:inherit;cursor:pointer;">펼치기</button>
-      </div>
-      <div id="survivor-list" style="display:none;margin-bottom:1rem;"></div>
+      <button onclick="openEmailModal('quiz')" style="width:100%;padding:10px 0;font-size:13px;font-weight:700;font-family:inherit;border-radius:10px;border:1.5px solid rgba(0,200,255,0.4);background:rgba(0,180,255,0.12);color:#00eeff;cursor:pointer;margin-bottom:10px;">✉️ 생존자 메일 발송</button>
 
-      <!-- 탈락자 관리 -->
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-top:0.5rem;margin-bottom:0.5rem;">
-        <div class="sec-title" style="margin:0;">💥 탈락자 관리 (<span id="elim-count">0</span>명)</div>
-        <button onclick="resetAllElim()" style="padding:7px 14px;background:rgba(226,75,74,0.2);color:var(--red);border:1px solid rgba(226,75,74,0.4);border-radius:8px;font-size:12px;font-weight:700;font-family:inherit;cursor:pointer;">🔄 전체 리셋</button>
+      <!-- 퀴즈 등록 -->
+      <div class="as">
+        <div class="as-hdr" onclick="adminAccordion('quiz-reg')">
+          <span class="as-title">📝 퀴즈 등록</span>
+          <span class="as-sum">이번 달 <span id="quiz-month-count">-</span>문제</span>
+          <span class="as-chev" id="as-chev-quiz-reg">▼</span>
+        </div>
+        <div class="as-body" id="as-body-quiz-reg">
+          <div style="font-size:11px;color:var(--text-hint);margin-bottom:10px;background:rgba(162,123,255,0.08);border:1px solid rgba(162,123,255,0.25);border-radius:8px;padding:7px 10px;">매주 자동 랜덤 배정 (중복 없음)</div>
+          <div class="m-field"><label>퀴즈 유형</label><div style="display:flex;gap:8px;"><button id="qtype-subj" class="quiz-type-btn active" onclick="setQuizType('subjective')">✏️ 주관식</button><button id="qtype-multi" class="quiz-type-btn inactive" onclick="setQuizType('multiple')">🔘 객관식</button></div></div>
+          <div class="m-field"><label>문제</label><textarea id="q-question" placeholder="퀴즈 문제를 입력하세요"></textarea></div>
+          <div class="m-field"><label>정답</label><input type="text" id="q-answer" placeholder="정답 입력"/></div>
+          <div id="q-options-wrap" style="display:none;">
+            <div style="font-size:11px;color:var(--sky);margin-bottom:8px;">정답은 보기 중 하나와 정확히 일치해야 합니다</div>
+            <div class="m-field"><label>보기 A</label><input type="text" id="q-opt-a" placeholder="보기 A"/></div>
+            <div class="m-field"><label>보기 B</label><input type="text" id="q-opt-b" placeholder="보기 B"/></div>
+            <div class="m-field"><label>보기 C</label><input type="text" id="q-opt-c" placeholder="보기 C"/></div>
+            <div class="m-field"><label>보기 D</label><input type="text" id="q-opt-d" placeholder="보기 D"/></div>
+          </div>
+          <div class="m-field"><label>힌트 (선택)</label><input type="text" id="q-hint" placeholder="예: 1969년 NASA 미션"/></div>
+          <button class="btn-main" style="background:var(--purple);" onclick="registerQuiz()">등록하기</button>
+        </div>
       </div>
-      <div id="elim-list"></div>
+
+      <!-- AI 생성 -->
+      <div class="as">
+        <div class="as-hdr" onclick="adminAccordion('quiz-ai')">
+          <span class="as-title">✨ AI 퀴즈 자동 생성</span>
+          <span class="as-sum">Groq 무료</span>
+          <span class="as-chev" id="as-chev-quiz-ai">▼</span>
+        </div>
+        <div class="as-body" id="as-body-quiz-ai">
+          <div style="margin-bottom:10px;"><div style="font-size:11px;color:var(--text-hint);margin-bottom:6px;font-weight:600;">주제</div><div style="display:flex;gap:6px;flex-wrap:wrap;"><button class="ai-opt-btn active" data-group="topic" data-val="mixed" onclick="selectAIOpt(this)">🔀 혼합</button><button class="ai-opt-btn" data-group="topic" data-val="contec" onclick="selectAIOpt(this)">🛰️ CONTEC</button><button class="ai-opt-btn" data-group="topic" data-val="space_basics" onclick="selectAIOpt(this)">🌌 기초</button><button class="ai-opt-btn" data-group="topic" data-val="trending" onclick="selectAIOpt(this)">🔥 트렌드</button></div></div>
+          <div style="margin-bottom:12px;"><div style="font-size:11px;color:var(--text-hint);margin-bottom:6px;font-weight:600;">유형</div><div style="display:flex;gap:6px;flex-wrap:wrap;"><button class="ai-opt-btn active" data-group="qtype" data-val="mixed" onclick="selectAIOpt(this)">🔀 혼합</button><button class="ai-opt-btn" data-group="qtype" data-val="subjective" onclick="selectAIOpt(this)">✏️ 주관식</button><button class="ai-opt-btn" data-group="qtype" data-val="multiple" onclick="selectAIOpt(this)">🔘 객관식</button></div></div>
+          <button id="quiz-ai-gen-btn" class="btn-main" style="background:linear-gradient(135deg,#5b21b6,#2563eb);margin-bottom:12px;" onclick="generateAIQuizzes()">🤖 생성하기</button>
+          <div id="quiz-ai-drafts"></div>
+        </div>
+      </div>
+
+      <!-- 퀴즈 이력 -->
+      <div class="as">
+        <div class="as-hdr" onclick="adminAccordion('quiz-hist')">
+          <span class="as-title">📋 퀴즈 이력</span>
+          <span class="as-sum" id="quiz-history-month-label"></span>
+          <span class="as-chev" id="as-chev-quiz-hist">▼</span>
+        </div>
+        <div class="as-body" id="as-body-quiz-hist">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;background:rgba(0,0,0,0.2);border-radius:10px;padding:6px 10px;">
+            <button onclick="quizHistoryNav('prev')" style="background:none;border:none;color:var(--text-sub);font-size:18px;cursor:pointer;padding:0 6px;font-family:inherit;">◀</button>
+            <span id="quiz-history-month-label2" style="font-size:13px;font-weight:700;color:var(--sky);"></span>
+            <button onclick="quizHistoryNav('next')" id="quiz-history-next-btn" style="background:none;border:none;color:var(--text-sub);font-size:18px;cursor:pointer;padding:0 6px;font-family:inherit;">▶</button>
+          </div>
+          <div id="quiz-admin-list"></div>
+        </div>
+      </div>
+
+      <!-- 생존자/탈락자 -->
+      <div class="as">
+        <div class="as-hdr" onclick="adminAccordion('quiz-survivors')">
+          <span class="as-title">🟢 생존자 / 💥 탈락자</span>
+          <span class="as-sum" id="as-sum-quiz-survivors">생존 -명</span>
+          <span class="as-chev" id="as-chev-quiz-survivors">▼</span>
+        </div>
+        <div class="as-body" id="as-body-quiz-survivors">
+          <div style="font-size:12px;font-weight:700;color:#00ff88;margin-bottom:6px;">🟢 생존자</div>
+          <div id="survivor-list" style="margin-bottom:12px;"></div>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+            <div style="font-size:12px;font-weight:700;color:var(--red);">💥 탈락자 (<span id="elim-count">0</span>명)</div>
+            <button onclick="resetAllElim()" style="padding:5px 12px;background:rgba(226,75,74,0.2);color:var(--red);border:1px solid rgba(226,75,74,0.4);border-radius:8px;font-size:11px;font-weight:700;font-family:inherit;cursor:pointer;">전체 리셋</button>
+          </div>
+          <div id="elim-list"></div>
+        </div>
+      </div>
+
+      <!-- 설정 -->
+      <div class="as">
+        <div class="as-hdr" onclick="adminAccordion('quiz-settings')">
+          <span class="as-title">⚙️ 설정</span>
+          <span class="as-sum"><span id="quiz-time-display">-</span> · <span id="quiz-week-count-display">-</span></span>
+          <span class="as-chev" id="as-chev-quiz-settings">▼</span>
+        </div>
+        <div class="as-body" id="as-body-quiz-settings">
+          <div style="margin-bottom:14px;">
+            <div style="font-size:12px;font-weight:700;color:#fff;margin-bottom:8px;">⏱ 제한 시간</div>
+            <div style="display:flex;align-items:center;gap:10px;">
+              <input type="number" id="quiz-time-input" min="5" max="300" step="5" style="width:80px;padding:8px 10px;font-size:14px;font-family:inherit;border:1px solid var(--border);border-radius:10px;outline:none;background:rgba(0,0,0,0.3);color:#fff;text-align:center;" placeholder="10"/>
+              <span style="font-size:13px;color:var(--text-sub);">초</span>
+              <button class="btn-main" style="flex:1;margin:0;background:var(--purple);" onclick="saveQuizTime()">저장</button>
+            </div>
+          </div>
+          <div style="margin-bottom:14px;">
+            <div style="font-size:12px;font-weight:700;color:#fff;margin-bottom:8px;">📚 주당 문제 수</div>
+            <div style="display:flex;align-items:center;gap:10px;">
+              <input type="number" id="quiz-week-count-input" min="1" max="10" step="1" style="width:80px;padding:8px 10px;font-size:14px;font-family:inherit;border:1px solid var(--border);border-radius:10px;outline:none;background:rgba(0,0,0,0.3);color:#fff;text-align:center;" placeholder="1"/>
+              <span style="font-size:13px;color:var(--text-sub);">문제</span>
+              <button class="btn-main" style="flex:1;margin:0;background:var(--sky);color:#000;" onclick="saveQuizWeekCount()">저장</button>
+            </div>
+          </div>
+          <div style="font-size:12px;font-weight:700;color:#fff;margin-bottom:8px;">🎁 생존자 경품 티어</div>
+          <div id="prize-tier-list"></div>
+          <button class="btn-main" style="background:var(--green);margin-top:10px;" onclick="savePrizeTiers()">경품 설정 저장</button>
+        </div>
+      </div>
     </div>
     <!-- FAQ 탭 -->
     <div id="admin-tab-faq" style="display:none;">
@@ -826,12 +844,13 @@
         <div style="font-size:14px;font-weight:700;margin-bottom:1rem;">👤 직원 개별 등록</div>
         <div class="m-field"><label>사번</label><input type="text" id="new-empno" placeholder="예: 2024001"/></div>
         <div class="m-field"><label>이름</label><input type="text" id="new-empname" placeholder="예: 홍길동"/></div>
+        <div class="m-field"><label>이메일 <span style="font-size:11px;font-weight:400;color:var(--text-hint);">(선택)</span></label><input type="email" id="new-empemail" placeholder="예: hong@contec.kr"/></div>
         <button class="btn-main" style="background:var(--navy);" onclick="addEmployee()">등록</button>
       </div>
       <div class="card" style="margin-bottom:1rem;">
         <div style="font-size:14px;font-weight:700;margin-bottom:8px;">📋 CSV 일괄 등록</div>
-        <p style="font-size:12px;color:var(--text-hint);margin-bottom:8px;">사번,이름 형식으로 한 줄에 한 명씩 입력</p>
-        <textarea id="csv-employees" style="width:100%;height:100px;padding:10px;font-size:13px;font-family:inherit;border:1.5px solid var(--border);border-radius:10px;outline:none;background:var(--bg);color:var(--text);resize:none;" placeholder="2024001,홍길동&#10;2024002,김철수&#10;2024003,이영희"></textarea>
+        <p style="font-size:12px;color:var(--text-hint);margin-bottom:8px;">사번,이름,이메일(선택) 형식으로 한 줄에 한 명씩 입력</p>
+        <textarea id="csv-employees" style="width:100%;height:100px;padding:10px;font-size:13px;font-family:inherit;border:1.5px solid var(--border);border-radius:10px;outline:none;background:var(--bg);color:var(--text);resize:none;" placeholder="2024001,홍길동,hong@contec.kr&#10;2024002,김철수&#10;2024003,이영희,lee@contec.kr"></textarea>
         <button class="btn-main" style="background:var(--blue);margin-top:8px;" onclick="bulkAddEmployees()">일괄 등록</button>
       </div>
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
@@ -845,91 +864,124 @@
     </div>
 
     <div id="admin-tab-race-mgmt" style="display:none;">
-      <!-- 레이스 즉시 실행 -->
-      <div style="background:linear-gradient(135deg,#000c20,#001030);border:1.5px solid rgba(0,200,255,0.35);border-radius:12px;padding:1rem 1.25rem;margin-bottom:1rem;">
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
-          <span style="font-size:16px;">🤖</span>
-          <span style="font-size:13px;font-weight:700;color:#00eeff;">자동운영 모드</span>
+      <!-- 자동운영 상태바 (항상 노출) -->
+      <div style="background:linear-gradient(135deg,#000c20,#001030);border:1.5px solid rgba(0,200,255,0.35);border-radius:12px;padding:10px 14px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;gap:10px;">
+        <div style="display:flex;align-items:center;gap:7px;min-width:0;">
+          <span style="font-size:15px;">🤖</span>
+          <div id="race-mgmt-auto-desc" style="font-size:11px;color:rgba(180,230,255,0.75);line-height:1.4;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">로딩 중...</div>
         </div>
-        <div id="race-mgmt-auto-desc" style="font-size:12px;color:rgba(180,230,255,0.7);line-height:1.6;margin-bottom:10px;"></div>
-        <button onclick="runAutoRaceNow()" style="width:100%;padding:10px 0;font-size:13px;font-weight:700;font-family:inherit;border-radius:8px;border:1.5px solid rgba(0,220,120,0.5);background:rgba(0,180,100,0.15);color:#00ff88;cursor:pointer;">🚀 지금 바로 실행</button>
-      </div>
-      <div class="card" style="margin-bottom:1rem;">
-        <div style="font-size:14px;font-weight:700;margin-bottom:1rem;">🎁 이달의 경품 등록</div>
-        <div class="m-field"><label>경품명</label><input type="text" id="reward-title" placeholder="예: 스타벅스 아메리카노"/></div>
-        <div class="m-field"><label>설명 (선택)</label><input type="text" id="reward-desc" placeholder="예: 1만원권 2장"/></div>
-        <button class="btn-main" style="background:var(--navy);" onclick="addReward()">경품 등록</button>
-      </div>
-      <div class="sec-title">이달의 경품 목록</div>
-      <div id="admin-reward-list" style="margin-bottom:1rem;"></div>
-
-      <!-- 이달의 참여 명단 -->
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-top:0.5rem;margin-bottom:0.75rem;cursor:pointer;" onclick="toggleRaceEntryList()">
-        <div class="sec-title" style="margin:0;">이달의 참여 명단</div>
-        <button id="race-entry-toggle-btn" style="padding:5px 12px;background:rgba(255,255,255,0.07);color:var(--text-sub);border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;cursor:pointer;">▼</button>
-      </div>
-      <div id="admin-race-entry-list" style="display:none;margin-bottom:1rem;"></div>
-
-      <!-- 자동운영 설정 패널 -->
-      <div id="race-auto-settings" class="card" style="margin-bottom:1rem;border:1px solid rgba(0,200,255,0.25);">
-        <div style="font-size:14px;font-weight:700;margin-bottom:0.75rem;">⚙️ 자동 운영 설정</div>
-        <div style="font-size:12px;color:var(--text-hint);margin-bottom:14px;">매월 지정한 날짜·시간에 자동으로 레이스를 진행하고 당첨자 1명을 선정합니다</div>
-
-        <!-- 날짜 -->
-        <div style="font-size:11px;color:var(--text-sub);font-weight:600;margin-bottom:6px;letter-spacing:0.5px;">운영 날짜</div>
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
-          <span style="font-size:13px;color:var(--text-sub);white-space:nowrap;">매월</span>
-          <input type="number" id="race-auto-day-input" min="1" max="31" oninput="updateEffectiveDatePreview()" style="width:64px;padding:9px 10px;font-size:15px;font-family:inherit;border:1px solid var(--border);border-radius:10px;outline:none;background:rgba(0,0,0,0.3);color:#fff;text-align:center;" value="25"/>
-          <span style="font-size:13px;color:var(--text-sub);white-space:nowrap;">일</span>
-        </div>
-
-        <!-- 시간 -->
-        <div style="font-size:11px;color:var(--text-sub);font-weight:600;margin-bottom:6px;letter-spacing:0.5px;">운영 시간</div>
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
-          <span style="font-size:13px;color:var(--text-sub);white-space:nowrap;">오전/오후</span>
-          <input type="number" id="race-auto-hour-input" min="0" max="23" oninput="updateEffectiveDatePreview()" style="width:64px;padding:9px 10px;font-size:15px;font-family:inherit;border:1px solid var(--border);border-radius:10px;outline:none;background:rgba(0,0,0,0.3);color:#fff;text-align:center;" value="10"/>
-          <span style="font-size:13px;color:var(--text-sub);white-space:nowrap;">시</span>
-          <input type="number" id="race-auto-minute-input" min="0" max="59" oninput="updateEffectiveDatePreview()" style="width:64px;padding:9px 10px;font-size:15px;font-family:inherit;border:1px solid var(--border);border-radius:10px;outline:none;background:rgba(0,0,0,0.3);color:#fff;text-align:center;" value="0"/>
-          <span style="font-size:13px;color:var(--text-sub);white-space:nowrap;">분</span>
-        </div>
-
-        <!-- 주말 안내 -->
-        <div style="display:flex;align-items:center;gap:6px;background:rgba(255,200,0,0.07);border:1px solid rgba(255,200,0,0.2);border-radius:8px;padding:9px 12px;margin-bottom:14px;">
-          <span style="font-size:14px;">📅</span>
-          <span style="font-size:11px;color:rgba(255,220,100,0.8);line-height:1.5;">운영일이 <strong>주말</strong>인 경우 <strong>이전 평일(금요일)</strong>에 자동으로 진행됩니다</span>
-        </div>
-
-        <button class="btn-main" style="background:var(--purple);margin-bottom:8px;" onclick="saveRaceAutoSettings()">저장</button>
-
-        <!-- 예정일 미리보기 -->
-        <div style="background:rgba(0,0,0,0.3);border-radius:8px;padding:10px 12px;">
-          <div style="font-size:11px;color:var(--text-hint);margin-bottom:3px;">이번 달 자동 운영 예정</div>
-          <div id="race-effective-date" style="font-size:14px;font-weight:700;color:#00eeff;">-</div>
-        </div>
+        <button onclick="runAutoRaceNow()" style="flex-shrink:0;padding:7px 14px;font-size:12px;font-weight:700;font-family:inherit;border-radius:8px;border:1.5px solid rgba(0,220,120,0.5);background:rgba(0,180,100,0.15);color:#00ff88;cursor:pointer;white-space:nowrap;">🚀 실행</button>
       </div>
 
-      <!-- 자동실행 기록 초기화 -->
-      <button onclick="resetAutoRunDate()" style="width:100%;padding:10px;font-size:12px;font-family:inherit;border:1px solid rgba(255,100,100,0.35);border-radius:10px;background:rgba(255,60,60,0.08);color:rgba(255,150,150,0.9);cursor:pointer;margin-bottom:1rem;">🔄 오늘 자동실행 기록 초기화 (재실행 허용)</button>
-
-      <!-- 이번 달 완료 표시 -->
-      <div id="race-admin-done-notice" style="display:none;background:linear-gradient(135deg,#001a10,#002a18);border:1.5px solid rgba(0,220,120,0.4);border-radius:12px;padding:1rem;margin-bottom:1rem;">
-        <div style="display:flex;align-items:center;gap:6px;margin-bottom:10px;">
-          <span style="font-size:16px;">✅</span>
+      <!-- 이번 달 완료 표시 (완료 시에만 노출) -->
+      <div id="race-admin-done-notice" style="display:none;background:linear-gradient(135deg,#001a10,#002a18);border:1.5px solid rgba(0,220,120,0.4);border-radius:12px;padding:10px 14px;margin-bottom:8px;">
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;">
+          <span style="font-size:15px;">✅</span>
           <span style="font-size:13px;font-weight:700;color:#00ff88;">이번 달 레이스 완료</span>
         </div>
-        <div id="race-admin-done-list" style="margin-bottom:12px;"></div>
-        <div style="display:flex;gap:8px;">
-          <button onclick="resetRaceMonth()" style="flex:1;padding:9px 0;font-size:12px;font-weight:700;font-family:inherit;border-radius:8px;border:1.5px solid rgba(226,75,74,0.4);cursor:pointer;background:rgba(226,75,74,0.1);color:var(--red);">🔄 전체 리셋</button>
+        <div id="race-admin-done-list" style="margin-bottom:10px;"></div>
+        <button onclick="resetRaceMonth()" style="width:100%;padding:8px 0;font-size:12px;font-weight:700;font-family:inherit;border-radius:8px;border:1.5px solid rgba(226,75,74,0.4);cursor:pointer;background:rgba(226,75,74,0.1);color:var(--red);">🔄 이달 전체 리셋</button>
+      </div>
+
+      <!-- 메일 버튼 (항상 노출) -->
+      <div style="display:flex;gap:8px;margin-bottom:8px;">
+        <button onclick="openEmailModal('race')" style="flex:1;padding:9px 0;font-size:12px;font-weight:700;font-family:inherit;border-radius:10px;border:1.5px solid rgba(0,200,255,0.4);background:rgba(0,180,255,0.12);color:#00eeff;cursor:pointer;">✉️ 참여자 결과 메일</button>
+        <button onclick="openEmailModal('race_winners')" style="flex:1;padding:9px 0;font-size:12px;font-weight:700;font-family:inherit;border-radius:10px;border:1.5px solid rgba(255,200,0,0.4);background:rgba(255,180,0,0.1);color:#ffd700;cursor:pointer;">✉️ 당첨자 축하 메일</button>
+      </div>
+
+      <!-- 아코디언: 경품 -->
+      <div class="as">
+        <div class="as-hdr" onclick="adminAccordion('race-reward')">
+          <span>🎁</span>
+          <span class="as-title">경품 등록 / 목록</span>
+          <span class="as-sum" id="as-sum-race-reward"></span>
+          <span class="as-chev" id="as-chev-race-reward">▼</span>
+        </div>
+        <div class="as-body" id="as-body-race-reward">
+          <div class="m-field"><label>경품명</label><input type="text" id="reward-title" placeholder="예: 스타벅스 아메리카노"/></div>
+          <div class="m-field"><label>설명 (선택)</label><input type="text" id="reward-desc" placeholder="예: 1만원권 2장"/></div>
+          <button class="btn-main" style="background:var(--navy);margin-bottom:14px;" onclick="addReward()">경품 등록</button>
+          <div id="admin-reward-list"></div>
         </div>
       </div>
 
-      <!-- 레이스 내역 -->
-      <div class="sec-title" style="margin-top:0.5rem;">📋 레이스 내역</div>
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
-        <select id="race-history-month-sel" onchange="loadRaceHistory()" style="padding:7px 10px;font-size:12px;font-family:inherit;border:1px solid var(--border);border-radius:8px;background:rgba(0,0,0,0.3);color:#fff;"></select>
-        <button onclick="loadRaceHistory()" style="padding:7px 12px;background:rgba(255,255,255,0.07);color:var(--text-sub);border:1px solid var(--border);border-radius:8px;font-size:11px;font-family:inherit;cursor:pointer;">새로고침</button>
+      <!-- 아코디언: 참여 명단 -->
+      <div class="as">
+        <div class="as-hdr" onclick="adminAccordion('race-entries')">
+          <span>👥</span>
+          <span class="as-title">이달 참여 명단</span>
+          <span class="as-sum" id="as-sum-race-entries"></span>
+          <span class="as-chev" id="as-chev-race-entries">▼</span>
+        </div>
+        <div class="as-body" id="as-body-race-entries">
+          <div id="admin-race-entry-list"></div>
+        </div>
       </div>
-      <div id="race-history-list"></div>
+
+      <!-- 아코디언: 자동 운영 설정 -->
+      <div class="as" id="race-auto-settings">
+        <div class="as-hdr" onclick="adminAccordion('race-settings')">
+          <span>⚙️</span>
+          <span class="as-title">자동 운영 설정</span>
+          <span class="as-sum" id="as-sum-race-settings"></span>
+          <span class="as-chev" id="as-chev-race-settings">▼</span>
+        </div>
+        <div class="as-body" id="as-body-race-settings">
+          <div style="font-size:12px;color:var(--text-hint);margin-bottom:14px;">매월 지정한 날짜·시간에 자동으로 레이스를 진행하고 당첨자 1명을 선정합니다</div>
+          <div style="font-size:11px;color:var(--text-sub);font-weight:600;margin-bottom:6px;">운영 날짜</div>
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
+            <span style="font-size:13px;color:var(--text-sub);white-space:nowrap;">매월</span>
+            <input type="number" id="race-auto-day-input" min="1" max="31" oninput="updateEffectiveDatePreview()" style="width:64px;padding:9px 10px;font-size:15px;font-family:inherit;border:1px solid var(--border);border-radius:10px;outline:none;background:rgba(0,0,0,0.3);color:#fff;text-align:center;" value="25"/>
+            <span style="font-size:13px;color:var(--text-sub);white-space:nowrap;">일</span>
+          </div>
+          <div style="font-size:11px;color:var(--text-sub);font-weight:600;margin-bottom:6px;">운영 시간</div>
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
+            <input type="number" id="race-auto-hour-input" min="0" max="23" oninput="updateEffectiveDatePreview()" style="width:64px;padding:9px 10px;font-size:15px;font-family:inherit;border:1px solid var(--border);border-radius:10px;outline:none;background:rgba(0,0,0,0.3);color:#fff;text-align:center;" value="10"/>
+            <span style="font-size:13px;color:var(--text-sub);white-space:nowrap;">시</span>
+            <input type="number" id="race-auto-minute-input" min="0" max="59" oninput="updateEffectiveDatePreview()" style="width:64px;padding:9px 10px;font-size:15px;font-family:inherit;border:1px solid var(--border);border-radius:10px;outline:none;background:rgba(0,0,0,0.3);color:#fff;text-align:center;" value="0"/>
+            <span style="font-size:13px;color:var(--text-sub);white-space:nowrap;">분</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:6px;background:rgba(255,200,0,0.07);border:1px solid rgba(255,200,0,0.2);border-radius:8px;padding:9px 12px;margin-bottom:14px;">
+            <span style="font-size:14px;">📅</span>
+            <span style="font-size:11px;color:rgba(255,220,100,0.8);line-height:1.5;">운영일이 <strong>주말</strong>이면 <strong>이전 평일(금요일)</strong>에 자동 진행됩니다</span>
+          </div>
+          <button class="btn-main" style="background:var(--purple);margin-bottom:10px;" onclick="saveRaceAutoSettings()">저장</button>
+          <div style="background:rgba(0,0,0,0.3);border-radius:8px;padding:10px 12px;">
+            <div style="font-size:11px;color:var(--text-hint);margin-bottom:3px;">이번 달 자동 운영 예정</div>
+            <div id="race-effective-date" style="font-size:14px;font-weight:700;color:#00eeff;">-</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 아코디언: 레이스 내역 -->
+      <div class="as">
+        <div class="as-hdr" onclick="adminAccordion('race-history')">
+          <span>📋</span>
+          <span class="as-title">레이스 내역</span>
+          <span class="as-sum" id="as-sum-race-history"></span>
+          <span class="as-chev" id="as-chev-race-history">▼</span>
+        </div>
+        <div class="as-body" id="as-body-race-history">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+            <select id="race-history-month-sel" onchange="loadRaceHistory()" style="padding:7px 10px;font-size:12px;font-family:inherit;border:1px solid var(--border);border-radius:8px;background:rgba(0,0,0,0.3);color:#fff;"></select>
+            <button onclick="loadRaceHistory()" style="padding:7px 12px;background:rgba(255,255,255,0.07);color:var(--text-sub);border:1px solid var(--border);border-radius:8px;font-size:11px;font-family:inherit;cursor:pointer;">새로고침</button>
+          </div>
+          <div id="race-history-list"></div>
+        </div>
+      </div>
+
+      <!-- 아코디언: 위험 작업 -->
+      <div class="as">
+        <div class="as-hdr" onclick="adminAccordion('race-danger')">
+          <span>🔄</span>
+          <span class="as-title">위험 작업</span>
+          <span class="as-sum" id="as-sum-race-danger"></span>
+          <span class="as-chev" id="as-chev-race-danger">▼</span>
+        </div>
+        <div class="as-body" id="as-body-race-danger">
+          <button onclick="resetAutoRunDate()" style="width:100%;padding:10px;font-size:12px;font-family:inherit;border:1px solid rgba(255,100,100,0.35);border-radius:10px;background:rgba(255,60,60,0.08);color:rgba(255,150,150,0.9);cursor:pointer;">🔄 오늘 자동실행 기록 초기화 (재실행 허용)</button>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -1231,6 +1283,82 @@
     <div style="display:flex;gap:8px;">
       <button onclick="closeInfoPopup('race',false)" style="flex:1;padding:11px 0;font-size:13px;font-weight:700;font-family:inherit;border-radius:10px;border:1px solid var(--border);background:rgba(255,255,255,0.05);color:var(--text-sub);cursor:pointer;">닫기</button>
       <button onclick="closeInfoPopup('race',true)" style="flex:2;padding:11px 0;font-size:13px;font-weight:700;font-family:inherit;border-radius:10px;border:none;background:linear-gradient(135deg,#000820,#0a0a2e);color:#00eeff;border:1px solid rgba(0,200,255,0.3);cursor:pointer;">✅ 다시 보지 않기</button>
+    </div>
+  </div>
+</div>
+
+<!-- 이메일 작성/발송 모달 -->
+<div class="pw-modal-overlay" id="email-modal-overlay" onclick="closeEmailModal(event)">
+  <div class="pw-modal" style="max-width:560px;width:96%;max-height:90vh;overflow-y:auto;padding:1.25rem;">
+    <div class="pw-modal-title">
+      ✉️ 이메일 작성 및 발송
+      <button class="pw-modal-close" onclick="closeEmailModal()">✕</button>
+    </div>
+
+    <!-- 유형 선택 -->
+    <div style="display:flex;gap:6px;margin-bottom:14px;">
+      <button id="emtype-quiz" onclick="setEmailModalType('quiz')" style="flex:1;padding:7px 0;font-size:11px;font-weight:700;font-family:inherit;border-radius:8px;border:1.5px solid rgba(0,200,255,0.5);background:rgba(0,180,255,0.2);color:#00eeff;cursor:pointer;">퀴즈 알림</button>
+      <button id="emtype-race" onclick="setEmailModalType('race')" style="flex:1;padding:7px 0;font-size:11px;font-weight:700;font-family:inherit;border-radius:8px;border:1px solid var(--border);background:rgba(255,255,255,0.04);color:var(--text-sub);cursor:pointer;">레이스 결과</button>
+      <button id="emtype-race_winners" onclick="setEmailModalType('race_winners')" style="flex:1;padding:7px 0;font-size:11px;font-weight:700;font-family:inherit;border-radius:8px;border:1px solid var(--border);background:rgba(255,255,255,0.04);color:var(--text-sub);cursor:pointer;">당첨자 축하</button>
+    </div>
+
+    <!-- 제목 -->
+    <div style="margin-bottom:12px;">
+      <div style="font-size:11px;color:var(--text-hint);margin-bottom:4px;">제목</div>
+      <input type="text" id="email-subject" style="width:100%;box-sizing:border-box;padding:9px 12px;font-size:13px;font-family:inherit;border:1px solid var(--border);border-radius:10px;outline:none;background:rgba(0,0,0,0.3);color:#fff;"/>
+    </div>
+
+    <!-- 내용 -->
+    <div style="margin-bottom:12px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+        <div style="font-size:11px;color:var(--text-hint);">내용 (HTML)</div>
+        <button onclick="loadEmailDefaultTemplate()" style="font-size:11px;padding:3px 10px;background:rgba(0,180,255,0.1);border:1px solid rgba(0,180,255,0.3);color:var(--sky);border-radius:6px;cursor:pointer;font-family:inherit;">기본 템플릿</button>
+      </div>
+      <textarea id="email-body" rows="8" oninput="updateEmailPreview()" style="width:100%;box-sizing:border-box;padding:10px 12px;font-size:12px;font-family:monospace;border:1px solid var(--border);border-radius:10px;outline:none;background:rgba(0,0,0,0.3);color:#fff;resize:vertical;"></textarea>
+    </div>
+
+    <!-- 미리보기 -->
+    <div style="margin-bottom:14px;">
+      <button onclick="toggleEmailPreview()" id="email-preview-btn" style="width:100%;padding:8px 0;font-size:12px;font-weight:700;font-family:inherit;border-radius:8px;border:1px solid var(--border);background:rgba(255,255,255,0.05);color:var(--text-sub);cursor:pointer;">미리보기 펼치기</button>
+      <div id="email-preview-wrap" style="display:none;margin-top:8px;border-radius:12px;overflow:hidden;border:1px solid var(--border);">
+        <iframe id="email-preview-frame" style="width:100%;height:420px;border:none;background:#fff;" srcdoc=""></iframe>
+      </div>
+    </div>
+
+    <!-- 수신자 관리 -->
+    <div style="margin-bottom:14px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+        <div style="font-size:12px;font-weight:700;color:#fff;">수신자</div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <button onclick="toggleAllEmailRecipients()" style="font-size:11px;padding:2px 8px;background:none;border:1px solid var(--border);color:var(--text-sub);border-radius:6px;cursor:pointer;font-family:inherit;">전체선택/해제</button>
+          <span style="font-size:11px;color:var(--sky);">선택: <span id="email-recipient-count">0</span>명</span>
+        </div>
+      </div>
+      <div id="email-recipient-list" style="max-height:160px;overflow-y:auto;background:rgba(0,0,0,0.2);border:1px solid var(--border);border-radius:10px;padding:6px;margin-bottom:8px;font-size:12px;color:var(--text-hint);text-align:center;">불러오는 중...</div>
+      <div style="display:flex;gap:6px;">
+        <input type="email" id="email-custom-addr" placeholder="이메일 직접 추가" style="flex:1;padding:8px 12px;font-size:12px;font-family:inherit;border:1px solid var(--border);border-radius:8px;outline:none;background:rgba(0,0,0,0.3);color:#fff;"/>
+        <button onclick="addCustomEmailAddr()" style="padding:8px 14px;font-size:12px;font-weight:700;font-family:inherit;border-radius:8px;border:1px solid rgba(0,200,255,0.4);background:rgba(0,180,255,0.1);color:var(--sky);cursor:pointer;white-space:nowrap;">+ 추가</button>
+      </div>
+    </div>
+
+    <hr style="border:none;border-top:1px solid rgba(255,255,255,0.08);margin:14px 0;"/>
+
+    <!-- 즉시 발송 -->
+    <button onclick="sendEmailNow()" style="width:100%;padding:12px 0;font-size:13px;font-weight:700;font-family:inherit;border-radius:10px;border:none;background:linear-gradient(135deg,#0D1B3E,#1a3a6e);color:#7eb8ff;cursor:pointer;margin-bottom:12px;">지금 발송</button>
+
+    <!-- 예약 발송 -->
+    <div style="background:rgba(0,0,0,0.2);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:14px;">
+      <div style="font-size:12px;font-weight:700;color:#fff;margin-bottom:8px;">예약 발송</div>
+      <div style="display:flex;gap:6px;">
+        <input type="datetime-local" id="email-schedule-time" style="flex:1;padding:8px 10px;font-size:12px;font-family:inherit;border:1px solid var(--border);border-radius:8px;outline:none;background:rgba(0,0,0,0.3);color:#fff;"/>
+        <button onclick="scheduleEmailSend()" style="padding:8px 14px;font-size:12px;font-weight:700;font-family:inherit;border-radius:8px;border:1.5px solid rgba(255,200,0,0.5);background:rgba(255,180,0,0.1);color:#ffd700;cursor:pointer;white-space:nowrap;">예약 등록</button>
+      </div>
+    </div>
+
+    <!-- 예약 목록 -->
+    <div>
+      <div style="font-size:12px;font-weight:700;color:#fff;margin-bottom:8px;">예약된 메일</div>
+      <div id="scheduled-email-list" style="font-size:12px;color:var(--text-hint);">-</div>
     </div>
   </div>
 </div>
@@ -1899,6 +2027,7 @@ async function registerQuiz(){
   });
   if(ok){
     showToast('✅ 문제 등록 완료! (주차 자동 배정)');
+    // 메일 발송은 관리자가 수동으로 진행
     ['q-question','q-answer','q-hint','q-opt-a','q-opt-b','q-opt-c','q-opt-d'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
     loadQuizAdminList();
   } else {
@@ -2076,6 +2205,19 @@ async function resetOneSurvivor(encodedName){
   const ok=await SB.delWhere('quiz_attempts','year_month=eq.'+ym+'&name=eq.'+encodedName+'&is_correct=eq.true');
   if(ok){showToast('🔄 리셋 완료!');loadSurvivorList();}
   else showToast('❌ 리셋 실패');
+}
+
+function adminAccordion(id){
+  const body=document.getElementById('as-body-'+id);
+  const chev=document.getElementById('as-chev-'+id);
+  if(!body)return;
+  const open=body.classList.toggle('open');
+  if(chev)chev.classList.toggle('open',open);
+  // 열릴 때 해당 섹션 데이터 로드
+  if(open){
+    if(id==='race-entries')loadAdminRaceEntries();
+    if(id==='race-history')loadRaceHistory();
+  }
 }
 
 function toggleSurvivorList(){
@@ -2996,7 +3138,7 @@ function switchAdminTab(btn,tab){
   if(tab==='idea-all'){adminIdeaMonth=getYM();loadAdminIdeaAll();}
   if(tab==='storage')loadStorageTab();
   if(tab==='quiz-mgmt'){populateWeekSelect();quizHistoryMonth=getYM();loadQuizAdminList();renderPrizeTiers();loadElimList();loadSurvivorList();loadQuizTimeDisplay();}
-  if(tab==='race-mgmt'){loadAdminRewardList();loadRaceAutoDaySetting();loadRaceHistory();SB.get('race_entries','year_month=eq.'+getYM()).then(r=>{const ec=document.getElementById('race-entry-count-admin');if(ec)ec.textContent=r.length;});}
+  if(tab==='race-mgmt'){loadAdminRewardList();loadRaceAutoDaySetting();loadRaceHistory();const el=document.getElementById('admin-race-entry-list');const btn=document.getElementById('race-entry-toggle-btn');if(el){el.style.display='none';}if(btn)btn.textContent='▼';SB.get('race_entries','year_month=eq.'+getYM()).then(r=>{const ec=document.getElementById('race-entry-count-admin');if(ec)ec.textContent=r.length;});}
   if(tab==='emp-mgmt'){document.getElementById('emp-list-wrap').style.display='none';document.getElementById('emp-list-toggle-btn').textContent='▼';loadEmployeeList();}
   if(tab==='faq'){loadFAQAdmin();loadAllQAAdmin();}
 }
@@ -4123,6 +4265,7 @@ async function saveRaceWinner(){
   if(allOk){
     showToast('🎉 결과 저장 완료! 직원들이 확인할 수 있습니다');
     if(_isAuto)sendRacePushNotification('🏆 이달의 궤도 레이스 결과가 발표됐습니다!'); // 자동운영: 결과 저장 후 직원들에게 알림
+    // 메일 발송은 관리자가 수동으로 진행
     const announce=document.getElementById('race-winner-announce');
     if(announce)announce.style.display='none';
     loadRacePage();
@@ -4756,11 +4899,13 @@ async function resetEmpPassword(id, empNo, name){
 async function addEmployee(){
   const empno=document.getElementById('new-empno').value.trim();
   const name=document.getElementById('new-empname').value.trim();
+  const email=document.getElementById('new-empemail').value.trim()||null;
   if(!empno||!name){showToast('❌ 사번과 이름을 입력해주세요');return;}
+  if(email&&!email.includes('@')){showToast('❌ 올바른 이메일 형식이 아닙니다');return;}
   const existing=await SB.get('employees','emp_no=eq.'+encodeURIComponent(empno));
   if(existing.length>0){showToast('❌ 이미 등록된 사번입니다');return;}
-  const ok=await SB.post('employees',{emp_no:empno,name,is_active:true});
-  if(ok){showToast('✅ 등록 완료!');document.getElementById('new-empno').value='';document.getElementById('new-empname').value='';loadEmployeeList();}
+  const ok=await SB.post('employees',{emp_no:empno,name,email,is_active:true});
+  if(ok){showToast('✅ 등록 완료!');document.getElementById('new-empno').value='';document.getElementById('new-empname').value='';document.getElementById('new-empemail').value='';loadEmployeeList();}
   else showToast('❌ 등록 실패');
 }
 
@@ -4772,12 +4917,14 @@ async function bulkAddEmployees(){
   for(const line of lines){
     const parts=line.split(',').map(p=>p.trim());
     if(parts.length<2){fail++;continue;}
-    const [empno,...nameParts]=parts;
-    const name=nameParts.join(',');
+    const empno=parts[0];
+    const name=parts[1];
+    const email=parts[2]||null;
     if(!empno||!name){fail++;continue;}
+    if(email&&!email.includes('@')){fail++;continue;}
     const existing=await SB.get('employees','emp_no=eq.'+encodeURIComponent(empno));
     if(existing.length>0){fail++;continue;}
-    const ok=await SB.post('employees',{emp_no:empno,name,is_active:true});
+    const ok=await SB.post('employees',{emp_no:empno,name,email,is_active:true});
     if(ok)success++;else fail++;
   }
   showToast(`✅ ${success}명 등록 완료${fail>0?' ('+fail+'명 실패/중복)':''}`);
@@ -4797,17 +4944,21 @@ function renderEmpList(rows){
   const el=document.getElementById('emp-list');
   if(!el)return;
   el.innerHTML=rows.length?rows.map(r=>`
-    <div style="background:var(--card);border-radius:12px;border:1px solid var(--border);padding:10px 14px;margin-bottom:6px;display:flex;align-items:center;justify-content:space-between;">
-      <div>
-        <span style="font-size:12px;font-weight:700;color:#fff;">${r.emp_no}</span>
-        <span style="font-size:13px;color:var(--text);margin-left:10px;">${r.name}</span>
-        ${!r.is_active?'<span style="font-size:10px;color:var(--red);margin-left:6px;">비활성</span>':''}
+    <div style="background:var(--card);border-radius:12px;border:1px solid var(--border);padding:10px 14px;margin-bottom:6px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px;">
+        <div>
+          <span style="font-size:12px;font-weight:700;color:#fff;">${r.emp_no}</span>
+          <span style="font-size:13px;color:var(--text);margin-left:10px;">${r.name}</span>
+          ${!r.is_active?'<span style="font-size:10px;color:var(--red);margin-left:6px;">비활성</span>':''}
+        </div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;">
+          <button onclick="toggleEmployee('${r.id}',${r.is_active})" style="padding:4px 10px;background:${r.is_active?'#e65100':'var(--green)'};color:#fff;border:none;border-radius:6px;font-size:11px;font-family:inherit;cursor:pointer;">${r.is_active?'비활성화':'활성화'}</button>
+          <button onclick="resetEmpPassword('${r.id}','${r.emp_no}','${r.name}')" style="padding:4px 10px;background:rgba(0,150,255,0.3);color:#7df;border:1px solid rgba(0,150,255,0.4);border-radius:6px;font-size:11px;font-family:inherit;cursor:pointer;">🔑 초기화</button>
+          <button onclick="editEmployeeEmail('${r.id}','${r.email||''}')" style="padding:4px 10px;background:rgba(0,200,120,0.2);color:#0f9;border:1px solid rgba(0,200,120,0.35);border-radius:6px;font-size:11px;font-family:inherit;cursor:pointer;">✉️ 이메일</button>
+          <button onclick="if(confirm('삭제하시겠습니까?'))SB.del('employees','${r.id}').then(()=>{showToast('🗑️ 삭제됨');loadEmployeeList();})" style="padding:4px 10px;background:#888;color:#fff;border:none;border-radius:6px;font-size:11px;font-family:inherit;cursor:pointer;">🗑️</button>
+        </div>
       </div>
-      <div style="display:flex;gap:6px;">
-        <button onclick="toggleEmployee('${r.id}',${r.is_active})" style="padding:4px 10px;background:${r.is_active?'#e65100':'var(--green)'};color:#fff;border:none;border-radius:6px;font-size:11px;font-family:inherit;cursor:pointer;">${r.is_active?'비활성화':'활성화'}</button>
-        <button onclick="resetEmpPassword('${r.id}','${r.emp_no}','${r.name}')" style="padding:4px 10px;background:rgba(0,150,255,0.3);color:#7df;border:1px solid rgba(0,150,255,0.4);border-radius:6px;font-size:11px;font-family:inherit;cursor:pointer;">🔑 초기화</button>
-        <button onclick="if(confirm('삭제하시겠습니까?'))SB.del('employees','${r.id}').then(()=>{showToast('🗑️ 삭제됨');loadEmployeeList();})" style="padding:4px 10px;background:#888;color:#fff;border:none;border-radius:6px;font-size:11px;font-family:inherit;cursor:pointer;">🗑️</button>
-      </div>
+      <div style="margin-top:5px;font-size:11px;color:${r.email?'#0cf':'var(--text-hint)'};">✉️ ${r.email||'이메일 미등록'}</div>
     </div>`).join(''):'<div class="rank-empty" style="background:var(--card);border-radius:12px;">검색 결과 없음</div>';
 }
 
@@ -4830,6 +4981,238 @@ async function toggleEmployee(id,current){
   await SB.patch('employees',id,{is_active:!current});
   showToast(current?'비활성화됨':'활성화됨');
   loadEmployeeList();
+}
+
+async function editEmployeeEmail(id,current){
+  const msg=current?`현재: ${current}\n새 이메일을 입력하세요 (비우면 삭제):`:'이메일 주소를 입력하세요:';
+  const val=prompt(msg,current||'');
+  if(val===null)return;
+  const email=val.trim()||null;
+  if(email&&!email.includes('@')){showToast('❌ 올바른 이메일 형식이 아닙니다');return;}
+  const ok=await SB.patch('employees',id,{email});
+  if(ok){showToast(email?'✅ 이메일 저장됨':'🗑️ 이메일 삭제됨');loadEmployeeList();}
+  else showToast('❌ 저장 실패');
+}
+
+// ── 이메일 모달 ──────────────────────────────────────────────────────────────
+let _emailModalType = 'quiz';
+let _emailRecipients = []; // [{name, email, checked, custom}]
+
+const EMAIL_SUBJECTS = {
+  quiz: '[CONTEC+] 이번 주 퀴즈가 출제됐습니다!',
+  race: '[CONTEC+] 이달의 궤도 레이스 결과가 발표됐습니다!',
+  race_winners: '[CONTEC+] 축하합니다! 궤도 레이스 당첨 안내',
+};
+
+function openEmailModal(type='quiz'){
+  _emailModalType = type;
+  document.getElementById('email-modal-overlay').classList.add('open');
+  setEmailModalType(type);
+  loadScheduledEmailList();
+  // 예약 시간 기본값: 지금으로부터 1시간 후
+  const d=new Date(Date.now()+3600000);
+  const pad=n=>String(n).padStart(2,'0');
+  document.getElementById('email-schedule-time').value=
+    `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+function closeEmailModal(e){
+  if(e&&e.target!==document.getElementById('email-modal-overlay'))return;
+  document.getElementById('email-modal-overlay').classList.remove('open');
+}
+
+function setEmailModalType(type){
+  _emailModalType=type;
+  ['quiz','race','race_winners'].forEach(t=>{
+    const btn=document.getElementById('emtype-'+t);
+    if(!btn)return;
+    if(t===type){
+      btn.style.border='1.5px solid rgba(0,200,255,0.5)';
+      btn.style.background='rgba(0,180,255,0.2)';
+      btn.style.color='#00eeff';
+    }else{
+      btn.style.border='1px solid var(--border)';
+      btn.style.background='rgba(255,255,255,0.04)';
+      btn.style.color='var(--text-sub)';
+    }
+  });
+  document.getElementById('email-subject').value=EMAIL_SUBJECTS[type]||'';
+  loadEmailDefaultTemplate();
+  loadEmailRecipients(type);
+}
+
+async function loadEmailDefaultTemplate(){
+  const type=_emailModalType;
+  const bodyEl=document.getElementById('email-body');
+  if(bodyEl)bodyEl.value='불러오는 중...';
+  try{
+    const r=await fetch(CONFIG.supabaseUrl+'/functions/v1/send-employee-notify',{
+      method:'POST',
+      headers:{'Authorization':'Bearer '+CONFIG.supabaseKey,'Content-Type':'application/json'},
+      body:JSON.stringify({type,preview:true})
+    });
+    const html=await r.text();
+    if(bodyEl)bodyEl.value=html.trim();
+    updateEmailPreview();
+  }catch(e){if(bodyEl)bodyEl.value='';}
+}
+
+async function loadEmailRecipients(type){
+  const listEl=document.getElementById('email-recipient-list');
+  if(listEl)listEl.innerHTML='<div style="text-align:center;padding:8px;">불러오는 중...</div>';
+  const ym=getYM();
+  let names=[];
+  if(type==='quiz'){
+    const attempts=await SB.get('quiz_attempts',`year_month=eq.${ym}&select=name,is_correct`);
+    const elim=new Set(attempts.filter(a=>!a.is_correct).map(a=>a.name));
+    const seen=new Set();
+    for(const a of attempts){
+      if(a.is_correct&&!elim.has(a.name)&&!seen.has(a.name)){seen.add(a.name);names.push(a.name);}
+    }
+  }else if(type==='race'){
+    const entries=await SB.get('race_entries',`year_month=eq.${ym}&select=name`);
+    names=entries.map(e=>e.name);
+  }else if(type==='race_winners'){
+    const results=await SB.get('race_results',`year_month=eq.${ym}&select=winner_name&order=rank.asc`);
+    names=results.map(r=>r.winner_name);
+  }
+  const emps=await SB.get('employees','is_active=eq.true&email=not.is.null&select=name,email');
+  const emailMap={};for(const e of emps)emailMap[e.name]=e.email;
+  const customs=_emailRecipients.filter(r=>r.custom);
+  _emailRecipients=[
+    ...names.filter(n=>emailMap[n]).map(n=>({name:n,email:emailMap[n],checked:true,custom:false})),
+    ...customs
+  ];
+  renderEmailRecipients();
+}
+
+function renderEmailRecipients(){
+  const el=document.getElementById('email-recipient-list');
+  if(!el)return;
+  if(!_emailRecipients.length){
+    el.innerHTML='<div style="text-align:center;padding:8px;color:var(--text-hint);">수신자 없음</div>';
+    updateRecipientCount();return;
+  }
+  el.innerHTML=_emailRecipients.map((r,i)=>`
+    <label style="display:flex;align-items:center;gap:8px;padding:5px 4px;cursor:pointer;border-radius:6px;">
+      <input type="checkbox" ${r.checked?'checked':''} onchange="_emailRecipients[${i}].checked=this.checked;updateRecipientCount()" style="accent-color:var(--sky);cursor:pointer;"/>
+      <span style="font-size:12px;color:#fff;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${r.name}</span>
+      <span style="font-size:11px;color:var(--text-hint);white-space:nowrap;">${r.email}</span>
+      ${r.custom?`<button onclick="_emailRecipients.splice(${i},1);renderEmailRecipients()" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:13px;padding:0 2px;line-height:1;">✕</button>`:''}
+    </label>`).join('');
+  updateRecipientCount();
+}
+
+function toggleAllEmailRecipients(){
+  const allChecked=_emailRecipients.every(r=>r.checked);
+  _emailRecipients.forEach(r=>r.checked=!allChecked);
+  renderEmailRecipients();
+}
+
+function updateRecipientCount(){
+  const el=document.getElementById('email-recipient-count');
+  if(el)el.textContent=_emailRecipients.filter(r=>r.checked).length;
+}
+
+function addCustomEmailAddr(){
+  const input=document.getElementById('email-custom-addr');
+  const addr=(input?.value||'').trim();
+  if(!addr||!addr.includes('@')){showToast('유효한 이메일을 입력해주세요');return;}
+  if(_emailRecipients.find(r=>r.email===addr)){showToast('이미 추가된 이메일입니다');return;}
+  _emailRecipients.push({name:addr,email:addr,checked:true,custom:true});
+  if(input)input.value='';
+  renderEmailRecipients();
+}
+
+function toggleEmailPreview(){
+  const wrap=document.getElementById('email-preview-wrap');
+  const btn=document.getElementById('email-preview-btn');
+  if(!wrap)return;
+  const showing=wrap.style.display!=='none';
+  wrap.style.display=showing?'none':'block';
+  if(btn)btn.textContent=showing?'미리보기 펼치기':'미리보기 닫기';
+  if(!showing)updateEmailPreview();
+}
+
+function updateEmailPreview(){
+  const html=document.getElementById('email-body')?.value||'';
+  const frame=document.getElementById('email-preview-frame');
+  if(frame)frame.srcdoc=html;
+}
+
+async function sendEmailNow(){
+  const subject=(document.getElementById('email-subject')?.value||'').trim();
+  const html=(document.getElementById('email-body')?.value||'').trim();
+  const selected=_emailRecipients.filter(r=>r.checked).map(r=>r.email);
+  if(!subject){showToast('❌ 제목을 입력해주세요');return;}
+  if(!html){showToast('❌ 내용을 입력해주세요');return;}
+  if(!selected.length){showToast('❌ 수신자를 선택해주세요');return;}
+  if(!confirm(`${selected.length}명에게 지금 바로 발송할까요?`))return;
+  showToast('📨 발송 중...');
+  try{
+    const r=await fetch(CONFIG.supabaseUrl+'/functions/v1/send-employee-notify',{
+      method:'POST',
+      headers:{'Authorization':'Bearer '+CONFIG.supabaseKey,'Content-Type':'application/json'},
+      body:JSON.stringify({type:_emailModalType,custom_subject:subject,custom_html:html,custom_recipients:selected})
+    });
+    const d=await r.json().catch(()=>({}));
+    if(d?.ok)showToast(`✅ ${d.sent}명에게 발송 완료!`);
+    else showToast('❌ 발송 실패: '+(d?.error||''));
+  }catch(e){showToast('❌ 발송 실패');}
+}
+
+async function scheduleEmailSend(){
+  const subject=(document.getElementById('email-subject')?.value||'').trim();
+  const html=(document.getElementById('email-body')?.value||'').trim();
+  const selected=_emailRecipients.filter(r=>r.checked).map(r=>r.email);
+  const timeVal=document.getElementById('email-schedule-time')?.value;
+  if(!subject||!html){showToast('❌ 제목과 내용을 입력해주세요');return;}
+  if(!selected.length){showToast('❌ 수신자를 선택해주세요');return;}
+  if(!timeVal){showToast('❌ 예약 시간을 선택해주세요');return;}
+  const scheduledAt=new Date(timeVal).toISOString();
+  if(new Date(scheduledAt)<=new Date()){showToast('❌ 미래 시간을 선택해주세요');return;}
+  const label=new Date(timeVal).toLocaleString('ko-KR');
+  if(!confirm(`${label}에 ${selected.length}명에게 발송 예약할까요?`))return;
+  const ok=await SB.post('scheduled_emails',{
+    email_type:_emailModalType,subject,html,
+    recipients:selected,
+    scheduled_at:scheduledAt,status:'pending'
+  });
+  if(ok){showToast('✅ 예약 등록 완료!');loadScheduledEmailList();}
+  else showToast('❌ 예약 실패 — 테이블이 없으면 SQL을 먼저 실행해주세요');
+}
+
+async function loadScheduledEmailList(){
+  const el=document.getElementById('scheduled-email-list');
+  if(!el)return;
+  const list=await SB.get('scheduled_emails','status=eq.pending&order=scheduled_at.asc&limit=20');
+  if(!list.length){el.innerHTML='<div style="color:var(--text-hint);">예약된 메일 없음</div>';return;}
+  el.innerHTML=list.map(e=>`
+    <div style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:8px;margin-bottom:6px;">
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:12px;color:#fff;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${e.subject}</div>
+        <div style="font-size:11px;color:var(--text-hint);margin-top:2px;">${new Date(e.scheduled_at).toLocaleString('ko-KR')} · ${(e.recipients||[]).length}명</div>
+      </div>
+      <button onclick="cancelScheduledEmail('${e.id}')" style="padding:4px 10px;font-size:11px;font-family:inherit;border-radius:6px;border:1px solid rgba(226,75,74,0.4);background:rgba(226,75,74,0.1);color:var(--red);cursor:pointer;white-space:nowrap;">취소</button>
+    </div>`).join('');
+}
+
+async function cancelScheduledEmail(id){
+  if(!confirm('예약을 취소할까요?'))return;
+  await SB.patch('scheduled_emails',id,{status:'cancelled'});
+  showToast('예약 취소됨');
+  loadScheduledEmailList();
+}
+
+async function sendEmployeeNotifyEmail(type,data={}){
+  try{
+    const r=await fetch(CONFIG.supabaseUrl+'/functions/v1/send-employee-notify',{
+      method:'POST',
+      headers:{'Authorization':'Bearer '+CONFIG.supabaseKey,'Content-Type':'application/json'},
+      body:JSON.stringify({type,...data})
+    });
+    return r.ok?r.json():null;
+  }catch(e){return null;}
 }
 
 // ── DEMO RACE ──
