@@ -904,6 +904,11 @@
           <div class="m-field"><label>설명 (선택)</label><input type="text" id="reward-desc" placeholder="예: 1만원권 2장"/></div>
           <div class="m-field"><label>대상 월</label><select id="reward-target-month" style="width:100%;padding:8px 10px;font-size:13px;font-family:inherit;border:1.5px solid var(--border);border-radius:8px;outline:none;background:var(--bg);color:var(--text);"></select></div>
           <button class="btn-main" style="background:var(--navy);margin-bottom:14px;" onclick="addReward()">경품 등록</button>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;background:rgba(0,0,0,0.2);border-radius:10px;padding:6px 10px;">
+            <button onclick="rewardHistoryNav('prev')" style="background:none;border:none;color:var(--text-sub);font-size:18px;cursor:pointer;padding:0 6px;font-family:inherit;">◀</button>
+            <span id="reward-history-month-label" style="font-size:13px;font-weight:700;color:var(--sky);"></span>
+            <button onclick="rewardHistoryNav('next')" id="reward-history-next-btn" style="background:none;border:none;color:var(--text-sub);font-size:18px;cursor:pointer;padding:0 6px;font-family:inherit;">▶</button>
+          </div>
           <div id="admin-reward-list"></div>
         </div>
       </div>
@@ -2082,7 +2087,8 @@ function getWeeksInMonth(ym){
 
 function quizHistoryNav(dir){
   const next=shiftYM(quizHistoryMonth,dir==='prev'?-1:1);
-  if(dir==='next'&&next>getYM())return;
+  const maxAllowed = shiftYM(getYM(), 1);
+  if(dir==='next'&&next>maxAllowed)return;
   quizHistoryMonth=next;
   loadQuizAdminList();
 }
@@ -2119,10 +2125,14 @@ function quizQuestionCard(q,wk,deletable=true){
 
 async function loadQuizAdminList(){
   const ym=quizHistoryMonth;
+  const maxAllowed = shiftYM(getYM(), 1);
+  const isMax=ym===maxAllowed;
   const isCurrent=ym===getYM();
   document.getElementById('quiz-history-month-label').textContent=ym+' 퀴즈 내역';
+  const el2 = document.getElementById('quiz-history-month-label2');
+  if(el2) el2.textContent = ym;
   const nextBtn=document.getElementById('quiz-history-next-btn');
-  if(nextBtn)nextBtn.style.opacity=isCurrent?'0.3':'1';
+  if(nextBtn)nextBtn.style.opacity=isMax?'0.3':'1';
 
   // year_month 기준 직접 조회 (미배정 문제 포함)
   const rows=await SB.get('quiz_relay','year_month=eq.'+ym+'&order=scheduled_week.asc,created_at.asc&limit=100');
@@ -3160,7 +3170,7 @@ async function loadAdminPage(){
   switchAdminTab(document.getElementById('anav-pending'),'pending');
 }
 
-let adminFunnyMonth=getYM(), adminIdeaMonth=getYM();
+let adminFunnyMonth=getYM(), adminIdeaMonth=getYM(), rewardHistoryMonth=getYM();
 
 function shiftYM(ym,delta){
   const [y,m]=ym.split('-').map(Number);
@@ -3193,7 +3203,7 @@ function switchAdminTab(btn,tab){
   if(tab==='idea-all'){adminIdeaMonth=getYM();loadAdminIdeaAll();}
   if(tab==='storage')loadStorageTab();
   if(tab==='quiz-mgmt'){populateWeekSelect();quizHistoryMonth=getYM();loadQuizAdminList();renderPrizeTiers();loadElimList();loadSurvivorList();loadQuizTimeDisplay();}
-  if(tab==='race-mgmt'){loadAdminRewardList();loadRaceAutoDaySetting();loadRaceHistory();const el=document.getElementById('admin-race-entry-list');const btn=document.getElementById('race-entry-toggle-btn');if(el){el.style.display='none';}if(btn)btn.textContent='▼';SB.get('race_entries','year_month=eq.'+getYM()).then(r=>{const ec=document.getElementById('race-entry-count-admin');if(ec)ec.textContent=r.length;});}
+  if(tab==='race-mgmt'){rewardHistoryMonth=getYM();loadAdminRewardList();loadRaceAutoDaySetting();loadRaceHistory();const el=document.getElementById('admin-race-entry-list');const btn=document.getElementById('race-entry-toggle-btn');if(el){el.style.display='none';}if(btn)btn.textContent='▼';SB.get('race_entries','year_month=eq.'+getYM()).then(r=>{const ec=document.getElementById('race-entry-count-admin');if(ec)ec.textContent=r.length;});}
   if(tab==='emp-mgmt'){document.getElementById('emp-list-wrap').style.display='none';document.getElementById('emp-list-toggle-btn').textContent='▼';loadEmployeeList();}
   if(tab==='faq'){loadFAQAdmin();loadAllQAAdmin();}
   populateTargetMonthDropdowns();
@@ -3378,8 +3388,24 @@ async function addReward(){
   if(ok){showToast('✅ 경품 등록 완료!');document.getElementById('reward-title').value='';document.getElementById('reward-desc').value='';loadAdminRewardList();}
 }
 
+function rewardHistoryNav(dir){
+  const next=shiftYM(rewardHistoryMonth,dir==='prev'?-1:1);
+  const maxAllowed = shiftYM(getYM(), 1);
+  if(dir==='next'&&next>maxAllowed)return;
+  rewardHistoryMonth=next;
+  loadAdminRewardList();
+}
+
 async function loadAdminRewardList(){
-  const rows=await SB.get('rewards','year_month=eq.'+getYM()+'&order=votes.desc');
+  const ym=rewardHistoryMonth;
+  const maxAllowed = shiftYM(getYM(), 1);
+  const isMax=ym===maxAllowed;
+  const el2=document.getElementById('reward-history-month-label');
+  if(el2)el2.textContent=ym;
+  const nextBtn=document.getElementById('reward-history-next-btn');
+  if(nextBtn)nextBtn.style.opacity=isMax?'0.3':'1';
+  
+  const rows=await SB.get('rewards','year_month=eq.'+ym+'&order=votes.desc');
   const el=document.getElementById('admin-reward-list');
   el.innerHTML=rows.length?rows.map(r=>`<div style="background:var(--card);border-radius:12px;border:1px solid var(--border);padding:10px 14px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;"><div><div style="font-size:13px;font-weight:700;">${r.title}</div>${r.description?`<div style="font-size:11px;color:var(--text-hint);">${r.description}</div>`:''}<div style="font-size:12px;color:var(--sky);margin-top:2px;">${r.votes||0}표</div></div><button onclick="if(confirm('삭제하시겠습니까?'))SB.delWhere('reward_votes','reward_id=eq.${r.id}').then(()=>SB.del('rewards','${r.id}')).then(()=>{showToast('삭제됨');loadAdminRewardList();})" style="padding:6px 10px;background:#888;color:#fff;border:none;border-radius:8px;font-size:12px;font-family:inherit;cursor:pointer;">🗑️</button></div>`).join(''):'<div style="font-size:13px;color:var(--text-hint);text-align:center;padding:1rem;">등록된 경품 없음</div>';
 }
