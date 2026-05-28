@@ -680,6 +680,7 @@
             <div class="m-field"><label>보기 D</label><input type="text" id="q-opt-d" placeholder="보기 D"/></div>
           </div>
           <div class="m-field"><label>힌트 (선택)</label><input type="text" id="q-hint" placeholder="예: 1969년 NASA 미션"/></div>
+          <div class="m-field"><label>대상 월</label><select id="q-target-month" style="width:100%;padding:8px 10px;font-size:13px;font-family:inherit;border:1.5px solid var(--border);border-radius:8px;outline:none;background:var(--bg);color:var(--text);"></select></div>
           <button class="btn-main" style="background:var(--purple);" onclick="registerQuiz()">등록하기</button>
         </div>
       </div>
@@ -694,6 +695,7 @@
         <div class="as-body" id="as-body-quiz-ai">
           <div style="margin-bottom:10px;"><div style="font-size:11px;color:var(--text-hint);margin-bottom:6px;font-weight:600;">주제</div><div style="display:flex;gap:6px;flex-wrap:wrap;"><button class="ai-opt-btn active" data-group="topic" data-val="mixed" onclick="selectAIOpt(this)">🔀 혼합</button><button class="ai-opt-btn" data-group="topic" data-val="contec" onclick="selectAIOpt(this)">🛰️ CONTEC</button><button class="ai-opt-btn" data-group="topic" data-val="space_basics" onclick="selectAIOpt(this)">🌌 기초</button><button class="ai-opt-btn" data-group="topic" data-val="trending" onclick="selectAIOpt(this)">🔥 트렌드</button></div></div>
           <div style="margin-bottom:12px;"><div style="font-size:11px;color:var(--text-hint);margin-bottom:6px;font-weight:600;">유형</div><div style="display:flex;gap:6px;flex-wrap:wrap;"><button class="ai-opt-btn active" data-group="qtype" data-val="mixed" onclick="selectAIOpt(this)">🔀 혼합</button><button class="ai-opt-btn" data-group="qtype" data-val="subjective" onclick="selectAIOpt(this)">✏️ 주관식</button><button class="ai-opt-btn" data-group="qtype" data-val="multiple" onclick="selectAIOpt(this)">🔘 객관식</button></div></div>
+          <div class="m-field" style="margin-bottom:12px;"><label style="font-size:11px;color:var(--text-hint);margin-bottom:6px;font-weight:600;display:block;">등록 대상 월</label><select id="q-ai-target-month" style="width:100%;padding:8px 10px;font-size:13px;font-family:inherit;border:1.5px solid var(--border);border-radius:8px;outline:none;background:var(--bg);color:var(--text);"></select></div>
           <button id="quiz-ai-gen-btn" class="btn-main" style="background:linear-gradient(135deg,#5b21b6,#2563eb);margin-bottom:12px;" onclick="generateAIQuizzes()">🤖 생성하기</button>
           <div id="quiz-ai-drafts"></div>
         </div>
@@ -900,6 +902,7 @@
         <div class="as-body" id="as-body-race-reward">
           <div class="m-field"><label>경품명</label><input type="text" id="reward-title" placeholder="예: 스타벅스 아메리카노"/></div>
           <div class="m-field"><label>설명 (선택)</label><input type="text" id="reward-desc" placeholder="예: 1만원권 2장"/></div>
+          <div class="m-field"><label>대상 월</label><select id="reward-target-month" style="width:100%;padding:8px 10px;font-size:13px;font-family:inherit;border:1.5px solid var(--border);border-radius:8px;outline:none;background:var(--bg);color:var(--text);"></select></div>
           <button class="btn-main" style="background:var(--navy);margin-bottom:14px;" onclick="addReward()">경품 등록</button>
           <div id="admin-reward-list"></div>
         </div>
@@ -2001,8 +2004,9 @@ function renderAIDrafts(){
 async function confirmDraftQuiz(idx){
   const q=_aiDrafts[idx];
   if(!q)return;
+  const targetMonth = document.getElementById('q-ai-target-month')?.value || getYM();
   const ok=await SB.post('quiz_relay',{
-    year_month:getYM(),week_key:null,scheduled_week:null,
+    year_month:targetMonth,week_key:null,scheduled_week:null,
     question:q.question,answer:q.answer,hint:q.hint||null,
     quiz_type:q.quiz_type,
     option_a:q.option_a||null,option_b:q.option_b||null,option_c:q.option_c||null,option_d:q.option_d||null,
@@ -2034,8 +2038,9 @@ async function registerQuiz(){
       showToast('❌ 정답이 보기 중에 없습니다. 정답과 보기 중 하나가 정확히 일치해야 합니다');return;
     }
   }
+  const targetMonth = document.getElementById('q-target-month')?.value || getYM();
   const ok=await SB.post('quiz_relay',{
-    year_month:getYM(),week_key:null,scheduled_week:null,
+    year_month:targetMonth,week_key:null,scheduled_week:null,
     question:q,answer:a,hint:h,
     quiz_type:_quizType,
     option_a:optA||null,option_b:optB||null,option_c:optC||null,option_d:optD||null,
@@ -3191,6 +3196,22 @@ function switchAdminTab(btn,tab){
   if(tab==='race-mgmt'){loadAdminRewardList();loadRaceAutoDaySetting();loadRaceHistory();const el=document.getElementById('admin-race-entry-list');const btn=document.getElementById('race-entry-toggle-btn');if(el){el.style.display='none';}if(btn)btn.textContent='▼';SB.get('race_entries','year_month=eq.'+getYM()).then(r=>{const ec=document.getElementById('race-entry-count-admin');if(ec)ec.textContent=r.length;});}
   if(tab==='emp-mgmt'){document.getElementById('emp-list-wrap').style.display='none';document.getElementById('emp-list-toggle-btn').textContent='▼';loadEmployeeList();}
   if(tab==='faq'){loadFAQAdmin();loadAllQAAdmin();}
+  populateTargetMonthDropdowns();
+}
+
+function populateTargetMonthDropdowns(){
+  const d=new Date();
+  const pad=n=>String(n).padStart(2,'0');
+  const y1=d.getFullYear(),m1=d.getMonth()+1;
+  const ym1=`${y1}-${pad(m1)}`;
+  const label1=`${m1}월 (현재)`;
+  const d2=new Date(y1,m1,1);
+  const y2=d2.getFullYear(),m2=d2.getMonth()+1;
+  const ym2=`${y2}-${pad(m2)}`;
+  const label2=`${m2}월 (예정)`;
+  const optHtml=`<option value="${ym1}">${label1}</option><option value="${ym2}">${label2}</option>`;
+  const els=['q-target-month','q-ai-target-month','reward-target-month'];
+  els.forEach(id=>{const el=document.getElementById(id);if(el)el.innerHTML=optHtml;});
 }
 
 async function loadAdminPending(){
@@ -3352,7 +3373,8 @@ async function addReward(){
   const title=document.getElementById('reward-title').value.trim();
   const desc=document.getElementById('reward-desc').value.trim();
   if(!title){showToast('❌ 경품명을 입력해주세요');return;}
-  const ok=await SB.post('rewards',{year_month:getYM(),title,description:desc,votes:0,created_by:app.name});
+  const targetMonth = document.getElementById('reward-target-month')?.value || getYM();
+  const ok=await SB.post('rewards',{year_month:targetMonth,title,description:desc,votes:0,created_by:app.name});
   if(ok){showToast('✅ 경품 등록 완료!');document.getElementById('reward-title').value='';document.getElementById('reward-desc').value='';loadAdminRewardList();}
 }
 
