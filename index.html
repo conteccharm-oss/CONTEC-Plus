@@ -1598,12 +1598,28 @@ async function loadQuizPage(){
     dlBanner.innerHTML=`<div style="font-size:11px;">${dlMsg}</div>`;
   }
 
-  const elim=await SB.get('quiz_attempts','name=eq.'+encodeURIComponent(app.name)+'&year_month=eq.'+ym+'&is_correct=eq.false');
-  const all=await SB.get('quiz_attempts','year_month=eq.'+ym);
-  const dead=new Set(all.filter(a=>!a.is_correct).map(a=>a.name));
-  const part=new Set(all.map(a=>a.name));
-  const aliveNames=[...part].filter(n=>!dead.has(n));
-  const aliveCount=Math.max(0,aliveNames.length);
+  let isEliminated=false;
+  let aliveNames=[];
+  let aliveCount=0;
+
+  // 1. 주간 생존 상태 뷰(v_quiz_weekly_status) 조회 시도
+  const statusRows=await SB.get('v_quiz_weekly_status');
+  if(statusRows && statusRows.length>0){
+    const myStatus=statusRows.find(r=>r.name===app.name);
+    isEliminated=myStatus && myStatus.final_status==='ELIMINATED';
+    aliveNames=statusRows.filter(r=>r.final_status==='ALIVE').map(r=>r.name);
+    aliveCount=aliveNames.length;
+  } else {
+    // 2. 뷰가 없거나 빈 경우 로컬 월별 집계로 폴백(Fallback)
+    const elim=await SB.get('quiz_attempts','name=eq.'+encodeURIComponent(app.name)+'&year_month=eq.'+ym+'&is_correct=eq.false');
+    const all=await SB.get('quiz_attempts','year_month=eq.'+ym);
+    const dead=new Set(all.filter(a=>!a.is_correct).map(a=>a.name));
+    const part=new Set(all.map(a=>a.name));
+    aliveNames=[...part].filter(n=>!dead.has(n));
+    aliveCount=Math.max(0,aliveNames.length);
+    isEliminated=elim.length>0;
+  }
+
   window._quizSurvivors=aliveNames;
   document.getElementById('quiz-alive').textContent=aliveCount;
   loadQuizPrizeTiers();
@@ -1620,7 +1636,7 @@ async function loadQuizPage(){
     prizeEl.appendChild(div);
   }
 
-  if(elim.length>0){el.innerHTML=`<div style="background:#fff5f5;border:1.5px solid #ffcccc;border-radius:16px;padding:1.5rem;text-align:center;"><div style="font-size:36px;margin-bottom:8px;">💥</div><div style="font-size:16px;font-weight:700;color:var(--red);">이번 달 탈락!</div><div style="font-size:12px;color:var(--text-sub);margin-top:4px;">다음 달 챌린지에서 다시 도전하세요</div></div>`;return;}
+  if(isEliminated){el.innerHTML=`<div style="background:#fff5f5;border:1.5px solid #ffcccc;border-radius:16px;padding:1.5rem;text-align:center;"><div style="font-size:36px;margin-bottom:8px;">💥</div><div style="font-size:16px;font-weight:700;color:var(--red);">퀴즈 탈락!</div><div style="font-size:12px;color:var(--text-sub);margin-top:4px;">매주 정답을 맞춘 생존자만 계속 참여할 수 있습니다.</div></div>`;return;}
 
   // 오후 3시 이후: 최종 생존자 명단 공개
   if(now>=announceTime){renderFinalSurvivors(el,ym,all);return;}
@@ -2166,20 +2182,42 @@ async function resetAllElim(){
 
 async function loadSurvivorList(){
   const ym=getYM();
+  const wk=getWeekKey();
+  
   // 전체 직원
   const empAll=await SB.get('employees','is_active=eq.true&order=name.asc');
-  // 탈락자 (이름 기준 중복 제거)
-  const elimAll=await SB.get('quiz_attempts','year_month=eq.'+ym+'&is_correct=eq.false');
-  const elimSet=new Set(elimAll.map(a=>a.name));
-  // 정답자 (이번 달 정답 맞춘 사람)
-  const correctAll=await SB.get('quiz_attempts','year_month=eq.'+ym+'&is_correct=eq.true');
-  const survivors=correctAll.filter(a=>!elimSet.has(a.name));
-  // 이름 중복 제거
-  const seenSurv=new Set();
-  const uniqueSurvivors=survivors.filter(a=>{if(seenSurv.has(a.name))return false;seenSurv.add(a.name);return true;});
   const total=empAll.length;
-  const alive=uniqueSurvivors.length;
-  const elim=elimSet.size;
+
+  let alive=0;
+  let elim=0;
+  let uniqueSurvivors=[];
+
+  // 1. 주간 생존 상태 뷰(v_quiz_weekly_status) 조회 시도
+  const statusRows=await SB.get('v_quiz_weekly_status');
+  if(statusRows && statusRows.length>0){
+    uniqueSurvivors=statusRows.filter(r=>r.final_status==='ALIVE');
+    alive=uniqueSurvivors.length;
+    elim=total - alive; // 생존자를 제외한 모든 인원(미참여자 포함)을 탈락자로 처리
+  } else {
+    // 2. 뷰가 없을 때 로컬 월별 집계로 폴백
+    const elimAll=await SB.get('quiz_attempts','year_month=eq.'+ym+'&is_correct=eq.false');
+    const elimSet=new Set(elimAll.map(a=>a.name));
+    const correctAll=await SB.get('quiz_attempts','year_month=eq.'+ym+'&is_correct=eq.true');
+    const survivors=correctAll.filter(a=>!elimSet.has(a.name));
+    const seenSurv=new Set();
+    uniqueSurvivors=survivors.filter(a=>{if(seenSurv.has(a.name))return false;seenSurv.add(a.name);return true;});
+    alive=uniqueSurvivors.length;
+    elim=total - alive; // 생존자를 제외한 모든 인원(미참여자 포함)을 탈락자로 처리
+  }
+
+  // 이번 주차 제출 여부 판별용 데이터 로드
+  const currentMonthAttempts=await SB.get('quiz_attempts','year_month=eq.'+ym);
+  const participatedThisWeek=new Set(
+    currentMonthAttempts
+      .filter(att=>getWeekKeyFromDate(new Date(att.created_at))===wk)
+      .map(att=>att.name)
+  );
+
   // 통계 업데이트
   const tEl=document.getElementById('quiz-stat-total');
   const aEl=document.getElementById('quiz-stat-alive');
@@ -2187,17 +2225,29 @@ async function loadSurvivorList(){
   if(tEl)tEl.textContent=total;
   if(aEl)aEl.textContent=alive;
   if(eEl)eEl.textContent=elim;
-  // 생존자 목록 렌더링 (정답 맞춘 사람만)
+
+  // 생존자 목록 렌더링 (참여 여부 뱃지 추가)
   const listEl=document.getElementById('survivor-list');
   if(!listEl)return;
   if(!uniqueSurvivors.length){
     listEl.innerHTML='<div style="text-align:center;color:var(--text-hint);font-size:13px;padding:12px;">아직 생존자가 없습니다</div>';
     return;
   }
-  listEl.innerHTML=uniqueSurvivors.map(a=>`<div style="display:flex;align-items:center;justify-content:space-between;background:rgba(0,255,136,0.05);border:1px solid rgba(0,255,136,0.2);border-radius:10px;padding:9px 14px;margin-bottom:6px;">
-    <span style="font-size:13px;font-weight:700;color:#fff;">🟢 ${a.name}</span>
-    <button onclick="resetOneSurvivor('${encodeURIComponent(a.name)}')" style="padding:5px 11px;background:rgba(226,75,74,0.15);color:var(--red);border:1px solid rgba(226,75,74,0.35);border-radius:8px;font-size:12px;font-weight:700;font-family:inherit;cursor:pointer;">리셋</button>
-  </div>`).join('');
+  
+  listEl.innerHTML=uniqueSurvivors.map(a=>{
+    const hasParticipated = participatedThisWeek.has(a.name);
+    const badgeHtml = hasParticipated 
+      ? `<span style="font-size:10px;background:rgba(0,255,136,0.12);color:#0f9;border:1px solid rgba(0,255,136,0.25);padding:2px 7px;border-radius:10px;margin-left:6px;font-weight:700;white-space:nowrap;">✔️ 제출 완료</span>`
+      : `<span style="font-size:10px;background:rgba(245,200,66,0.12);color:#fac775;border:1px solid rgba(245,200,66,0.3);padding:2px 7px;border-radius:10px;margin-left:6px;font-weight:700;white-space:nowrap;">⏳ 미참여</span>`;
+      
+    return `<div style="display:flex;align-items:center;justify-content:space-between;background:rgba(0,255,136,0.05);border:1px solid rgba(0,255,136,0.2);border-radius:10px;padding:9px 14px;margin-bottom:6px;">
+      <div style="display:flex;align-items:center;flex-wrap:wrap;gap:4px;">
+        <span style="font-size:13px;font-weight:700;color:#fff;">🟢 ${a.name}</span>
+        ${badgeHtml}
+      </div>
+      <button onclick="resetOneSurvivor('${encodeURIComponent(a.name)}')" style="padding:5px 11px;background:rgba(226,75,74,0.15);color:var(--red);border:1px solid rgba(226,75,74,0.35);border-radius:8px;font-size:12px;font-weight:700;font-family:inherit;cursor:pointer;">리셋</button>
+    </div>`;
+  }).join('');
 }
 
 async function resetOneSurvivor(encodedName){
@@ -5063,11 +5113,16 @@ async function loadEmailRecipients(type){
   const ym=getYM();
   let names=[];
   if(type==='quiz'){
-    const attempts=await SB.get('quiz_attempts',`year_month=eq.${ym}&select=name,is_correct`);
-    const elim=new Set(attempts.filter(a=>!a.is_correct).map(a=>a.name));
-    const seen=new Set();
-    for(const a of attempts){
-      if(a.is_correct&&!elim.has(a.name)&&!seen.has(a.name)){seen.add(a.name);names.push(a.name);}
+    const statusRows=await SB.get('v_quiz_weekly_status');
+    if(statusRows && statusRows.length>0){
+      names=statusRows.filter(r=>r.final_status==='ALIVE').map(r=>r.name);
+    }else{
+      const attempts=await SB.get('quiz_attempts',`year_month=eq.${ym}&select=name,is_correct`);
+      const elim=new Set(attempts.filter(a=>!a.is_correct).map(a=>a.name));
+      const seen=new Set();
+      for(const a of attempts){
+        if(a.is_correct&&!elim.has(a.name)&&!seen.has(a.name)){seen.add(a.name);names.push(a.name);}
+      }
     }
   }else if(type==='race'){
     const entries=await SB.get('race_entries',`year_month=eq.${ym}&select=name`);
