@@ -2156,7 +2156,8 @@ async function loadQuizAdminList(){
     el.innerHTML=summary+'<div class="rank-empty" style="background:var(--card);border-radius:12px;">해당 월 등록된 문제 없음</div>';
     return;
   }
-  el.innerHTML=summary+rows.map(q=>quizQuestionCard(q,wk,isCurrent)).join('');
+  const deletable = ym >= getYM();
+  el.innerHTML=summary+rows.map(q=>quizQuestionCard(q,wk,deletable)).join('');
 }
 
 // ── QUIZ ELIM MANAGE ──
