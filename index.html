@@ -1370,6 +1370,51 @@
     </div>
   </div>
 </div>
+<!-- 5월 당첨자 팝업 -->
+<div class="pw-modal-overlay" id="may-winners-overlay" style="z-index: 10000; padding: 20px;">
+  <div class="pw-modal" style="max-width:380px; padding:0; background:rgba(10,15,40,0.9); border:1.5px solid rgba(0,200,255,0.4); border-radius:20px; overflow:hidden; box-shadow: 0 10px 40px rgba(0,0,0,0.8), 0 0 20px rgba(0,150,255,0.2); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);">
+    <div style="padding: 24px; text-align: center;">
+      <h2 style="font-size: 22px; font-weight: 800; color: #fff; margin-bottom: 20px; text-shadow: 0 0 12px rgba(0, 200, 255, 0.8);">✨ 5월 이벤트 당첨자 발표 ✨</h2>
+      
+      <div style="background: rgba(255,255,255,0.05); border-radius: 12px; padding: 16px; margin-bottom: 12px; border: 1px solid rgba(255,255,255,0.1);">
+        <div style="font-size: 14px; font-weight: 700; color: #00eeff; margin-bottom: 8px;">🎯 릴레이 퀴즈 생존자</div>
+        <div style="font-size: 18px; font-weight: 800; color: #fff;">김혜성, 서대환</div>
+      </div>
+
+      <div style="background: rgba(255,255,255,0.05); border-radius: 12px; padding: 16px; margin-bottom: 16px; border: 1px solid rgba(255,255,255,0.1);">
+        <div style="font-size: 14px; font-weight: 700; color: #c084fc; margin-bottom: 8px;">🚀 궤도레이스 당첨자</div>
+        <div style="font-size: 15px; font-weight: 700; color: #fff; line-height: 1.6;">
+          <span style="color:#ffd700;">1위</span> 엄슬기로<br>
+          <span style="color:#c0c0c0;">2위</span> 홍기병<br>
+          <span style="color:#cd7f32;">3위</span> 고석기
+        </div>
+      </div>
+
+      <div style="font-size: 13px; color: var(--text-hint); margin-bottom: 16px; line-height: 1.5; font-weight: 600;">
+        🎁 당첨 상품은 <strong style="color: #00eeff;">6월 8일</strong>에<br>모바일 기프티콘으로 발송될 예정입니다.
+      </div>
+
+      <div style="background: rgba(255,100,100,0.1); border: 1px solid rgba(255,100,100,0.3); border-radius: 12px; padding: 12px; margin-bottom: 12px;">
+        <div style="font-size: 13px; font-weight: 700; color: #ff8888; line-height: 1.5;">
+          😅 웃수저 & 아이디어 챌린지는<br>이번 달 참여자가 없었어요!
+        </div>
+      </div>
+
+      <div style="background: linear-gradient(135deg, rgba(0,80,200,0.3), rgba(120,40,200,0.3)); border-radius: 12px; padding: 16px; margin-bottom: 16px;">
+        <div style="font-size: 14px; font-weight: 800; color: #fff; line-height: 1.5;">
+          지금 초기 운영 기간이라<br><span style="color: #00eeff;">웃수저 & 아이디어 챌린지만</span><br><span style="color: #ffaa00;">당첨 확률이 매우 높습니다!</span><br>이번 달 기회를 절대 놓치지 마세요!
+        </div>
+      </div>
+    </div>
+    <div style="display: flex; border-top: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.2);">
+      <label style="flex: 1; padding: 16px; display: flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer; color: var(--text-sub); font-size: 13px; margin: 0;">
+        <input type="checkbox" id="chk-hide-may-winners" style="accent-color: #00eeff; width: 14px; height: 14px;"> 오늘 하루 그만보기
+      </label>
+      <div style="width: 1px; background: rgba(255,255,255,0.1);"></div>
+      <button onclick="closeMayWinners()" style="flex: 1; padding: 16px; background: none; border: none; color: #fff; font-size: 14px; font-weight: 700; cursor: pointer; font-family: inherit;">종료</button>
+    </div>
+  </div>
+</div>
 
 <script>
 const CONFIG = {
@@ -1413,6 +1458,23 @@ function switchLoginTab(type){
   document.getElementById('field-empno').style.display='block';
 }
 
+// 5월 당첨자 팝업 제어
+function checkAndShowMayWinners() {
+  const hideDate = localStorage.getItem('hideMayWinnersPopup');
+  const today = new Date().toLocaleDateString();
+  if (hideDate !== today) {
+    document.getElementById('may-winners-overlay').classList.add('open');
+  }
+}
+function closeMayWinners() {
+  const chk = document.getElementById('chk-hide-may-winners');
+  if (chk && chk.checked) {
+    const today = new Date().toLocaleDateString();
+    localStorage.setItem('hideMayWinnersPopup', today);
+  }
+  document.getElementById('may-winners-overlay').classList.remove('open');
+}
+
 async function doLogin(){
   const pw=document.getElementById('inp-pw').value;
   const err=document.getElementById('login-err');
@@ -1453,6 +1515,7 @@ async function doLogin(){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.getElementById('screen-main').classList.add('active');
   subscribePush();
+  checkAndShowMayWinners();
 }
 
 document.getElementById('btn-login').addEventListener('click',doLogin);
