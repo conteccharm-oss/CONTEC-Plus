@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CONTEC+ 퀴즈 수신 거부</title>
+  <style>
+    body { font-family: 'Malgun Gothic', sans-serif; background-color: #f4f7f6; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+    .container { background-color: white; padding: 40px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); max-width: 400px; width: 100%; text-align: center; }
+    h2 { color: #0D1B3E; margin-top: 0; }
+    p { color: #555; line-height: 1.5; margin-bottom: 25px; }
+    .email-display { background-color: #f8f9fa; padding: 10px; border-radius: 6px; font-weight: bold; color: #333; margin-bottom: 25px; word-break: break-all; }
+    button { background: linear-gradient(135deg, #e24b4a, #c0392b); color: white; border: none; padding: 12px 24px; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; transition: 0.2s; width: 100%; }
+    button:hover { opacity: 0.9; }
+    button:disabled { background: #ccc; cursor: not-allowed; }
+    .success-msg { color: #2ecc71; font-weight: bold; font-size: 18px; display: none; margin-top: 20px; }
+    .error-msg { color: #e74c3c; font-size: 14px; display: none; margin-top: 15px; }
+  </style>
+</head>
+<body>
+
+<div class="container" id="main-container">
+  <h2>수신 거부 처리</h2>
+  <p>앞으로 CONTEC+ 퀴즈 안내 메일을 받지 않으시겠습니까?</p>
+  
+  <div class="email-display" id="email-text">이메일 정보 불러오는 중...</div>
+  
+  <button id="btn-unsubscribe" onclick="doUnsubscribe()">수신 거부하기</button>
+  
+  <div class="success-msg" id="success-msg">✅ 수신 거부 처리가 완료되었습니다.</div>
+  <div class="error-msg" id="error-msg">❌ 처리 중 오류가 발생했습니다. 다시 시도해주세요.</div>
+</div>
+
+<script>
+  const CONFIG = {
+    supabaseUrl: 'https://ifytanvhskqmbvmjoohi.supabase.co',
+    supabaseKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlmeXRhbnZoc2txbWJ2bWpvb2hpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUwMDk4MTAsImV4cCI6MjA5MDU4NTgxMH0.IK8OqhfvAEtQmcBI0ooqclVy8WK01ZfI6kwMlnKCWig',
+  };
+
+  const urlParams = new URLSearchParams(window.location.search);
+  const targetEmail = urlParams.get('email');
+
+  document.addEventListener("DOMContentLoaded", () => {
+    if (!targetEmail) {
+      document.getElementById('email-text').textContent = "오류: 이메일 정보가 없습니다.";
+      document.getElementById('email-text').style.color = "red";
+      document.getElementById('btn-unsubscribe').disabled = true;
+    } else {
+      document.getElementById('email-text').textContent = targetEmail;
+    }
+  });
+
+  async function doUnsubscribe() {
+    if (!targetEmail) return;
+    
+    const btn = document.getElementById('btn-unsubscribe');
+    btn.disabled = true;
+    btn.textContent = "처리 중...";
+    document.getElementById('error-msg').style.display = 'none';
+
+    try {
+      // 1. 해당 이메일을 가진 직원이 있는지 먼저 조회
+      const headers = {
+        'Content-Type': 'application/json',
+        'apikey': CONFIG.supabaseKey,
+        'Authorization': 'Bearer ' + CONFIG.supabaseKey
+      };
+      
+      const getRes = await fetch(`${CONFIG.supabaseUrl}/rest/v1/employees?email=eq.${encodeURIComponent(targetEmail)}&select=id`, { headers });
+      const data = await getRes.json();
+      
+      if (!data || data.length === 0) {
+        throw new Error("등록되지 않은 이메일입니다.");
+      }
+
+      // 2. is_unsubscribed 값을 true로 업데이트
+      const patchRes = await fetch(`${CONFIG.supabaseUrl}/rest/v1/employees?email=eq.${encodeURIComponent(targetEmail)}`, {
+        method: 'PATCH',
+        headers: {
+          ...headers,
+          'Prefer': 'return=minimal'
+        },
+        body: JSON.stringify({ is_unsubscribed: true })
+      });
+
+      if (!patchRes.ok) {
+        throw new Error("업데이트 실패");
+      }
+
+      // 성공 처리
+      btn.style.display = 'none';
+      document.getElementById('success-msg').style.display = 'block';
+      document.getElementById('main-container').style.borderTop = "5px solid #2ecc71";
+      
+    } catch (e) {
+      console.error(e);
+      document.getElementById('error-msg').style.display = 'block';
+      document.getElementById('error-msg').textContent = `❌ 오류: ${e.message}`;
+      btn.disabled = false;
+      btn.textContent = "수신 거부하기";
+    }
+  }
+</script>
+
+</body>
+</html>

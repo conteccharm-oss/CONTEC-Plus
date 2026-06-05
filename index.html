@@ -5243,8 +5243,9 @@ async function loadEmailRecipients(type){
     const results=await SB.get('race_results',`year_month=eq.${ym}&select=winner_name&order=rank.asc`);
     names=results.map(r=>r.winner_name);
   }
-  const emps=await SB.get('employees','is_active=eq.true&email=not.is.null&select=name,email');
-  const emailMap={};for(const e of emps)emailMap[e.name]=e.email;
+  const emps=await SB.get('employees','is_active=eq.true&email=not.is.null&select=name,email,is_unsubscribed');
+  const activeEmps = emps.filter(e => e.is_unsubscribed !== true);
+  const emailMap={};for(const e of activeEmps)emailMap[e.name]=e.email;
   const customs=_emailRecipients.filter(r=>r.custom);
   _emailRecipients=[
     ...names.filter(n=>emailMap[n]).map(n=>({name:n,email:emailMap[n],checked:true,custom:false})),
