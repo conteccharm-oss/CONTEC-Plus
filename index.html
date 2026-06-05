@@ -4589,20 +4589,11 @@ async function loadAdminRaceEntries(){
   ]);
   const el=document.getElementById('admin-race-entry-list');
   if(!el)return;
+  el.style.display='block';
   const entryNames=new Set(entries.map(e=>e.name));
   const notJoined=emps.filter(e=>!entryNames.has(e.name));
-  // 미참여 직원 선택 섹션
-  const pickerSection=notJoined.length?`
-    <div style="margin-bottom:10px;">
-      <div style="font-size:11px;color:var(--text-sub);font-weight:600;margin-bottom:6px;">미참여 직원 (${notJoined.length}명)</div>
-      <div style="max-height:160px;overflow-y:auto;background:rgba(0,0,0,0.2);border:1px solid var(--border);border-radius:10px;padding:6px 8px;">
-        ${notJoined.map(e=>`<label style="display:flex;align-items:center;gap:8px;padding:5px 6px;border-radius:7px;cursor:pointer;">
-          <input type="checkbox" class="emp-add-chk" data-name="${e.name}" style="width:15px;height:15px;accent-color:#00eeff;cursor:pointer;flex-shrink:0;">
-          <span style="font-size:13px;color:#fff;">${e.name}</span>
-        </label>`).join('')}
-      </div>
-      <button onclick="addSelectedEmpsToRace()" style="width:100%;padding:9px 0;font-size:13px;font-weight:700;font-family:inherit;border-radius:10px;border:1px solid rgba(0,200,255,0.4);background:rgba(0,150,255,0.15);color:#00eeff;cursor:pointer;margin-top:6px;">+ 선택 추가</button>
-    </div>`:`<div style="font-size:12px;color:var(--text-hint);margin-bottom:10px;padding:6px 0;">모든 직원이 참여 중입니다</div>`;
+  // 미참여 직원 선택 섹션 (제거됨)
+  const pickerSection='';
   const actionBtns=`
     <button onclick="addAllEmployeesToRace()" style="width:100%;padding:10px 0;font-size:13px;font-weight:700;font-family:inherit;border-radius:10px;border:1.5px solid rgba(0,220,120,0.4);background:rgba(0,180,100,0.12);color:#00ff88;cursor:pointer;margin-bottom:6px;">👥 전직원 참여하기</button>
     <button onclick="resetAllRaceEntries()" style="width:100%;padding:8px 0;font-size:12px;font-weight:700;font-family:inherit;border-radius:10px;border:1px solid rgba(226,75,74,0.35);background:rgba(226,75,74,0.07);color:var(--red);cursor:pointer;margin-bottom:12px;">🗑️ 참여자 전체 리셋</button>`;
