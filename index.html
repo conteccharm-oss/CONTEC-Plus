@@ -5317,15 +5317,25 @@ async function sendEmailNow(){
   if(!confirm(`${selected.length}명에게 지금 바로 발송할까요?`))return;
   showToast('📨 발송 중...');
   try{
-    const r=await fetch(CONFIG.supabaseUrl+'/functions/v1/send-employee-notify',{
-      method:'POST',
-      headers:{'Authorization':'Bearer '+CONFIG.supabaseKey,'Content-Type':'application/json'},
-      body:JSON.stringify({type:_emailModalType,custom_subject:subject,custom_html:html,custom_recipients:selected})
-    });
-    const d=await r.json().catch(()=>({}));
-    if(d?.ok)showToast(`✅ ${d.sent}명에게 발송 완료!`);
-    else showToast('❌ 발송 실패: '+(d?.error||''));
-  }catch(e){showToast('❌ 발송 실패');}
+    const GAS_URL = 'https://script.google.com/macros/s/AKfycbx3SgWGaL-3NULmni6MTg_NPzlEySmQMsJxGaVC9yypHQ6JxV1sAvmOkHjDEJDjOWnr/exec';
+    // 구글 앱스스크립트는 preflight(OPTIONS) 에러를 피하기 위해 text/plain을 사용하는 것이 안전합니다.
+    fetch(GAS_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({
+        type: _emailModalType,
+        custom_subject: subject,
+        custom_html: html,
+        custom_recipients: selected
+      })
+    }).catch(e => console.error('GAS fetch error:', e));
+    
+    // 앱스스크립트는 리다이렉션을 하거나 CORS로 인해 opaque 응답이 올 수 있으므로 바로 성공으로 간주합니다.
+    showToast(`✅ ${selected.length}명에게 메일 발송을 요청했습니다!`);
+  }catch(e){
+    console.error(e);
+    showToast('❌ 발송 에러');
+  }
 }
 
 async function scheduleEmailSend(){
