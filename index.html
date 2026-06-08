@@ -1673,23 +1673,9 @@ async function loadQuizPage(){
   let aliveNames=[];
   let aliveCount=0;
 
-  // 1. 주간 생존 상태 뷰(v_quiz_weekly_status) 조회 시도
-  const statusRows=await SB.get('v_quiz_weekly_status');
-  if(statusRows && statusRows.length>0){
-    const myStatus=statusRows.find(r=>r.name===app.name);
-    isEliminated=myStatus && myStatus.final_status==='ELIMINATED';
-    aliveNames=statusRows.filter(r=>r.final_status==='ALIVE').map(r=>r.name);
-    aliveCount=aliveNames.length;
-  } else {
-    // 2. 뷰가 없거나 빈 경우 로컬 월별 집계로 폴백(Fallback)
-    const elim=await SB.get('quiz_attempts','name=eq.'+encodeURIComponent(app.name)+'&year_month=eq.'+ym+'&is_correct=eq.false');
-    const all=await SB.get('quiz_attempts','year_month=eq.'+ym);
-    const dead=new Set(all.filter(a=>!a.is_correct).map(a=>a.name));
-    const part=new Set(all.map(a=>a.name));
-    aliveNames=[...part].filter(n=>!dead.has(n));
-    aliveCount=Math.max(0,aliveNames.length);
-    isEliminated=elim.length>0;
-  }
+  aliveNames = await getQuizSurvivors(ym, wk);
+  aliveCount = aliveNames.length;
+  isEliminated = !aliveNames.includes(app.name);
 
   window._quizSurvivors=aliveNames;
   document.getElementById('quiz-alive').textContent=aliveCount;
@@ -2132,6 +2118,32 @@ function getWeekKeyFromDate(d){
   return d.getFullYear()+'-W'+String(w).padStart(2,'0');
 }
 
+async function getQuizSurvivors(ym, currentWk){
+  const empAll = await SB.get('employees', 'is_active=eq.true&order=name.asc');
+  const allAttempts = await SB.get('quiz_attempts', 'year_month=eq.'+ym);
+  
+  // 이번 달에 등록된 시도들로부터 진행된 '과거 주차' 목록 추출
+  const monthWeeks = [...new Set(allAttempts.map(a => getWeekKeyFromDate(new Date(a.created_at))))].sort();
+  const pastWeeks = monthWeeks.filter(w => w < currentWk);
+  
+  const elimSet = new Set(allAttempts.filter(a => !a.is_correct).map(a => a.name));
+  
+  const survivors = [];
+  for (const emp of empAll) {
+    if (elimSet.has(emp.name)) continue;
+    let survivedAllPast = true;
+    for (const pw of pastWeeks) {
+      const participated = allAttempts.some(a => a.name === emp.name && getWeekKeyFromDate(new Date(a.created_at)) === pw && a.is_correct);
+      if (!participated) {
+        survivedAllPast = false;
+        break;
+      }
+    }
+    if (survivedAllPast) survivors.push(emp.name);
+  }
+  return survivors;
+}
+
 function getLastWeekdayOfMonth(ym){
   const [y,m]=ym.split('-').map(Number);
   const d=new Date(y,m,0); // 해당 월의 마지막 날
@@ -2271,23 +2283,10 @@ async function loadSurvivorList(){
   let elim=0;
   let uniqueSurvivors=[];
 
-  // 1. 주간 생존 상태 뷰(v_quiz_weekly_status) 조회 시도
-  const statusRows=await SB.get('v_quiz_weekly_status');
-  if(statusRows && statusRows.length>0){
-    uniqueSurvivors=statusRows.filter(r=>r.final_status==='ALIVE');
-    alive=uniqueSurvivors.length;
-    elim=total - alive; // 생존자를 제외한 모든 인원(미참여자 포함)을 탈락자로 처리
-  } else {
-    // 2. 뷰가 없을 때 로컬 월별 집계로 폴백
-    const elimAll=await SB.get('quiz_attempts','year_month=eq.'+ym+'&is_correct=eq.false');
-    const elimSet=new Set(elimAll.map(a=>a.name));
-    const correctAll=await SB.get('quiz_attempts','year_month=eq.'+ym+'&is_correct=eq.true');
-    const survivors=correctAll.filter(a=>!elimSet.has(a.name));
-    const seenSurv=new Set();
-    uniqueSurvivors=survivors.filter(a=>{if(seenSurv.has(a.name))return false;seenSurv.add(a.name);return true;});
-    alive=uniqueSurvivors.length;
-    elim=total - alive; // 생존자를 제외한 모든 인원(미참여자 포함)을 탈락자로 처리
-  }
+  const aliveNames = await getQuizSurvivors(ym, wk);
+  uniqueSurvivors = aliveNames.map(name => ({name}));
+  alive = uniqueSurvivors.length;
+  elim = total - alive; // 생존자를 제외한 모든 인원(미참여자 포함)을 탈락자로 처리
 
   // 이번 주차 제출 여부 판별용 데이터 로드
   const currentMonthAttempts=await SB.get('quiz_attempts','year_month=eq.'+ym);
@@ -5012,6 +5011,7 @@ async function showSurvivorPopup(){
     
     if(pending.length>0){
       html+=`<div style="text-align:center;background:rgba(245,200,66,0.05);border:1px solid rgba(245,200,66,0.2);border-radius:10px;padding:12px;margin-top:10px;margin-bottom:6px;font-size:13px;font-weight:700;color:#fac775;">⏳ 미참여 대기자: 총 ${pending.length}명</div>`;
+      html+=pending.map(n=>`<div style="display:flex;align-items:center;background:rgba(245,200,66,0.05);border:1px solid rgba(245,200,66,0.2);border-radius:10px;padding:10px 14px;margin-bottom:6px;"><span style="font-size:18px;margin-right:10px;">⏳</span><span style="font-size:14px;font-weight:700;color:#fac775;">${n}</span></div>`).join('');
     }
     el.innerHTML=html||`<div style="text-align:center;color:var(--text-hint);font-size:13px;padding:16px;">데이터가 없습니다</div>`;
   } catch(e) {
@@ -5248,17 +5248,8 @@ async function loadEmailRecipients(type){
   const ym=getYM();
   let names=[];
   if(type==='quiz'){
-    const statusRows=await SB.get('v_quiz_weekly_status');
-    if(statusRows && statusRows.length>0){
-      names=statusRows.filter(r=>r.final_status==='ALIVE').map(r=>r.name);
-    }else{
-      const attempts=await SB.get('quiz_attempts',`year_month=eq.${ym}&select=name,is_correct`);
-      const elim=new Set(attempts.filter(a=>!a.is_correct).map(a=>a.name));
-      const seen=new Set();
-      for(const a of attempts){
-        if(a.is_correct&&!elim.has(a.name)&&!seen.has(a.name)){seen.add(a.name);names.push(a.name);}
-      }
-    }
+    const wk = getWeekKey();
+    names = await getQuizSurvivors(ym, wk);
   }else if(type==='race'){
     const entries=await SB.get('race_entries',`year_month=eq.${ym}&select=name`);
     names=entries.map(e=>e.name);
