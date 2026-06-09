@@ -1391,7 +1391,7 @@
       </div>
 
       <div style="font-size: 13px; color: var(--text-hint); margin-bottom: 16px; line-height: 1.5; font-weight: 600;">
-        🎁 당첨 상품은 <strong style="color: #00eeff;">6월 8일</strong>에<br>모바일 기프티콘으로 발송될 예정입니다.
+        🎁 당첨 상품은 <strong style="color: #00ff88;">6/9 지급완료</strong> ✅
       </div>
 
       <div style="background: rgba(255,100,100,0.1); border: 1px solid rgba(255,100,100,0.3); border-radius: 12px; padding: 12px; margin-bottom: 12px;">
@@ -2121,13 +2121,13 @@ function getWeekKeyFromDate(d){
 async function getQuizSurvivors(ym, currentWk){
   const empAll = await SB.get('employees', 'is_active=eq.true&order=name.asc');
   const allAttempts = await SB.get('quiz_attempts', 'year_month=eq.'+ym);
-  
-  // 이번 달에 등록된 시도들로부터 진행된 '과거 주차' 목록 추출
-  const monthWeeks = [...new Set(allAttempts.map(a => getWeekKeyFromDate(new Date(a.created_at))))].sort();
-  const pastWeeks = monthWeeks.filter(w => w < currentWk);
-  
+
+  // 달력 기준 과거 주차 (시도 여부와 무관하게 이미 지난 주차 전체)
+  const pastWeeks = getWeeksInMonth(ym).filter(w => w < currentWk);
+
   const elimSet = new Set(allAttempts.filter(a => !a.is_correct).map(a => a.name));
-  
+
+
   const survivors = [];
   for (const emp of empAll) {
     if (elimSet.has(emp.name)) continue;
@@ -2238,34 +2238,73 @@ async function loadQuizAdminList(){
 // ── QUIZ ELIM MANAGE ──
 async function loadElimList(){
   const ym=getYM();
-  const all=await SB.get('quiz_attempts','year_month=eq.'+ym+'&is_correct=eq.false&order=eliminated_at.desc');
-  // 이름 기준 중복 제거 (최초 탈락 기록만)
-  const seen=new Set();
-  const elims=all.filter(a=>{if(seen.has(a.name))return false;seen.add(a.name);return true;});
+  const wk=getWeekKey();
+  const empAll=await SB.get('employees','is_active=eq.true&order=name.asc');
+  const aliveNames=new Set(await getQuizSurvivors(ym,wk));
+  const allAttempts=await SB.get('quiz_attempts','year_month=eq.'+ym);
+
+  // 오답/시간초과 기록 (이름당 최초 1건)
+  const wrongMap=new Map();
+  for(const a of allAttempts.filter(a=>!a.is_correct)){
+    if(!wrongMap.has(a.name)) wrongMap.set(a.name,a);
+  }
+
+  // 생존자가 아닌 전원 = 탈락자 (오답 또는 미참여)
+  const elims=empAll
+    .filter(emp=>!aliveNames.has(emp.name))
+    .map(emp=>{
+      const wr=wrongMap.get(emp.name);
+      return {name:emp.name, eliminated_at:wr?.eliminated_at||null, isWrong:!!wr};
+    });
+
   document.getElementById('elim-count').textContent=elims.length;
   const el=document.getElementById('elim-list');
   if(!elims.length){el.innerHTML='<div class="rank-empty" style="background:var(--card);border-radius:12px;">탈락자 없음 🎉</div>';return;}
   el.innerHTML=elims.map(a=>`<div style="display:flex;align-items:center;justify-content:space-between;background:var(--card);border-radius:10px;border:1px solid var(--border);padding:10px 14px;margin-bottom:8px;">
     <div>
       <div style="font-size:13px;font-weight:700;color:#fff;">💥 ${a.name}</div>
-      <div style="font-size:11px;color:var(--text-hint);margin-top:2px;">${a.eliminated_at?new Date(a.eliminated_at).toLocaleString('ko-KR'):'-'}</div>
+      <div style="font-size:11px;color:var(--text-hint);margin-top:2px;">${a.isWrong?(a.eliminated_at?new Date(a.eliminated_at).toLocaleString('ko-KR'):'오답/시간초과'):'⏳ 미참여 탈락'}</div>
     </div>
-    <button onclick="resetOneElim('${encodeURIComponent(a.name)}')" style="padding:6px 13px;background:rgba(0,200,100,0.15);color:#00cc66;border:1px solid rgba(0,200,100,0.35);border-radius:8px;font-size:12px;font-weight:700;font-family:inherit;cursor:pointer;">복구</button>
+    <button onclick="resetOneElim('${encodeURIComponent(a.name)}',${a.isWrong})" style="padding:6px 13px;background:rgba(0,200,100,0.15);color:#00cc66;border:1px solid rgba(0,200,100,0.35);border-radius:8px;font-size:12px;font-weight:700;font-family:inherit;cursor:pointer;">복구</button>
   </div>`).join('');
 }
 
-async function resetOneElim(encodedName){
+async function resetOneElim(encodedName, isWrong=true){
   const ym=getYM();
-  const ok=await SB.delWhere('quiz_attempts','year_month=eq.'+ym+'&name=eq.'+encodedName+'&is_correct=eq.false');
-  if(ok){showToast('✅ 복구 완료!');loadElimList();loadSurvivorList();}
-  else showToast('❌ 복구 실패');
+  const name=decodeURIComponent(encodedName);
+  if(isWrong){
+    // 오답 기록 삭제
+    const ok=await SB.delWhere('quiz_attempts','year_month=eq.'+ym+'&name=eq.'+encodedName+'&is_correct=eq.false');
+    if(ok){showToast('✅ 복구 완료!');loadElimList();loadSurvivorList();}
+    else showToast('❌ 복구 실패');
+  } else {
+    // 미참여 탈락: 이번 달 모든 과거 주차에 정답 처리 기록 삽입
+    const pastWeeks=getWeeksInMonth(ym).filter(w=>w<getWeekKey());
+    const allAttempts=await SB.get('quiz_attempts','year_month=eq.'+ym+'&name=eq.'+encodedName+'&is_correct=eq.true');
+    const participatedWeeks=new Set(allAttempts.map(a=>getWeekKeyFromDate(new Date(a.created_at))));
+    let ok=true;
+    for(const pw of pastWeeks){
+      if(participatedWeeks.has(pw)) continue;
+      // 해당 주차 월요일 날짜로 created_at 설정
+      const [yr,wn]=pw.split('-W').map(Number);
+      const jan1=new Date(yr,0,1);
+      const monday=new Date(jan1.getTime()+((wn-1)*7-(jan1.getDay()||7)+1)*86400000);
+      const res=await SB.post('quiz_attempts',{year_month:ym,name:name,quiz_id:null,is_correct:true,eliminated_at:null,created_at:monday.toISOString()});
+      if(!res) ok=false;
+    }
+    if(ok){showToast('✅ 복구 완료!');loadElimList();loadSurvivorList();}
+    else showToast('⚠️ 일부 복구 실패 - quiz_id 필드 확인 필요');
+  }
 }
 
 async function resetAllElim(){
   const ym=getYM();
-  const elims=await SB.get('quiz_attempts','year_month=eq.'+ym+'&is_correct=eq.false');
-  if(!elims.length){showToast('탈락자가 없습니다');return;}
-  if(!confirm('이번 달 탈락자 '+elims.length+'명을 전부 복구하시겠습니까?'))return;
+  const wk=getWeekKey();
+  const empAll=await SB.get('employees','is_active=eq.true');
+  const aliveNames=new Set(await getQuizSurvivors(ym,wk));
+  const elimCount=empAll.filter(e=>!aliveNames.has(e.name)).length;
+  if(!elimCount){showToast('탈락자가 없습니다');return;}
+  if(!confirm('이번 달 탈락자 '+elimCount+'명을 전부 복구하시겠습니까?'))return;
   const ok=await SB.delWhere('quiz_attempts','year_month=eq.'+ym+'&is_correct=eq.false');
   if(ok){showToast('🔄 전체 리셋 완료!');loadElimList();loadSurvivorList();}
   else showToast('❌ 리셋 실패');
