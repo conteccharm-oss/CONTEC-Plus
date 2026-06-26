@@ -1226,7 +1226,6 @@
         <button onclick="previewPopup()" style="width:100%;padding:11px 0;font-size:13px;font-weight:700;font-family:inherit;border-radius:10px;border:1.5px solid rgba(0,200,255,0.4);background:rgba(0,180,255,0.1);color:#00eeff;cursor:pointer;">👁️ 팝업 미리보기</button>
       </div>
     </div>
-    </div>
     <!-- 스토리지 탭 -->
     <div id="admin-tab-storage" style="display:none;">
       <div class="sec-title">💾 스토리지 현황</div>
@@ -1517,6 +1516,12 @@
           <button onclick="resetAutoRunDate()" style="width:100%;padding:10px;font-size:12px;font-family:inherit;border:1px solid rgba(255,100,100,0.35);border-radius:10px;background:rgba(255,60,60,0.08);color:rgba(255,150,150,0.9);cursor:pointer;">🔄 오늘 자동실행 기록 초기화 (재실행 허용)</button>
         </div>
       </div>
+    </div>
+    <!-- 타자왕 관리 탭 -->
+    <div id="admin-tab-typing-mgmt" style="display:none;">
+      <div class="sec-title">⌨️ 타자왕 단어 관리</div>
+      <div style="font-size:12px;color:var(--text-hint);margin-bottom:14px;line-height:1.6;">테마별 기본 단어를 확인하고 단어를 추가할 수 있습니다. 추가된 단어는 해당 테마 게임에 포함됩니다.</div>
+      <div id="typing-theme-cards"></div>
     </div>
   </div>
 
@@ -1812,7 +1817,6 @@
       <span>📅 이달의 출석체크</span>
       <button class="pw-modal-close" onclick="closeAttModal()">✕</button>
     </div>
-    
     <!-- 통계 -->
     <div style="display:flex;gap:8px;margin-bottom:14px;">
       <div class="att-modal-stats-card highlight">
@@ -1830,8 +1834,7 @@
         <div class="att-modal-stats-label">연속 출석</div>
       </div>
     </div>
-    
-    <!-- 진행률 설명 및 바 -->
+    <!-- 진행률 -->
     <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text-sub);margin-bottom:6px;font-weight:600;">
       <span>출석 달성도</span>
       <span id="att-modal-percent" style="color:var(--gold);">0%</span>
@@ -1839,29 +1842,17 @@
     <div style="height:6px;background:rgba(255,255,255,0.08);border-radius:3px;overflow:hidden;margin-bottom:14px;box-shadow:inset 0 1px 3px rgba(0,0,0,0.5);">
       <div id="att-modal-bar" style="height:6px;background:linear-gradient(90deg,var(--gold),var(--orange));border-radius:3px;width:0%;transition:width 0.6s cubic-bezier(0.4, 0, 0.2, 1);box-shadow:0 0 8px rgba(245,200,66,0.5);"></div>
     </div>
-    
-    <!-- 마일스톤 메달형 -->
+    <!-- 마일스톤 -->
     <div class="att-modal-milestones">
-      <div id="att-milestone-10" class="att-milestone-medal">
-        <span class="medal-icon">🎖️</span>
-        <span class="medal-name">10일 달성</span>
-      </div>
-      <div id="att-milestone-20" class="att-milestone-medal">
-        <span class="medal-icon">🥈</span>
-        <span class="medal-name">20일 달성</span>
-      </div>
-      <div id="att-milestone-full" class="att-milestone-medal">
-        <span class="medal-icon">🏆</span>
-        <span class="medal-name">이달 개근</span>
-      </div>
+      <div id="att-milestone-10" class="att-milestone-medal"><span class="medal-icon">🎖️</span><span class="medal-name">10일 달성</span></div>
+      <div id="att-milestone-20" class="att-milestone-medal"><span class="medal-icon">🥈</span><span class="medal-name">20일 달성</span></div>
+      <div id="att-milestone-full" class="att-milestone-medal"><span class="medal-icon">🏆</span><span class="medal-name">이달 개근</span></div>
     </div>
-    
     <!-- 상품 안내 -->
     <div style="background:rgba(0,0,0,0.25);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:10px 12px;margin-bottom:14px;">
       <div style="font-size:11px;font-weight:700;color:rgba(255,255,255,0.5);margin-bottom:7px;letter-spacing:0.3px;">🎁 출석 달성 상품</div>
       <div id="att-reward-list"></div>
     </div>
-    
     <!-- 요일 헤더 -->
     <div class="att-cal-header" style="margin-bottom:6px;background:rgba(255,255,255,0.02);border-radius:6px;padding:4px 0;">
       <div class="att-cal-dow" style="color:#ff6b6b;font-weight:800;">일</div>
@@ -2513,11 +2504,15 @@ let _tgRaf=null, _tgWords=[], _tgScore=0, _tgCombo=0, _tgMaxCombo=0,
     _tgSpawnTimer=0, _tgSpawnInterval=2200, _tgRunning=false,
     _tgLastFrame=0, _tgComboTimeout=null, _tgDeck=[], _tgDeckIdx=0;
 
+let _typingCustomMap = {}; // {themeKey: [추가단어,...]}
+
 function _tgShuffleDeck(){
-  const src=_TG_THEMES[_tgActiveTheme].words;
+  const defaults = _TG_THEMES[_tgActiveTheme].words;
+  const custom = (_typingCustomMap && _typingCustomMap[_tgActiveTheme]) || [];
+  const src = custom.length > 0 ? [...defaults, ...custom] : defaults;
   _tgDeck=[...src];
   for(let i=_tgDeck.length-1;i>0;i--){
-    const j=Math.floor(Math.random()*src.length);
+    const j=Math.floor(Math.random()*(i+1));
     [_tgDeck[i],_tgDeck[j]]=[_tgDeck[j],_tgDeck[i]];
   }
   _tgDeckIdx=0;
@@ -2790,10 +2785,16 @@ async function loadTypingLeaderboard(targetId){
   const el=document.getElementById(targetId);if(!el)return;
   el.innerHTML='<div class="rank-empty">불러오는 중...</div>';
   const ym=getYM();
-  const rows=await SB.get('typing_scores','year_month=eq.'+ym+'&order=score.desc&limit=10');
+  const rows=await SB.get('typing_scores','year_month=eq.'+ym+'&order=score.desc&limit=500');
   if(!rows.length){el.innerHTML='<div class="rank-empty">아직 기록이 없어요! 첫 도전자가 되세요 🚀</div>';return;}
-  el.innerHTML=rows.map((r,i)=>{
-    const medals=['🥇','🥈','🥉'];
+  // 인당 최고 점수만 남기기
+  const bestMap={};
+  rows.forEach(r=>{
+    if(!bestMap[r.emp_no]||r.score>bestMap[r.emp_no].score) bestMap[r.emp_no]=r;
+  });
+  const ranked=Object.values(bestMap).sort((a,b)=>b.score-a.score);
+  const medals=['🥇','🥈','🥉'];
+  el.innerHTML=ranked.map((r,i)=>{
     const medal=i<3?medals[i]:`<span style="font-size:12px;color:var(--text-hint);">${i+1}</span>`;
     const isMe=r.emp_no===app.empNo;
     return `<div class="rank-item${isMe?' rank-me':''}" style="${isMe?'background:rgba(162,123,255,0.12);border-color:rgba(162,123,255,0.3);':''}">
@@ -2805,10 +2806,15 @@ async function loadTypingLeaderboard(targetId){
 }
 
 
-function startTypingCountdown(){
+async function startTypingCountdown(){
   document.getElementById('tg-start-area').style.display='none';
   document.getElementById('tg-result-area').style.display='none';
   document.getElementById('tg-game-area-wrap').style.display='';
+  // 커스텀 단어 로드
+  if(!_typingCustomMap || Object.keys(_typingCustomMap).length === 0){
+    const rows = await SB.get('app_settings','key=eq.typing_custom_words');
+    if(rows.length && rows[0].value) _typingCustomMap = JSON.parse(rows[0].value);
+  }
   // 초기화
   _tgWords=[]; _tgScore=0; _tgCombo=0; _tgMaxCombo=0;
   _tgLives=3; _tgLevel=1; _tgWordsTyped=0; _tgSpawnTimer=0;
@@ -2866,11 +2872,15 @@ function typingGameLoop(now){
   const dt=now-_tgLastFrame; _tgLastFrame=now;
   const area=document.getElementById('tg-area');
   const areaH=area.clientHeight;
-  // 레벨 업
+  // 레벨 업 (15초마다 레벨+1, 최대 15)
   const elapsed=(now-_tgStartTime)/1000;
-  _tgLevel=Math.min(10,1+Math.floor(elapsed/20));
-  const speed=28+_tgLevel*4; // px/s
-  _tgSpawnInterval=Math.max(900,2200-_tgLevel*130);
+  const newLevel=Math.min(15,1+Math.floor(elapsed/15));
+  if(newLevel>_tgLevel){
+    _tgLevel=newLevel;
+    showTypingLevelUp(_tgLevel);
+  }
+  const speed=30+_tgLevel*6; // px/s (빠른 가속)
+  _tgSpawnInterval=Math.max(700,2200-_tgLevel*110);
   // 단어 이동
   _tgWords.forEach(w=>{
     w.y+=speed*(dt/1000);
@@ -2939,6 +2949,17 @@ function destroyTypingWord(w,input){
   },3000);
 }
 
+function showTypingLevelUp(level){
+  const el=document.getElementById('tg-combo-display');
+  if(!el)return;
+  el.textContent='⚡ LEVEL '+level+'!';
+  el.style.opacity='1';
+  el.style.color='#ffd700';
+  el.style.transform='translate(-50%,-50%) scale(1.6)';
+  setTimeout(()=>{el.style.transform='translate(-50%,-50%) scale(1)';el.style.opacity='0.7';el.style.color='';},400);
+  setTimeout(()=>{if(el.textContent.startsWith('⚡'))el.textContent='';},1800);
+}
+
 function showTypingCombo(combo,pts){
   const el=document.getElementById('tg-combo-display');
   if(combo>=2){
@@ -2993,12 +3014,15 @@ async function endTypingGame(){
   // 점수 저장
   if(_tgScore>0)await submitTypingScore(wpm);
   loadTypingLeaderboard('tg-leaderboard-result');
-  // 내 순위 찾기
+  // 내 순위 찾기 (인당 최고점수 기준)
   const ym=getYM();
-  const all=await SB.get('typing_scores','year_month=eq.'+ym+'&order=score.desc');
-  const rank=all.findIndex(r=>r.emp_no===app.empNo&&r.score===_tgScore);
+  const all=await SB.get('typing_scores','year_month=eq.'+ym+'&order=score.desc&limit=500');
+  const bestMap={};
+  all.forEach(r=>{if(!bestMap[r.emp_no]||r.score>bestMap[r.emp_no].score)bestMap[r.emp_no]=r;});
+  const ranked=Object.values(bestMap).sort((a,b)=>b.score-a.score);
+  const rank=ranked.findIndex(r=>r.emp_no===app.empNo);
   const rankEl=document.getElementById('tg-result-rank');
-  if(rank>=0)rankEl.textContent='🏆 이달 '+( rank+1)+'위 기록!';
+  if(rank>=0)rankEl.textContent='🏆 이달 '+(rank+1)+'위 기록!';
   else rankEl.textContent='';
 }
 
@@ -3985,117 +4009,57 @@ async function loadAttendanceCard(){
   const card=document.getElementById('home-attendance-card');
   if(!card||!app.empNo)return;
   if(window._attFeatureHidden)return;
-  
   const [records, rwRows] = await Promise.all([
     fetchAttendanceRecords(app.empNo),
     SB.get('app_settings','key=in.(att_reward_10,att_reward_20,att_reward_full)')
   ]);
-  
   _attRecords = records;
   rwRows.forEach(r=>{
     if(r.key==='att_reward_10')_attRewards.r10=r.value;
     if(r.key==='att_reward_20')_attRewards.r20=r.value;
     if(r.key==='att_reward_full')_attRewards.rfull=r.value;
   });
-  
   const todayStr = new Date().toISOString().split('T')[0];
   const [ty, tm, td] = todayStr.split('-').map(Number);
   const ym = ty + '-' + String(tm).padStart(2, '0');
-  
   const checkedDates = new Set(_attRecords.filter(r => r.year_month === ym).map(r => r.check_date));
   const count = checkedDates.size;
   const checkedToday = checkedDates.has(todayStr);
-  
   card.style.display='';
-  
   const subEl=document.getElementById('att-home-sub');
   if(subEl) subEl.textContent='이달 '+count+'일 출석';
-  
   let streak = 0;
   let checkDate = new Date(ty, tm - 1, td);
-  const hasCheckedToday = _attRecords.some(r => r.check_date === todayStr);
-  if (!hasCheckedToday) {
-    checkDate.setDate(checkDate.getDate() - 1);
-  }
+  if (!_attRecords.some(r => r.check_date === todayStr)) checkDate.setDate(checkDate.getDate() - 1);
   while (true) {
     const dateStr = checkDate.toISOString().split('T')[0];
-    const isChecked = _attRecords.some(r => r.check_date === dateStr);
-    if (isChecked) {
-      streak++;
-      checkDate.setDate(checkDate.getDate() - 1);
-    } else {
-      break;
-    }
+    if (_attRecords.some(r => r.check_date === dateStr)) { streak++; checkDate.setDate(checkDate.getDate() - 1); } else break;
   }
-  
   const streakWrap = document.getElementById('att-home-streak-wrap');
   const streakVal = document.getElementById('att-home-streak-val');
-  if (streak > 0) {
-    if (streakWrap) streakWrap.style.display = 'block';
-    if (streakVal) streakVal.textContent = streak;
-  } else {
-    if (streakWrap) streakWrap.style.display = 'none';
-  }
-  
+  if (streak > 0) { if(streakWrap)streakWrap.style.display='block'; if(streakVal)streakVal.textContent=streak; }
+  else { if(streakWrap)streakWrap.style.display='none'; }
   const baseDate = new Date(ty, tm - 1, td);
-  const currentDayOfWeek = baseDate.getDay();
-  const distToMonday = currentDayOfWeek === 0 ? -6 : 1 - currentDayOfWeek;
+  const dow = baseDate.getDay();
   const monday = new Date(baseDate);
-  monday.setDate(baseDate.getDate() + distToMonday);
-  
-  const dowNames = ['일', '월', '화', '수', '목', '금', '토'];
-  const allCheckedDates = new Set(_attRecords.map(r => r.check_date));
-  
-  let progressHtml = '';
-  for (let i = 0; i < 7; i++) {
-    const d = new Date(monday);
-    d.setDate(monday.getDate() + i);
-    const dStr = d.toISOString().split('T')[0];
-    const isChecked = allCheckedDates.has(dStr);
-    const isToday = dStr === todayStr;
-    const isFuture = d > baseDate;
-    const isMissed = !isChecked && d < baseDate && d.getMonth() === tm - 1;
-    const dowName = dowNames[d.getDay()];
-    
-    let dotClass = 'att-week-dot';
-    let dotContent = d.getDate();
-    
-    if (isChecked) {
-      dotClass += ' checked';
-      dotContent = '★';
-    } else if (isToday) {
-      dotClass += ' today';
-    } else if (isMissed) {
-      dotClass += ' missed';
-      dotContent = '✕';
-    } else if (isFuture) {
-      dotClass += ' future';
-    }
-    
-    progressHtml += `
-      <div class="att-week-day">
-        <div class="att-week-dow" style="${isToday ? 'color:var(--gold);font-weight:800;' : ''}">${dowName}</div>
-        <div class="${dotClass}">${dotContent}</div>
-      </div>
-    `;
+  monday.setDate(baseDate.getDate() + (dow===0?-6:1-dow));
+  const dowNames=['일','월','화','수','목','금','토'];
+  const allDates=new Set(_attRecords.map(r=>r.check_date));
+  let ph='';
+  for(let i=0;i<7;i++){
+    const d=new Date(monday); d.setDate(monday.getDate()+i);
+    const dStr=d.toISOString().split('T')[0];
+    const isC=allDates.has(dStr),isT=dStr===todayStr,isF=d>baseDate,isM=!isC&&d<baseDate&&d.getMonth()===tm-1;
+    let cls='att-week-dot',cnt=d.getDate();
+    if(isC){cls+=' checked';cnt='★';}else if(isT){cls+=' today';}else if(isM){cls+=' missed';cnt='✕';}else if(isF){cls+=' future';}
+    ph+=`<div class="att-week-day"><div class="att-week-dow" style="${isT?'color:var(--gold);font-weight:800;':''}">${dowNames[d.getDay()]}</div><div class="${cls}">${cnt}</div></div>`;
   }
-  
-  const progContainer = document.getElementById('att-week-progress-container');
-  if (progContainer) progContainer.innerHTML = progressHtml;
-  
+  const pc=document.getElementById('att-week-progress-container');
+  if(pc)pc.innerHTML=ph;
   const btnEl=document.getElementById('att-home-btn');
   if(btnEl){
-    if(checkedToday){
-      btnEl.textContent='완료 ✓';
-      btnEl.className='';
-      btnEl.disabled=true;
-      btnEl.style.cssText='width:100%;margin-top:auto;padding:6px 0;font-size:11px;border-radius:12px;font-weight:700;background:rgba(245,200,66,0.12);color:var(--gold);border:1px solid rgba(245,200,66,0.3);box-shadow:none;cursor:default;';
-    } else {
-      btnEl.textContent='오늘 출석!';
-      btnEl.className='att-btn-pulse';
-      btnEl.disabled=false;
-      btnEl.style.cssText='width:100%;margin-top:auto;padding:6px 0;font-size:11px;border-radius:12px;border:none;';
-    }
+    if(checkedToday){btnEl.textContent='완료 ✓';btnEl.className='';btnEl.disabled=true;btnEl.style.cssText='width:100%;margin-top:auto;padding:6px 0;font-size:11px;border-radius:12px;font-weight:700;background:rgba(245,200,66,0.12);color:var(--gold);border:1px solid rgba(245,200,66,0.3);box-shadow:none;cursor:default;';}
+    else{btnEl.textContent='오늘 출석!';btnEl.className='att-btn-pulse';btnEl.disabled=false;btnEl.style.cssText='width:100%;margin-top:auto;padding:6px 0;font-size:11px;border-radius:12px;border:none;';}
   }
 }
 
@@ -4110,109 +4074,34 @@ function closeAttModal(e){
 }
 
 function renderAttCalendarModal(){
-  const todayStr = new Date().toISOString().split('T')[0];
-  const [ty, tm, td] = todayStr.split('-').map(Number);
-  const ym = ty + '-' + String(tm).padStart(2, '0');
-  const daysInMonth = new Date(ty, tm, 0).getDate();
-  const todayDay = td;
-  
-  const checkedDates = new Set(_attRecords.filter(r => r.year_month === ym).map(r => r.check_date));
-  const count = checkedDates.size;
-  
-  let streak = 0;
-  let checkDate = new Date(ty, tm - 1, td);
-  const hasCheckedToday = _attRecords.some(r => r.check_date === todayStr);
-  if (!hasCheckedToday) {
-    checkDate.setDate(checkDate.getDate() - 1);
-  }
-  while (true) {
-    const dateStr = checkDate.toISOString().split('T')[0];
-    const isChecked = _attRecords.some(r => r.check_date === dateStr);
-    if (isChecked) {
-      streak++;
-      checkDate.setDate(checkDate.getDate() - 1);
-    } else {
-      break;
-    }
-  }
-  
-  const countEl=document.getElementById('att-modal-count');
-  const totalEl=document.getElementById('att-modal-total');
-  const streakEl=document.getElementById('att-modal-streak');
-  const barEl=document.getElementById('att-modal-bar');
-  const percentEl=document.getElementById('att-modal-percent');
-  
-  if(countEl)countEl.textContent=count;
-  if(totalEl)totalEl.textContent=daysInMonth;
-  if(streakEl)streakEl.textContent=streak;
-  
-  const pct = Math.min(100, Math.round(count / daysInMonth * 100));
-  if(percentEl)percentEl.textContent=pct+'%';
-  if(barEl)barEl.style.width=pct+'%';
-  
-  const m10=document.getElementById('att-milestone-10');
-  const m20=document.getElementById('att-milestone-20');
-  const mf=document.getElementById('att-milestone-full');
-  
-  if(m10) {
-    if(count>=10) m10.classList.add('reached');
-    else m10.classList.remove('reached');
-  }
-  if(m20) {
-    if(count>=20) m20.classList.add('reached');
-    else m20.classList.remove('reached');
-  }
-  if(mf) {
-    if(count>=todayDay&&count>0) mf.classList.add('reached');
-    else mf.classList.remove('reached');
-  }
-  
+  const todayStr=new Date().toISOString().split('T')[0];
+  const [ty,tm,td]=todayStr.split('-').map(Number);
+  const ym=ty+'-'+String(tm).padStart(2,'0');
+  const daysInMonth=new Date(ty,tm,0).getDate();
+  const checkedDates=new Set(_attRecords.filter(r=>r.year_month===ym).map(r=>r.check_date));
+  const count=checkedDates.size;
+  let streak=0,checkDate=new Date(ty,tm-1,td);
+  if(!_attRecords.some(r=>r.check_date===todayStr))checkDate.setDate(checkDate.getDate()-1);
+  while(true){const ds=checkDate.toISOString().split('T')[0];if(_attRecords.some(r=>r.check_date===ds)){streak++;checkDate.setDate(checkDate.getDate()-1);}else break;}
+  const countEl=document.getElementById('att-modal-count'),totalEl=document.getElementById('att-modal-total'),streakEl=document.getElementById('att-modal-streak'),barEl=document.getElementById('att-modal-bar'),percentEl=document.getElementById('att-modal-percent');
+  if(countEl)countEl.textContent=count;if(totalEl)totalEl.textContent=daysInMonth;if(streakEl)streakEl.textContent=streak;
+  const pct=Math.min(100,Math.round(count/daysInMonth*100));
+  if(percentEl)percentEl.textContent=pct+'%';if(barEl)barEl.style.width=pct+'%';
+  const m10=document.getElementById('att-milestone-10'),m20=document.getElementById('att-milestone-20'),mf=document.getElementById('att-milestone-full');
+  if(m10){if(count>=10)m10.classList.add('reached');else m10.classList.remove('reached');}
+  if(m20){if(count>=20)m20.classList.add('reached');else m20.classList.remove('reached');}
+  if(mf){if(count>=td&&count>0)mf.classList.add('reached');else mf.classList.remove('reached');}
   const rewardEl=document.getElementById('att-reward-list');
-  if(rewardEl){
-    const tiers=[
-      {days:10,label:'🎖️ 10일 출석',prize:_attRewards.r10||'(상품 미설정)'},
-      {days:20,label:'🥈 20일 출석',prize:_attRewards.r20||'(상품 미설정)'},
-      {days:todayDay,label:'🏆 이달 개근',prize:_attRewards.rfull||'(상품 미설정)',isFull:true}
-    ];
-    rewardEl.innerHTML=tiers.map(t=>{
-      const done=t.isFull?(count>=todayDay&&count>0):count>=t.days;
-      return `<div style="display:flex;align-items:center;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.06);">
-        <div style="font-size:12px;font-weight:600;color:${done?'#fff':'var(--text-hint)'};">${t.label}</div>
-        <div style="font-size:11px;${done?'color:var(--gold);font-weight:700;':'color:var(--text-hint);'}">${done?'✓ ':''}<span>${t.prize}</span></div>
-      </div>`;
-    }).join('');
-  }
-  
-  const firstDay=new Date(ty, tm - 1, 1).getDay();
-  let html='';
+  if(rewardEl){const tiers=[{days:10,label:'🎖️ 10일 출석',prize:_attRewards.r10||'(상품 미설정)'},{days:20,label:'🥈 20일 출석',prize:_attRewards.r20||'(상품 미설정)'},{days:td,label:'🏆 이달 개근',prize:_attRewards.rfull||'(상품 미설정)',isFull:true}];rewardEl.innerHTML=tiers.map(t=>{const done=t.isFull?(count>=td&&count>0):count>=t.days;return`<div style="display:flex;align-items:center;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.06);"><div style="font-size:12px;font-weight:600;color:${done?'#fff':'var(--text-hint)'};">${t.label}</div><div style="font-size:11px;${done?'color:var(--gold);font-weight:700;':'color:var(--text-hint);'}">${done?'✓ ':''}<span>${t.prize}</span></div></div>`;}).join('');}
+  const firstDay=new Date(ty,tm-1,1).getDay();let html='';
   for(let i=0;i<firstDay;i++)html+='<div class="att-day empty"></div>';
-  for(let d=1;d<=daysInMonth;d++){
-    const ds=ym+'-'+String(d).padStart(2,'0');
-    const isChecked=checkedDates.has(ds);
-    const isToday=d===todayDay;
-    const isFuture=d>todayDay;
-    let cls='att-day'+(isChecked?' checked':'')+(isToday?' today':'')+(isFuture?' future':'');
-    html+=`<div class="${cls}">${d}</div>`;
-  }
-  const calEl=document.getElementById('att-calendar');
-  if(calEl)calEl.innerHTML=html;
-  
+  for(let d=1;d<=daysInMonth;d++){const ds=ym+'-'+String(d).padStart(2,'0');const isC=checkedDates.has(ds),isT=d===td,isF=d>td;let cls='att-day'+(isC?' checked':'')+(isT?' today':'')+(isF?' future':'');html+=`<div class="${cls}">${d}</div>`;}
+  const calEl=document.getElementById('att-calendar');if(calEl)calEl.innerHTML=html;
   const btn=document.getElementById('att-checkin-btn');
-  if(btn){
-    if(checkedDates.has(todayStr)){
-      btn.textContent='오늘 출석 완료 ✓';btn.disabled=true;
-      btn.style.cssText='width:100%;padding:14px;border:1px solid rgba(245,200,66,0.3);border-radius:12px;font-size:15px;font-weight:800;font-family:inherit;cursor:default;background:rgba(245,200,66,0.12);color:var(--gold);box-shadow:none;';
-    }else{
-      btn.textContent='✅ 오늘 출석체크!';btn.disabled=false;
-      btn.style.cssText='width:100%;padding:14px;border:none;border-radius:12px;font-size:15px;font-weight:800;font-family:inherit;cursor:pointer;background:linear-gradient(135deg,#c9a227,#e07820);color:#fff;box-shadow:0 4px 15px rgba(245,200,66,0.35);';
-    }
-  }
+  if(btn){if(checkedDates.has(todayStr)){btn.textContent='오늘 출석 완료 ✓';btn.disabled=true;btn.style.cssText='width:100%;padding:14px;border:1px solid rgba(245,200,66,0.3);border-radius:12px;font-size:15px;font-weight:800;font-family:inherit;cursor:default;background:rgba(245,200,66,0.12);color:var(--gold);box-shadow:none;';}else{btn.textContent='✅ 오늘 출석체크!';btn.disabled=false;btn.style.cssText='width:100%;padding:14px;border:none;border-radius:12px;font-size:15px;font-weight:800;font-family:inherit;cursor:pointer;background:linear-gradient(135deg,#c9a227,#e07820);color:#fff;box-shadow:0 4px 15px rgba(245,200,66,0.35);';}}
 }
 
-async function doCheckInHome(e) {
-  if (e) e.stopPropagation();
-  await doCheckIn();
-}
+async function doCheckInHome(e){if(e)e.stopPropagation();await doCheckIn();}
 
 async function doCheckIn(){
   if(!app.empNo){showToast('❌ 로그인이 필요합니다');return;}
@@ -4221,16 +4110,67 @@ async function doCheckIn(){
   if(btn){btn.disabled=true;btn.textContent='처리 중...';}
   const todayStr=new Date().toISOString().split('T')[0];
   const ok=await SB.insertIgnore('attendance_checks',{emp_no:app.empNo,employee_name:app.name,check_date:todayStr,year_month:getYM()});
-  if(ok){
-    showToast('🎉 출석체크 완료! 오늘도 화이팅!');
-    showAttendanceConfetti();
-    _attRecords=await fetchAttendanceRecords(app.empNo);
-    renderAttCalendarModal();
-    loadAttendanceCard();
-  }else{
-    showToast('❌ 출석체크 실패. 다시 시도해주세요.');
-    if(btn){btn.disabled=false;btn.textContent='✅ 오늘 출석체크!';}
-  }
+  if(ok){showToast('🎉 출석체크 완료! 오늘도 화이팅!');showAttendanceConfetti();_attRecords=await fetchAttendanceRecords(app.empNo);renderAttCalendarModal();loadAttendanceCard();}
+  else{showToast('❌ 출석체크 실패. 다시 시도해주세요.');if(btn){btn.disabled=false;btn.textContent='✅ 오늘 출석체크!';}}
+}
+
+// ── 타자왕 단어 관리 ──
+async function loadTypingMgmt(){
+  const rows = await SB.get('app_settings','key=eq.typing_custom_words');
+  _typingCustomMap = (rows.length && rows[0].value) ? JSON.parse(rows[0].value) : {};
+  renderTypingThemeCards();
+}
+
+function renderTypingThemeCards(){
+  const container = document.getElementById('typing-theme-cards');
+  if(!container) return;
+  const themeOrder = ['space','contec','knowledge','fun','world'];
+  container.innerHTML = themeOrder.map(key=>{
+    const theme = _TG_THEMES[key];
+    const custom = _typingCustomMap[key] || [];
+    const sample = theme.words.slice(0,8).join('  ·  ');
+    const remaining = theme.words.length - 8;
+    return `<div class="card" style="margin-bottom:12px;">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+        <span style="font-size:20px;">${theme.icon||'📝'}</span>
+        <div>
+          <div style="font-size:14px;font-weight:700;color:#fff;">${theme.name}</div>
+          <div style="font-size:11px;color:var(--text-hint);">기본 ${theme.words.length}개${custom.length?` · 추가 ${custom.length}개`:''}</div>
+        </div>
+      </div>
+      <div style="font-size:11px;color:rgba(255,255,255,0.45);margin-bottom:10px;line-height:1.8;">${sample}${remaining>0?`  <span style="color:var(--text-hint);">외 ${remaining}개...</span>`:''}</div>
+      ${custom.length ? `<div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px;">${custom.map((w,i)=>`<span style="display:inline-flex;align-items:center;gap:3px;padding:3px 8px;background:rgba(0,200,255,0.1);border:1px solid rgba(0,200,255,0.25);border-radius:99px;font-size:11px;color:#00eeff;">${w}<button onclick="deleteTypingWord('${key}',${i})" style="background:none;border:none;color:rgba(0,200,255,0.6);cursor:pointer;font-size:10px;padding:0;line-height:1;">✕</button></span>`).join('')}</div>` : ''}
+      <div style="display:flex;gap:6px;">
+        <input type="text" id="typing-add-input-${key}" placeholder="추가할 단어 입력" style="flex:1;padding:8px 12px;background:rgba(255,255,255,0.07);border:1px solid var(--border);border-radius:10px;color:#fff;font-family:inherit;font-size:13px;outline:none;" onkeydown="if(event.key==='Enter')addTypingWord('${key}')">
+        <button onclick="addTypingWord('${key}')" class="btn-main" style="padding:8px 14px;margin:0;font-size:12px;">추가</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function addTypingWord(themeKey){
+  const inp = document.getElementById('typing-add-input-'+themeKey);
+  if(!inp) return;
+  const word = inp.value.trim();
+  if(!word){showToast('⚠️ 단어를 입력하세요');return;}
+  if(!_typingCustomMap[themeKey]) _typingCustomMap[themeKey]=[];
+  if(_typingCustomMap[themeKey].includes(word)){showToast('⚠️ 이미 있는 단어입니다');return;}
+  _typingCustomMap[themeKey].push(word);
+  await SB.upsert('app_settings',{key:'typing_custom_words',value:JSON.stringify(_typingCustomMap)},'key');
+  _tgCustomWords = null; // 게임 캐시 초기화
+  inp.value = '';
+  renderTypingThemeCards();
+  showToast('✅ 단어 추가됨: '+word);
+}
+
+async function deleteTypingWord(themeKey, idx){
+  if(!_typingCustomMap[themeKey]) return;
+  const word = _typingCustomMap[themeKey][idx];
+  _typingCustomMap[themeKey].splice(idx,1);
+  await SB.upsert('app_settings',{key:'typing_custom_words',value:JSON.stringify(_typingCustomMap)},'key');
+  _tgCustomWords = null;
+  renderTypingThemeCards();
+  showToast('🗑️ 삭제됨: '+word);
 }
 
 async function saveAttRewards(){
@@ -5061,7 +5001,7 @@ function drawJoinOrbit(canvas,W,H,CX,CY){
 const ADMIN_GROUPS = {
   pending: {tabs:['pending'], labels:[]},
   content: {tabs:['funny-all','idea-all'], labels:['😂 웃수저','💡 아이디어']},
-  events:  {tabs:['quiz-mgmt','race-mgmt'], labels:['🚀 퀴즈','🎱 레이스']},
+  events:  {tabs:['quiz-mgmt','race-mgmt','typing-mgmt'], labels:['🚀 퀴즈','🎱 레이스','⌨️ 타자왕']},
   stats:   {tabs:['attendance','report','storage'], labels:['📅 출석현황','📊 월간리포트','💾 스토리지']},
   cfg:     {tabs:['emp-mgmt','faq','popup'], labels:['👥 직원관리','❓ FAQ','📢 설정']},
 };
@@ -5097,6 +5037,7 @@ function _runAdminTabLogic(tab){
   if(tab==='idea-all'){adminIdeaMonth=getYM();loadAdminIdeaAll();}
   if(tab==='storage')loadStorageTab();
   if(tab==='quiz-mgmt'){populateWeekSelect();quizHistoryMonth=getYM();loadQuizAdminList();renderPrizeTiers();loadElimList();loadSurvivorList();loadQuizTimeDisplay();}
+  if(tab==='typing-mgmt')loadTypingMgmt();
   if(tab==='race-mgmt'){rewardHistoryMonth=getYM();loadAdminRewardList();loadRaceAutoDaySetting();loadRaceHistory();const el=document.getElementById('admin-race-entry-list');const btn=document.getElementById('race-entry-toggle-btn');if(el){el.style.display='none';}if(btn)btn.textContent='▼';SB.get('race_entries','year_month=eq.'+getYM()).then(r=>{const ec=document.getElementById('race-entry-count-admin');if(ec)ec.textContent=r.length;});}
   if(tab==='emp-mgmt'){document.getElementById('emp-list-wrap').style.display='none';document.getElementById('emp-list-toggle-btn').textContent='▼';loadEmployeeList();}
   if(tab==='faq'){loadFAQAdmin();loadAllQAAdmin();}
@@ -5107,7 +5048,7 @@ function _runAdminTabLogic(tab){
 }
 
 function _showAdminTab(tab){
-  ['pending','funny-all','idea-all','quiz-mgmt','race-mgmt','emp-mgmt','faq','storage','attendance','report','popup'].forEach(t=>{
+  ['pending','funny-all','idea-all','quiz-mgmt','race-mgmt','typing-mgmt','emp-mgmt','faq','storage','attendance','report','popup'].forEach(t=>{
     const el=document.getElementById('admin-tab-'+t);
     if(el)el.style.display=t===tab?'block':'none';
   });
