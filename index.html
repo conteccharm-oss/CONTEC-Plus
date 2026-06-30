@@ -623,23 +623,6 @@
     .cmt-time{font-size:10px;color:var(--text-hint);margin-left:6px;}
     .cmt-text{font-size:13px;color:var(--text);margin-top:3px;line-height:1.5;word-break:break-all;}
     .cmt-empty{font-size:12px;color:var(--text-hint);text-align:center;padding:1rem 0;}
-
-    /* SUMMER VACATION THEME BACKGROUND */
-    .page.summer-bg {
-      background: linear-gradient(180deg, rgba(8, 20, 45, 0.65) 0%, rgba(0, 110, 180, 0.55) 45%, rgba(0, 195, 215, 0.35) 75%, rgba(180, 245, 255, 0.18) 100%) !important;
-      position: relative;
-    }
-    .page.summer-bg::after {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      height: 450px;
-      background: radial-gradient(circle at 50% -10%, rgba(0, 220, 255, 0.2) 0%, rgba(0, 120, 255, 0.06) 60%, transparent 100%);
-      pointer-events: none;
-      z-index: 0;
-    }
   </style>
 </head>
 <body>
@@ -8048,8 +8031,17 @@ async function loadComments(type){
     const raw=c.created_at;
     const d=new Date(raw&&(raw.includes('+')||raw.endsWith('Z'))?raw:raw+'+00:00');
     const ts=d.toLocaleString('ko-KR',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hour12:false,timeZone:'Asia/Seoul'});
-    return `<div class="cmt-item"><span class="cmt-author">${_cmtEscape(c.author_name)}</span><span class="cmt-time">${ts}</span><div class="cmt-text">${_cmtEscape(c.content)}</div></div>`;
+    const isMine=!app.isAdmin&&c.emp_no===app.empNo;
+    const delBtn=isMine?`<button onclick="deleteMyComment('${c.id}','${type}')" style="margin-left:auto;padding:2px 8px;font-size:10px;font-weight:700;font-family:inherit;border:1px solid rgba(255,80,80,0.3);border-radius:6px;background:transparent;color:rgba(255,100,100,0.7);cursor:pointer;flex-shrink:0;">삭제</button>`:'';
+    return `<div class="cmt-item" style="display:flex;align-items:flex-start;gap:6px;"><div style="flex:1;min-width:0;"><span class="cmt-author">${_cmtEscape(c.author_name)}</span><span class="cmt-time">${ts}</span><div class="cmt-text">${_cmtEscape(c.content)}</div></div>${delBtn}</div>`;
   }).join('');
+}
+
+async function deleteMyComment(id,type){
+  if(!confirm('내 댓글을 삭제할까요?'))return;
+  const ok=await SB.del('comments',id);
+  if(ok){showToast('댓글을 삭제했어요');loadComments(type);}
+  else showToast('삭제에 실패했어요. 다시 시도해주세요');
 }
 
 async function submitComment(type){
@@ -8090,17 +8082,6 @@ function closeInfoPopup(type,doNotShow){
   if(el)el.classList.remove('open');
   if(doNotShow)localStorage.setItem('contec_'+type+'_info_read','true');
 }
-
-// 여름휴가 시즌 배경 설정 (6월~8월까지만 활성화)
-(function initSummerTheme() {
-  const month = new Date().getMonth() + 1;
-  if (month >= 6 && month <= 8) {
-    const homePage = document.getElementById('page-home');
-    if (homePage) {
-      homePage.classList.add('summer-bg');
-    }
-  }
-})();
 
 </script>
 </body>
