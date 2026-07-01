@@ -4638,12 +4638,14 @@ async function submitIdea(){
 }
 async function loadIdeaList(){
   const ym=getYM();
-  const [rawRows,myVoteArr]=await Promise.all([
+  const [rawRows,allVotes]=await Promise.all([
     SB.get('idea_submissions','year_month=eq.'+ym+'&status=in.(approved,winner)&order=created_at.asc'),
-    SB.get('idea_votes','year_month=eq.'+ym+'&voter_name=eq.'+encodeURIComponent(app.name))
+    SB.get('idea_votes','year_month=eq.'+ym)
   ]);
-  const rows=rawRows.sort((a,b)=>(b.votes||0)-(a.votes||0));
-  const myVotedIds=new Set(myVoteArr.map(v=>v.submission_id));
+  const voteCounts={};
+  allVotes.forEach(v=>{voteCounts[v.submission_id]=(voteCounts[v.submission_id]||0)+1;});
+  const rows=rawRows.map(r=>({...r,votes:voteCounts[r.id]||0})).sort((a,b)=>b.votes-a.votes);
+  const myVotedIds=new Set(allVotes.filter(v=>v.voter_name===app.name).map(v=>v.submission_id));
   const el=document.getElementById('idea-list');
   const infoEl=document.getElementById('idea-vote-info');
   const totalVotes=rows.reduce((a,b)=>a+(b.votes||0),0);
@@ -4687,8 +4689,6 @@ async function voteIdea(submissionId){
   const ym=getYM();
   const ok=await SB.insertIgnore('idea_votes',{year_month:ym,submission_id:submissionId,voter_name:app.name});
   if(!ok){showToast('❌ 이미 투표하셨거나 오류가 발생했습니다');return;}
-  const sub=await SB.get('idea_submissions','id=eq.'+submissionId);
-  if(sub[0])await SB.patch('idea_submissions',submissionId,{votes:(sub[0].votes||0)+1});
   showToast('💡 투표 완료!');
   loadIdeaList();
 }
@@ -5564,7 +5564,13 @@ async function loadAdminIdeaAll(){
   document.getElementById('admin-idea-month-label').textContent=ym+' 아이디어 내역';
   const nextBtn=document.getElementById('admin-idea-next-btn');
   if(nextBtn)nextBtn.style.opacity=isCurrent?'0.3':'1';
-  const rows=await SB.get('idea_submissions','year_month=eq.'+ym+'&order=created_at.desc');
+  const [rawRows,voteRows]=await Promise.all([
+    SB.get('idea_submissions','year_month=eq.'+ym+'&order=created_at.desc'),
+    SB.get('idea_votes','year_month=eq.'+ym)
+  ]);
+  const ideaVoteCounts={};
+  voteRows.forEach(v=>{ideaVoteCounts[v.submission_id]=(ideaVoteCounts[v.submission_id]||0)+1;});
+  const rows=rawRows.map(r=>({...r,votes:ideaVoteCounts[r.id]||0}));
   const el=document.getElementById('admin-idea-all-content');
   const summary=`<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:0.75rem;">
     <span style="font-size:12px;color:var(--text-hint);">총 ${rows.length}건</span>
@@ -7155,7 +7161,6 @@ async function showSurvivorPopup(){
     
     if(pending.length>0){
       html+=`<div style="text-align:center;background:rgba(245,200,66,0.05);border:1px solid rgba(245,200,66,0.2);border-radius:10px;padding:12px;margin-top:10px;margin-bottom:6px;font-size:13px;font-weight:700;color:#fac775;">⏳ 미참여 대기자: 총 ${pending.length}명</div>`;
-      html+=pending.map(n=>`<div style="display:flex;align-items:center;background:rgba(245,200,66,0.05);border:1px solid rgba(245,200,66,0.2);border-radius:10px;padding:10px 14px;margin-bottom:6px;"><span style="font-size:18px;margin-right:10px;">⏳</span><span style="font-size:14px;font-weight:700;color:#fac775;">${n}</span></div>`).join('');
     }
     el.innerHTML=html||`<div style="text-align:center;color:var(--text-hint);font-size:13px;padding:16px;">데이터가 없습니다</div>`;
   } catch(e) {
