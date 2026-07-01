@@ -3,7 +3,7 @@ const APPS_SCRIPT_SECRET = Deno.env.get("APPS_SCRIPT_SECRET") ?? "";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";
 const SUPABASE_SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
 
-const APP_URL = "https://conteccharm-oss.github.io/CONTEC-Plus/";
+const APP_URL = "https://contec-plus.contec.dev/";
 const CC = "charm@contec.kr";
 const TEST_MODE = true; // 테스트 완료 후 false 로 변경
 
