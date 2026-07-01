@@ -1,6 +1,18 @@
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY") ?? "";
 const RECIPIENT_EMAIL = Deno.env.get("QA_RECIPIENT_EMAIL") ?? "";
 
+const wrapHtml = (content: string) =>
+  `<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+</head>
+<body style="margin:0;padding:0;background:#f0f2f5;">
+${content}
+</body>
+</html>`;
+
 const CORS = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, content-type",
@@ -84,6 +96,8 @@ Deno.serve(async (req) => {
       headers: { "Content-Type": "application/json", ...CORS },
     });
   }
+
+  html = wrapHtml(html);
 
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",

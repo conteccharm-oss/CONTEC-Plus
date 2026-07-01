@@ -71,6 +71,18 @@ async function getRaceWinnerEmails(ym: string): Promise<string[]> {
   return getEmailsByNames(results.map(r => r.winner_name));
 }
 
+const wrapHtml = (content: string) =>
+  `<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+</head>
+<body style="margin:0;padding:0;background:#f0f2f5;">
+${content}
+</body>
+</html>`;
+
 const linkBtn = (label: string) =>
   `<div style="margin-top:20px;text-align:center;">
     <a href="${APP_URL}" target="_blank"
@@ -160,6 +172,8 @@ Deno.serve(async (req) => {
   } else {
     return respond({ error: "알 수 없는 type (quiz / race / race_winners)" }, 400);
   }
+
+  html = wrapHtml(html);
 
   // 프론트엔드에서 제목/내용 직접 지정 시 오버라이드
   if (body.custom_subject) subject = body.custom_subject;
