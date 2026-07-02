@@ -2077,6 +2077,9 @@ const SB = {
 
 const app={name:'',isAdmin:false,empId:null,empNo:''};
 function getYM(){const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');}
+// 로컬(KST) 기준 YYYY-MM-DD. toISOString()은 UTC라 밤~오전엔 하루 밀리므로 절대 쓰지 말 것.
+function fmtLocalDate(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+function getTodayStr(){return fmtLocalDate(new Date());}
 function getWeekKey(){const d=new Date();const s=new Date(d.getFullYear(),0,1);const w=Math.ceil(((d-s)/86400000+s.getDay()+1)/7);return d.getFullYear()+'-W'+String(w).padStart(2,'0');}
 function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);}
 
@@ -4006,6 +4009,8 @@ function showAttendanceConfetti() {
 async function loadAttendanceCard(){
   const card=document.getElementById('home-attendance-card');
   if(!card||!app.empNo)return;
+  // 데이터 로드 전에 미리 노출해 타자왕 카드 뒤 늦게 튀어나오는 레이아웃 밀림 방지
+  card.style.display='';
   const [records, rwRows] = await Promise.all([
     fetchAttendanceRecords(app.empNo),
     SB.get('app_settings','key=in.(att_reward_10,att_reward_20,att_reward_full)')
@@ -4016,7 +4021,7 @@ async function loadAttendanceCard(){
     if(r.key==='att_reward_20')_attRewards.r20=r.value;
     if(r.key==='att_reward_full')_attRewards.rfull=r.value;
   });
-  const todayStr = new Date().toISOString().split('T')[0];
+  const todayStr = getTodayStr();
   const [ty, tm, td] = todayStr.split('-').map(Number);
   const ym = ty + '-' + String(tm).padStart(2, '0');
   const checkedDates = new Set(_attRecords.filter(r => r.year_month === ym).map(r => r.check_date));
@@ -4029,7 +4034,7 @@ async function loadAttendanceCard(){
   let checkDate = new Date(ty, tm - 1, td);
   if (!_attRecords.some(r => r.check_date === todayStr)) checkDate.setDate(checkDate.getDate() - 1);
   while (true) {
-    const dateStr = checkDate.toISOString().split('T')[0];
+    const dateStr = fmtLocalDate(checkDate);
     if (_attRecords.some(r => r.check_date === dateStr)) { streak++; checkDate.setDate(checkDate.getDate() - 1); } else break;
   }
   const streakWrap = document.getElementById('att-home-streak-wrap');
@@ -4045,7 +4050,7 @@ async function loadAttendanceCard(){
   let ph='';
   for(let i=0;i<7;i++){
     const d=new Date(monday); d.setDate(monday.getDate()+i);
-    const dStr=d.toISOString().split('T')[0];
+    const dStr=fmtLocalDate(d);
     const isC=allDates.has(dStr),isT=dStr===todayStr,isF=d>baseDate,isM=!isC&&d<baseDate&&d.getMonth()===tm-1;
     let cls='att-week-dot',cnt=d.getDate();
     if(isC){cls+=' checked';cnt='★';}else if(isT){cls+=' today';}else if(isM){cls+=' missed';cnt='✕';}else if(isF){cls+=' future';}
@@ -4071,7 +4076,7 @@ function closeAttModal(e){
 }
 
 function renderAttCalendarModal(){
-  const todayStr=new Date().toISOString().split('T')[0];
+  const todayStr=getTodayStr();
   const [ty,tm,td]=todayStr.split('-').map(Number);
   const ym=ty+'-'+String(tm).padStart(2,'0');
   const daysInMonth=new Date(ty,tm,0).getDate();
@@ -4079,7 +4084,7 @@ function renderAttCalendarModal(){
   const count=checkedDates.size;
   let streak=0,checkDate=new Date(ty,tm-1,td);
   if(!_attRecords.some(r=>r.check_date===todayStr))checkDate.setDate(checkDate.getDate()-1);
-  while(true){const ds=checkDate.toISOString().split('T')[0];if(_attRecords.some(r=>r.check_date===ds)){streak++;checkDate.setDate(checkDate.getDate()-1);}else break;}
+  while(true){const ds=fmtLocalDate(checkDate);if(_attRecords.some(r=>r.check_date===ds)){streak++;checkDate.setDate(checkDate.getDate()-1);}else break;}
   const countEl=document.getElementById('att-modal-count'),totalEl=document.getElementById('att-modal-total'),streakEl=document.getElementById('att-modal-streak'),barEl=document.getElementById('att-modal-bar'),percentEl=document.getElementById('att-modal-percent');
   if(countEl)countEl.textContent=count;if(totalEl)totalEl.textContent=daysInMonth;if(streakEl)streakEl.textContent=streak;
   const pct=Math.min(100,Math.round(count/daysInMonth*100));
@@ -4105,7 +4110,7 @@ async function doCheckIn(){
   const btn=document.getElementById('att-checkin-btn');
   if(btn&&btn.disabled)return;
   if(btn){btn.disabled=true;btn.textContent='처리 중...';}
-  const todayStr=new Date().toISOString().split('T')[0];
+  const todayStr=getTodayStr();
   const ok=await SB.insertIgnore('attendance_checks',{emp_no:app.empNo,employee_name:app.name,check_date:todayStr,year_month:getYM()});
   if(ok){showToast('🎉 출석체크 완료! 오늘도 화이팅!');showAttendanceConfetti();_attRecords=await fetchAttendanceRecords(app.empNo);renderAttCalendarModal();loadAttendanceCard();}
   else{showToast('❌ 출석체크 실패. 다시 시도해주세요.');if(btn){btn.disabled=false;btn.textContent='✅ 오늘 출석체크!';}}
