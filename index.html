@@ -1534,6 +1534,9 @@
     </div>
     <!-- 타자왕 관리 탭 -->
     <div id="admin-tab-typing-mgmt" style="display:none;">
+      <div class="sec-title">🚫 순위 관리 (참여자 제외)</div>
+      <div style="font-size:12px;color:var(--text-hint);margin-bottom:14px;line-height:1.6;">이번 달 참여자 목록입니다. 부정 기록 등으로 순위에서 빼고 싶은 사람을 <b>제외</b>하세요. 제외해도 기록은 삭제되지 않고 랭킹·리포트에서만 숨겨집니다.</div>
+      <div id="typing-exclude-mgmt" style="margin-bottom:26px;"></div>
       <div class="sec-title">⌨️ 타자왕 단어 관리</div>
       <div style="font-size:12px;color:var(--text-hint);margin-bottom:14px;line-height:1.6;">테마별 기본 단어를 확인하고 단어를 추가할 수 있습니다. 추가된 단어는 해당 테마 게임에 포함됩니다.</div>
       <div id="typing-theme-cards"></div>
@@ -1659,7 +1662,7 @@
         </div>
         <div id="tg-theme-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:1rem;"></div>
         <div style="font-size:11px;color:var(--text-hint);text-align:center;margin-bottom:1rem;line-height:1.8;">⌨️ 단어를 타이핑해서 없애세요 · ❤️ 3개 놓치면 종료 · 🏆 빠를수록 고득점</div>
-        <button onclick="startTypingCountdown()" class="btn-main" style="background:linear-gradient(135deg,var(--purple),#9c27b0);font-size:16px;font-weight:800;box-shadow:0 0 20px rgba(162,123,255,0.4);">🚀 게임 시작!</button>
+        <button id="tg-start-btn" onclick="startTypingCountdown()" class="btn-main" style="background:linear-gradient(135deg,var(--purple),#9c27b0);font-size:16px;font-weight:800;box-shadow:0 0 20px rgba(162,123,255,0.4);">🚀 게임 시작!</button>
       </div>
       <!-- 이달 랭킹 -->
       <div class="sec-title" style="margin-top:1rem;">🏆 이달 랭킹</div>
@@ -1700,7 +1703,7 @@
         </div>
         <div id="tg-result-rank" style="font-size:13px;color:var(--gold);margin-bottom:1rem;"></div>
         <div style="display:flex;gap:8px;">
-          <button onclick="startTypingCountdown()" class="btn-main" style="flex:1;background:linear-gradient(135deg,var(--purple),#9c27b0);">🔄 다시 하기</button>
+          <button id="tg-retry-btn" onclick="startTypingCountdown()" class="btn-main" style="flex:1;background:linear-gradient(135deg,var(--purple),#9c27b0);">🔄 다시 하기</button>
           <button onclick="switchPage('home')" style="flex:1;padding:13px;background:rgba(255,255,255,0.07);border:1px solid var(--border);border-radius:10px;color:var(--text-sub);font-size:15px;font-weight:700;font-family:inherit;cursor:pointer;">🏠 홈으로</button>
         </div>
       </div>
@@ -2057,7 +2060,7 @@
 const CONFIG = {
   password: 'contec2024',
   adminPassword: 'contec@admin',
-  supabaseUrl: 'https://ifytanvhskqmbvmjoohi.supabase.co',
+  supabaseUrl: '', // 라이브와 동일: 같은 도메인의 /rest/v1 프록시로 요청 (실제 셀프호스팅 DB). 절대 클라우드 URL 하드코딩 금지 — 그 프로젝트는 옛 복사본이라 데이터가 다름
   supabaseKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlmeXRhbnZoc2txbWJ2bWpvb2hpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUwMDk4MTAsImV4cCI6MjA5MDU4NTgxMH0.IK8OqhfvAEtQmcBI0ooqclVy8WK01ZfI6kwMlnKCWig',
 };
 
@@ -2505,6 +2508,29 @@ let _tgRaf=null, _tgWords=[], _tgScore=0, _tgCombo=0, _tgMaxCombo=0,
     _tgLastFrame=0, _tgComboTimeout=null, _tgDeck=[], _tgDeckIdx=0;
 
 let _typingCustomMap = {}; // {themeKey: [추가단어,...]}
+let _tgPlayedToday = false; // 하루 1회 도전 제한 플래그
+
+// 오늘 이미 도전했는지 확인 (로컬 날짜 기준 · 출석체크와 동일한 타임존 처리)
+async function hasPlayedTypingToday(){
+  if(!app || !app.empNo) return false;
+  const ym=getYM();
+  const rows=await SB.get('typing_scores','year_month=eq.'+ym+'&emp_no=eq.'+encodeURIComponent(app.empNo)+'&order=created_at.desc&limit=50');
+  const today=getTodayStr();
+  return rows.some(r=>r.created_at && fmtLocalDate(new Date(r.created_at))===today);
+}
+
+// 도전 제한 상태를 시작/결과 화면 버튼에 반영
+function applyTypingLimitUI(){
+  const startBtn=document.getElementById('tg-start-btn');
+  const retryBtn=document.getElementById('tg-retry-btn');
+  if(_tgPlayedToday){
+    if(startBtn){startBtn.disabled=true;startBtn.style.opacity='0.5';startBtn.style.cursor='not-allowed';startBtn.innerHTML='🌙 내일 다시 도전!';}
+    if(retryBtn){retryBtn.disabled=true;retryBtn.style.opacity='0.5';retryBtn.style.cursor='not-allowed';retryBtn.innerHTML='🌙 내일 다시';}
+  }else{
+    if(startBtn){startBtn.disabled=false;startBtn.style.opacity='';startBtn.style.cursor='';startBtn.innerHTML='🚀 게임 시작!';}
+    if(retryBtn){retryBtn.disabled=false;retryBtn.style.opacity='';retryBtn.style.cursor='';retryBtn.innerHTML='🔄 다시 하기';}
+  }
+}
 
 function _tgShuffleDeck(){
   const defaults = _TG_THEMES[_tgActiveTheme].words;
@@ -2770,6 +2796,8 @@ function loadTypingPage(){
   selectTypingTheme(_tgActiveTheme);
   loadTypingLeaderboard('tg-leaderboard-start');
   loadTypingHomeBest();
+  // 하루 1회 도전 제한 상태 반영
+  hasPlayedTypingToday().then(played=>{_tgPlayedToday=played;applyTypingLimitUI();});
 }
 
 async function loadTypingHomeBest(){
@@ -2781,18 +2809,28 @@ async function loadTypingHomeBest(){
   else{el.innerHTML='도전해보세요!<br><span style="font-size:11px;color:rgba(162,123,255,0.5);">기록 없음</span>';}
 }
 
+// 순위 제외 참여자 목록 (app_settings.typing_excluded) — 관리자가 지정
+async function getTypingExcluded(){
+  const rows=await SB.get('app_settings','key=eq.typing_excluded');
+  const arr=(rows.length&&rows[0].value)?JSON.parse(rows[0].value):[];
+  return new Set(arr.map(String));
+}
+
 async function loadTypingLeaderboard(targetId){
   const el=document.getElementById(targetId);if(!el)return;
   el.innerHTML='<div class="rank-empty">불러오는 중...</div>';
   const ym=getYM();
   const rows=await SB.get('typing_scores','year_month=eq.'+ym+'&order=score.desc&limit=500');
   if(!rows.length){el.innerHTML='<div class="rank-empty">아직 기록이 없어요! 첫 도전자가 되세요 🚀</div>';return;}
-  // 인당 최고 점수만 남기기
+  const excluded=await getTypingExcluded();
+  // 인당 최고 점수만 남기기 (제외 대상 제거 후 상위 3위까지만 노출)
   const bestMap={};
   rows.forEach(r=>{
+    if(excluded.has(String(r.emp_no)))return;
     if(!bestMap[r.emp_no]||r.score>bestMap[r.emp_no].score) bestMap[r.emp_no]=r;
   });
-  const ranked=Object.values(bestMap).sort((a,b)=>b.score-a.score);
+  const ranked=Object.values(bestMap).sort((a,b)=>b.score-a.score).slice(0,3);
+  if(!ranked.length){el.innerHTML='<div class="rank-empty">아직 기록이 없어요! 첫 도전자가 되세요 🚀</div>';return;}
   const medals=['🥇','🥈','🥉'];
   el.innerHTML=ranked.map((r,i)=>{
     const medal=i<3?medals[i]:`<span style="font-size:12px;color:var(--text-hint);">${i+1}</span>`;
@@ -2807,6 +2845,16 @@ async function loadTypingLeaderboard(targetId){
 
 
 async function startTypingCountdown(){
+  // 하루 1회 도전 제한 — 오늘 이미 기록이 있으면 시작 차단
+  if(await hasPlayedTypingToday()){
+    _tgPlayedToday=true;
+    applyTypingLimitUI();
+    showToast('🌙 오늘은 이미 타자왕에 도전했어요! 내일 다시 도전하세요');
+    document.getElementById('tg-start-area').style.display='';
+    document.getElementById('tg-result-area').style.display='none';
+    document.getElementById('tg-game-area-wrap').style.display='none';
+    return;
+  }
   document.getElementById('tg-start-area').style.display='none';
   document.getElementById('tg-result-area').style.display='none';
   document.getElementById('tg-game-area-wrap').style.display='';
@@ -3012,13 +3060,16 @@ async function endTypingGame(){
   document.getElementById('tg-result-wpm').textContent=wpm;
   document.getElementById('tg-result-combo').textContent=_tgMaxCombo;
   // 점수 저장
-  if(_tgScore>0)await submitTypingScore(wpm);
+  if(_tgScore>0){await submitTypingScore(wpm);_tgPlayedToday=true;}
+  // 하루 1회 제한 — 결과 화면의 '다시 하기' 버튼 비활성화
+  applyTypingLimitUI();
   loadTypingLeaderboard('tg-leaderboard-result');
   // 내 순위 찾기 (인당 최고점수 기준)
   const ym=getYM();
   const all=await SB.get('typing_scores','year_month=eq.'+ym+'&order=score.desc&limit=500');
+  const excluded=await getTypingExcluded();
   const bestMap={};
-  all.forEach(r=>{if(!bestMap[r.emp_no]||r.score>bestMap[r.emp_no].score)bestMap[r.emp_no]=r;});
+  all.forEach(r=>{if(excluded.has(String(r.emp_no)))return;if(!bestMap[r.emp_no]||r.score>bestMap[r.emp_no].score)bestMap[r.emp_no]=r;});
   const ranked=Object.values(bestMap).sort((a,b)=>b.score-a.score);
   const rank=ranked.findIndex(r=>r.emp_no===app.empNo);
   const rankEl=document.getElementById('tg-result-rank');
@@ -3028,11 +3079,26 @@ async function endTypingGame(){
 
 async function submitTypingScore(wpm){
   const ym=getYM();
-  await SB.insert('typing_scores',{
+  // 점수 조작 방지 — 서버 CHECK 제약과 동일한 규칙으로 로컬 값 사전 검증.
+  // 정상 플레이는 항상 통과하며, 공식상 불가능한 값이면 저장하지 않음.
+  const maxPossible = _tgWordsTyped * (37 + 3 * _tgMaxCombo);
+  const valid =
+       _tgScore >= 0
+    && _tgWordsTyped >= 0 && _tgWordsTyped <= 1000
+    && _tgMaxCombo >= 0 && _tgMaxCombo <= _tgWordsTyped
+    && _tgScore <= maxPossible
+    && _tgScore <= 500000;
+  if(!valid){
+    console.warn('[typing] 비정상 점수 감지 — 저장 건너뜀',
+      {score:_tgScore, words:_tgWordsTyped, combo:_tgMaxCombo, maxPossible});
+    return;
+  }
+  const ok = await SB.post('typing_scores',{
     emp_no:app.empNo, employee_name:app.name,
     score:_tgScore, words_typed:_tgWordsTyped,
     max_combo:_tgMaxCombo, year_month:ym
   });
+  if(!ok) showToast('⚠️ 점수 저장에 실패했어요. 잠시 후 다시 시도해주세요');
 }
 
 function quitTypingGame(){
@@ -4121,6 +4187,48 @@ async function loadTypingMgmt(){
   const rows = await SB.get('app_settings','key=eq.typing_custom_words');
   _typingCustomMap = (rows.length && rows[0].value) ? JSON.parse(rows[0].value) : {};
   renderTypingThemeCards();
+  renderTypingExcludeMgmt();
+}
+
+// 순위 제외 관리 — 이번 달 참여자 목록 + 제외/복구 토글
+async function renderTypingExcludeMgmt(){
+  const container=document.getElementById('typing-exclude-mgmt');
+  if(!container)return;
+  container.innerHTML='<div style="font-size:12px;color:var(--text-hint);padding:6px 0;">불러오는 중...</div>';
+  const ym=getYM();
+  const rows=await SB.get('typing_scores','year_month=eq.'+ym+'&order=score.desc&limit=500');
+  const excluded=await getTypingExcluded();
+  const bestMap={};
+  rows.forEach(r=>{if(!bestMap[r.emp_no]||r.score>bestMap[r.emp_no].score)bestMap[r.emp_no]=r;});
+  const list=Object.values(bestMap).sort((a,b)=>b.score-a.score);
+  if(!list.length){container.innerHTML='<div class="card" style="font-size:12px;color:var(--text-hint);text-align:center;padding:16px;">이번 달 참여자가 없습니다.</div>';return;}
+  const exCount=list.filter(r=>excluded.has(String(r.emp_no))).length;
+  container.innerHTML=`
+    <div style="font-size:11px;color:var(--text-hint);margin-bottom:8px;">참여자 ${list.length}명${exCount?` · 제외 ${exCount}명`:''}</div>
+    <div class="card" style="padding:4px 6px;">
+    ${list.map((r,i)=>{
+      const isEx=excluded.has(String(r.emp_no));
+      return `<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:9px 8px;${i<list.length-1?'border-bottom:1px solid var(--border);':''}">
+        <div style="display:flex;flex-direction:column;min-width:0;">
+          <span style="font-size:13px;font-weight:700;color:${isEx?'var(--text-hint)':'#fff'};${isEx?'text-decoration:line-through;':''}overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${r.employee_name} <span style="font-size:11px;font-weight:400;color:var(--text-hint);">(${r.emp_no})</span></span>
+          <span style="font-size:11px;color:var(--text-hint);">${r.score}점 · ${r.words_typed}단어 · 콤보${r.max_combo}</span>
+        </div>
+        <button onclick="toggleTypingExclude('${String(r.emp_no).replace(/'/g,"\\'")}')" style="flex-shrink:0;font-size:12px;font-weight:700;padding:6px 14px;border-radius:8px;cursor:pointer;font-family:inherit;border:1px solid ${isEx?'rgba(0,200,255,0.35)':'rgba(244,67,54,0.4)'};background:${isEx?'rgba(0,200,255,0.12)':'rgba(244,67,54,0.12)'};color:${isEx?'#00eeff':'#ff6b6b'};">${isEx?'복구':'제외'}</button>
+      </div>`;
+    }).join('')}
+    </div>`;
+}
+
+async function toggleTypingExclude(empNo){
+  const excluded=await getTypingExcluded();
+  const key=String(empNo);
+  let nowExcluded;
+  if(excluded.has(key)){excluded.delete(key);nowExcluded=false;}
+  else{excluded.add(key);nowExcluded=true;}
+  const ok=await SB.upsert('app_settings',{key:'typing_excluded',value:JSON.stringify([...excluded])},'key');
+  if(!ok){showToast('⚠️ 저장에 실패했어요. 다시 시도해주세요');return;}
+  await renderTypingExcludeMgmt();
+  showToast(nowExcluded?'🚫 순위에서 제외했습니다':'✅ 순위에 복구했습니다');
 }
 
 function renderTypingThemeCards(){
@@ -5284,9 +5392,12 @@ async function loadMonthlyReport(){
   const fullAtt=attList.filter(a=>a.count>=daysInMonth);
   const avgAtt=attList.length?Math.round(attList.reduce((s,a)=>s+a.count,0)/attList.length*10)/10:0;
 
-  // ── 타자게임: emp_no 기준 1인 최고점
+  // ── 타자게임: emp_no 기준 1인 최고점 (순위 제외 참여자 제거)
+  const tgExRows=await SB.get('app_settings','key=eq.typing_excluded');
+  const tgExcluded=new Set(((tgExRows.length&&tgExRows[0].value)?JSON.parse(tgExRows[0].value):[]).map(String));
   const tgBest={};
   typingRows.forEach(r=>{
+    if(tgExcluded.has(String(r.emp_no)))return;
     if(!tgBest[r.emp_no]||r.score>tgBest[r.emp_no].score)
       tgBest[r.emp_no]={name:r.employee_name,score:r.score,words:r.words_typed,combo:r.max_combo};
   });
