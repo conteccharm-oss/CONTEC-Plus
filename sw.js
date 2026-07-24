@@ -1,4 +1,4 @@
-const CACHE = 'contec-challenge-v56';
+const CACHE = 'contec-challenge-v57';
 const ASSETS = [
   '/CONTEC-Plus/logo_premium_transparent.png',
   '/CONTEC-Plus/og-image.jpg',
@@ -49,6 +49,8 @@ self.addEventListener('push', e => {
       body: data.body || '궤도 레이스가 시작되었습니다!',
       icon: '/CONTEC-Plus/icon-192.png',
       badge: '/CONTEC-Plus/icon-192.png',
+      tag: 'contec-race',        // 같은 tag는 하나로 합쳐짐 → 중복 구독이 있어도 알림 1개만 표시
+      renotify: false,
       data: { url: '/CONTEC-Plus/' }
     })
   );
