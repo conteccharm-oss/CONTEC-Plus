@@ -3797,8 +3797,15 @@ async function getQuizSurvivors(ym, currentWk){
   const empAll = await SB.get('employees', 'is_active=eq.true&order=name.asc');
   const allAttempts = await SB.get('quiz_attempts', 'year_month=eq.'+ym);
 
-  // 달력 기준 과거 주차 (시도 여부와 무관하게 이미 지난 주차 전체)
-  const pastWeeks = getWeeksInMonth(ym).filter(w => w < currentWk);
+  // 실제로 퀴즈가 가동된 주차 = 누군가 한 번이라도 시도한 주차
+  // 월 1일이 주말/주중 경계에 걸리면(예: 토요일) getWeeksInMonth가 하루짜리 '조각 주차'를
+  // 포함하는데, 아무도 참여하지 못한 그 주차를 '지난 주차'로 세면 전 직원이 미참여 탈락 처리되어
+  // 새 달 퀴즈가 열리자마자 전원 탈락(=퀴즈 미실행)으로 보이는 버그가 있었다.
+  // → 실제 시도가 1건이라도 있었던 주차만 생존 조건 대상으로 삼는다.
+  const activeWeeks = new Set(allAttempts.map(a => getWeekKeyFromDate(new Date(a.created_at))));
+
+  // 달력 기준 과거 주차 중, 실제 퀴즈가 가동된(=참여 기록이 있는) 주차만 생존 판정 대상
+  const pastWeeks = getWeeksInMonth(ym).filter(w => w < currentWk && activeWeeks.has(w));
 
   const elimSet = new Set(allAttempts.filter(a => !a.is_correct).map(a => a.name));
 
