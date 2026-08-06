@@ -2243,7 +2243,37 @@ function getYM(){const d=new Date();return d.getFullYear()+'-'+String(d.getMonth
 // 로컬(KST) 기준 YYYY-MM-DD. toISOString()은 UTC라 밤~오전엔 하루 밀리므로 절대 쓰지 말 것.
 function fmtLocalDate(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
 function getTodayStr(){return fmtLocalDate(new Date());}
-function getWeekKey(){const d=new Date();const s=new Date(d.getFullYear(),0,1);const w=Math.ceil(((d-s)/86400000+s.getDay()+1)/7);return d.getFullYear()+'-W'+String(w).padStart(2,'0');}
+// ── 주차 계산 (단일 출처) ─────────────────────────────────────────────
+// 2026-08-01부터 주차를 '월요일~일요일'(ISO 8601)로 정의한다.
+//
+// 그 전까지 쓰던 방식은 (d-s)/86400000 을 버림하지 않아 시·분·초가 소수로 남았고,
+// 그 탓에 경계에 걸린 토요일만 시각에 따라 주차가 갈려 실제로는 '토~금' 주차로
+// 돌아가고 있었다. 목록 생성(getWeeksInMonth)은 일~토로, 화면 라벨은 월요일 기준으로
+// 보고 있어서 셋이 서로 어긋났다.
+//
+// 과거 데이터는 옛 방식 그대로 둔다. 소급 적용하면 이미 끝난 달의 주차 소속이
+// 재배치되어 확정된 생존자·우승자가 뒤바뀐다. (2026-07은 일요일에만 응시한 직원이
+// 있어, 소급 시 그 달 유일한 생존자가 사라지는 것을 확인했다.)
+const WEEK_ISO_FROM = new Date(2026, 7, 1);   // 2026-08-01
+
+function getWeekKeyFromDate(d){
+  if(d < WEEK_ISO_FROM){
+    // 레거시(~2026-07): 기존 기록의 주차 소속을 보존하기 위해 옛 계산식을 그대로 유지
+    const s = new Date(d.getFullYear(), 0, 1);
+    const w = Math.ceil(((d - s) / 86400000 + s.getDay() + 1) / 7);
+    return d.getFullYear() + '-W' + String(w).padStart(2, '0');
+  }
+  // ISO 8601: 월요일 시작, 그 주 목요일이 속한 해의 몇 번째 주인지로 센다.
+  // 시·분·초를 떼고 날짜만으로 계산하므로 응시 시각에 따라 주차가 갈리지 않는다.
+  const t = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  t.setDate(t.getDate() + 3 - ((t.getDay() + 6) % 7));      // 그 주의 목요일
+  const y = t.getFullYear();
+  const jan4 = new Date(y, 0, 4);                            // 1월 4일은 항상 W01에 속함
+  const w = 1 + Math.round(((t - jan4) / 86400000 - 3 + ((jan4.getDay() + 6) % 7)) / 7);
+  return y + '-W' + String(w).padStart(2, '0');
+}
+
+function getWeekKey(){ return getWeekKeyFromDate(new Date()); }
 function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);}
 
 // ── LOGIN ──
@@ -3666,15 +3696,21 @@ function setQuizType(type){
 
 function getWeekKeyOffset(offset){
   const d=new Date();d.setDate(d.getDate()+offset*7);
-  const s=new Date(d.getFullYear(),0,1);
-  const w=Math.ceil(((d-s)/86400000+s.getDay()+1)/7);
-  return d.getFullYear()+'-W'+String(w).padStart(2,'0');
+  return getWeekKeyFromDate(d);
+}
+
+// 주차 키('2026-W32') → 그 주 월요일 Date. ISO 기준(1월 4일이 속한 주가 W01)이라
+// 위 getWeekKeyFromDate 와 정확히 짝을 이룬다.
+function getWeekMondayDate(wk){
+  const [y,w]=wk.split('-W').map(Number);
+  const jan4=new Date(y,0,4);
+  const d=new Date(jan4);
+  d.setDate(jan4.getDate()-((jan4.getDay()+6)%7)+(w-1)*7);   // W01의 월요일 + (w-1)주
+  return d;
 }
 
 function getWeekMonday(wk){
-  const [y,w]=wk.split('-W').map(Number);
-  const d=new Date(y,0,1+((w-1)*7));
-  const day=d.getDay();d.setDate(d.getDate()+(day<=4?1-day:8-day));
+  const d=getWeekMondayDate(wk);
   return (d.getMonth()+1)+'/'+(d.getDate());
 }
 
@@ -3806,23 +3842,7 @@ async function registerQuiz(){
 
 let quizHistoryMonth=getYM();
 
-// [알려진 이슈 / 수정 보류 — 2026-08]
-// (d-s)/86400000 을 버림하지 않아 시·분·초가 소수점으로 남는다. 그래서 주차 경계에 걸린
-// '토요일'만 시각에 따라 주차가 갈린다. 자정 정각은 이전 주차, 그 이후는 다음 주차.
-//   예) 2026-08-01(토) 00:00 → W31 / 같은 날 10:00 → W32
-// 결과적으로 실제 주차는 '토요일~금요일'로 돌아간다. 반면 getWeeksInMonth()는 자정으로
-// 목록을 만들어 '일~토'로 보고, 화면 라벨 getWeekMonday()는 월요일 기준으로 표시한다.
-// → 경계(토)·목록(일)·표시(월) 셋이 어긋나 있음.
-//
-// Math.floor((d-s)/86400000) 로 감싸면 '일~토'로 통일되지만, 기존 기록의 주차 소속이
-// 하루 이동해 진행 중인 달의 생존 판정이 바뀔 수 있어 보류했다.
-// 바꾼다면 '월초, 그 달 첫 응시가 생기기 전'이 유일하게 안전한 시점이다.
-// (아래 isJudgeableWeek 기반 조각 주차 방어는 이 이슈와 무관하게 양쪽 다 정상 동작한다)
-function getWeekKeyFromDate(d){
-  const s=new Date(d.getFullYear(),0,1);
-  const w=Math.ceil(((d-s)/86400000+s.getDay()+1)/7);
-  return d.getFullYear()+'-W'+String(w).padStart(2,'0');
-}
+// getWeekKeyFromDate 는 상단 '주차 계산 (단일 출처)' 블록에 정의되어 있다.
 
 // 생존 판정에 쓸 수 있는 주차인지 — 그 달 안에서 평일(월~금)이 며칠이나 되는가로 판단한다.
 // 월 1일이 주 중간에 걸리면 앞뒤로 '조각 주차'가 생긴다. 예) 2026-08은 8/1 토요일 하루뿐인 W31.
@@ -4032,10 +4052,11 @@ async function resetOneElim(encodedName, isWrong=true){
     let ok=true;
     for(const pw of pastWeeks){
       if(participatedWeeks.has(pw)) continue;
-      // 해당 주차 월요일 날짜로 created_at 설정
-      const [yr,wn]=pw.split('-W').map(Number);
-      const jan1=new Date(yr,0,1);
-      const monday=new Date(jan1.getTime()+((wn-1)*7-(jan1.getDay()||7)+1)*86400000);
+      // 해당 주차 월요일 정오로 created_at 설정.
+      // getWeekMondayDate 를 쓰는 이유: 주차 계산과 같은 기준이어야 삽입한 기록이
+      // 의도한 주차로 되읽힌다. 정오로 두는 건 UTC 변환 시 날짜가 밀리지 않게 하기 위함.
+      const monday=getWeekMondayDate(pw);
+      monday.setHours(12,0,0,0);
       const res=await SB.post('quiz_attempts',{year_month:ym,name:name,quiz_id:null,is_correct:true,eliminated_at:null,created_at:monday.toISOString()});
       if(!res) ok=false;
     }
