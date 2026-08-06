@@ -750,13 +750,32 @@
     .rpt-toggle{padding:5px 11px;border-radius:20px;border:1.5px solid var(--border);background:rgba(255,255,255,0.05);color:var(--text-hint);font-size:11px;font-weight:700;font-family:inherit;cursor:pointer;transition:all 0.2s;}
     .rpt-toggle.on{border-color:var(--sky);background:rgba(0,200,255,0.15);color:var(--sky);}
     @media print{
-      body *{visibility:hidden!important;}
-      #print-report,#print-report *{visibility:visible!important;}
-      #print-report{position:fixed!important;top:0!important;left:0!important;width:100%!important;background:#fff!important;color:#000!important;padding:20px!important;font-family:'Noto Sans KR',sans-serif!important;}
-      #print-report .rpt-section{background:#f8f8f8!important;border:1px solid #ddd!important;color:#000!important;break-inside:avoid;}
+      @page{margin:12mm;}
+      /* 예전엔 body *{visibility:hidden} + #print-report{position:fixed} 조합이었는데,
+         인쇄에서 position:fixed 요소는 첫 페이지 박스에 고정되고 넘치는 내용이 잘려나가
+         리포트가 아무리 길어도 1페이지만 출력됐다. → 조상 체인만 남기고 나머지는
+         display:none 으로 '공간까지' 제거해, 리포트가 일반 흐름으로 여러 페이지에 걸치게 한다. */
+      html,body{height:auto!important;min-height:0!important;overflow:visible!important;display:block!important;background:#fff!important;}
+      body > *:not(#screen-main){display:none!important;}
+      #screen-main > *:not(#page-admin){display:none!important;}
+      #page-admin > *:not(#admin-tab-report){display:none!important;}
+      #admin-tab-report > *:not(#print-report){display:none!important;}
+      /* .page{overflow-y:auto}·.screen{max-width:480px}가 인쇄본을 클립/축소하므로 함께 해제 */
+      #screen-main,#page-admin,#admin-tab-report,#print-report{
+        display:block!important;position:static!important;flex:none!important;
+        width:auto!important;max-width:none!important;height:auto!important;min-height:0!important;
+        margin:0!important;padding:0!important;overflow:visible!important;
+        box-shadow:none!important;background:#fff!important;
+      }
+      #print-report{color:#000!important;font-family:'Noto Sans KR',sans-serif!important;}
+      #print-report .rpt-section{background:#f8f8f8!important;border:1px solid #ddd!important;color:#000!important;break-inside:avoid;page-break-inside:avoid;margin-bottom:10px!important;}
       #print-report .rpt-section-title,#print-report .rpt-table th,#print-report .rpt-table td{color:#000!important;}
       #print-report .rpt-table th{color:#555!important;}
       #print-report .rpt-no-print{display:none!important;}
+      /* 긴 표가 페이지 경계에 걸리면 헤더를 다음 페이지에도 반복하고, 행은 쪼개지지 않게 */
+      #print-report .rpt-table{page-break-inside:auto;}
+      #print-report .rpt-table thead{display:table-header-group;}
+      #print-report .rpt-table tr{break-inside:avoid;page-break-inside:avoid;}
     }
     /* COMMENTS */
     .cmt-section{margin-top:1.25rem;}
