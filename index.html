@@ -3812,22 +3812,56 @@ function getWeekKeyFromDate(d){
   return d.getFullYear()+'-W'+String(w).padStart(2,'0');
 }
 
+// 생존 판정에 쓸 수 있는 주차인지 — 그 달 안에서 평일(월~금)이 며칠이나 되는가로 판단한다.
+// 월 1일이 주 중간에 걸리면 앞뒤로 '조각 주차'가 생긴다. 예) 2026-08은 8/1 토요일 하루뿐인 W31.
+// 참여 자체가 불가능했던 그런 주차를 '지난 주차'로 세면 전 직원이 미참여 탈락 처리되어
+// 새 달 퀴즈가 열리자마자 전원 탈락(=퀴즈 미실행)이 된다. 실제로 2026-08에 이 사고가 났다.
+const MIN_WEEKDAYS_FOR_JUDGING = 3;
+
+function weekdaysInMonthForWeek(wk, ym){
+  const [y,m] = ym.split('-').map(Number);
+  const d = new Date(y, m-1, 1), end = new Date(y, m, 0);
+  let n = 0;
+  while(d <= end){
+    const dow = d.getDay();
+    if(dow !== 0 && dow !== 6 && getWeekKeyFromDate(d) === wk) n++;
+    d.setDate(d.getDate()+1);
+  }
+  return n;
+}
+
+function isJudgeableWeek(wk, ym){
+  return weekdaysInMonthForWeek(wk, ym) >= MIN_WEEKDAYS_FOR_JUDGING;
+}
+
 async function getQuizSurvivors(ym, currentWk){
   const empAll = await SB.get('employees', 'is_active=eq.true&order=name.asc');
   const allAttempts = await SB.get('quiz_attempts', 'year_month=eq.'+ym);
 
   // 실제로 퀴즈가 가동된 주차 = 누군가 한 번이라도 시도한 주차
-  // 월 1일이 주말/주중 경계에 걸리면(예: 토요일) getWeeksInMonth가 하루짜리 '조각 주차'를
-  // 포함하는데, 아무도 참여하지 못한 그 주차를 '지난 주차'로 세면 전 직원이 미참여 탈락 처리되어
-  // 새 달 퀴즈가 열리자마자 전원 탈락(=퀴즈 미실행)으로 보이는 버그가 있었다.
-  // → 실제 시도가 1건이라도 있었던 주차만 생존 조건 대상으로 삼는다.
   const activeWeeks = new Set(allAttempts.map(a => getWeekKeyFromDate(new Date(a.created_at))));
 
-  // 달력 기준 과거 주차 중, 실제 퀴즈가 가동된(=참여 기록이 있는) 주차만 생존 판정 대상
-  const pastWeeks = getWeeksInMonth(ym).filter(w => w < currentWk && activeWeeks.has(w));
+  // 지난 주차 중 '판정 가능한 주차'만 생존 조건 대상.
+  // isJudgeableWeek을 먼저 거는 게 핵심 — activeWeeks(시도 1건 이상)만으로 거르면
+  // 조각 주차에 단 한 명이라도 응시했을 때 그 주차가 정상 주차로 취급되어 나머지 전원이 탈락한다.
+  // 그 경우 생존자가 0명이 아니라 1명이라 퀴즈는 정상적으로 열리고, 사고를 눈치채지 못한다.
+  const pastWeeks = getWeeksInMonth(ym).filter(w =>
+    w < currentWk && isJudgeableWeek(w, ym) && activeWeeks.has(w)
+  );
 
-  const elimSet = new Set(allAttempts.filter(a => !a.is_correct).map(a => a.name));
+  // 판정에서 뺀 지난 조각 주차의 '오답'도 탈락 사유로 삼지 않는다.
+  // 안 푼 사람은 살고 풀었다가 틀린 사람만 죽는 역전을 막기 위함.
+  // (현재 주차는 항상 정상 규칙 적용 — 이번 주에 틀리면 그대로 탈락)
+  const skippedPastWeeks = new Set(
+    getWeeksInMonth(ym).filter(w => w < currentWk && !isJudgeableWeek(w, ym))
+  );
+  if(skippedPastWeeks.size) console.info('[quiz] 조각 주차 판정 제외:', [...skippedPastWeeks].join(', '));
 
+  const elimSet = new Set(
+    allAttempts
+      .filter(a => !a.is_correct && !skippedPastWeeks.has(getWeekKeyFromDate(new Date(a.created_at))))
+      .map(a => a.name)
+  );
 
   const survivors = [];
   for (const emp of empAll) {
