@@ -2340,6 +2340,80 @@ const CONFIG = {
   supabaseKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlmeXRhbnZoc2txbWJ2bWpvb2hpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUwMDk4MTAsImV4cCI6MjA5MDU4NTgxMH0.IK8OqhfvAEtQmcBI0ooqclVy8WK01ZfI6kwMlnKCWig',
 };
 
+// ── 메일 발송 중계 (Apps Script) ─────────────────────────────────────────
+// 발신 계정 = 이 웹앱을 소유한 Google 계정. charm@contec.kr 로 배포한 것을 쓴다.
+// 코드는 google-apps-script/mail-webhook.gs — GmailApp 이 아니라 MailApp 을 쓴다
+// (회사 주소로 만든 Google 계정은 Gmail 사서함이 없어 GmailApp 이 실패한다).
+//
+// ⚠️ 예전에는 이 URL 이 emailMonthlyReport / sendEmailNow 두 곳에 각각
+//    하드코딩돼 있어서 한쪽만 고치면 조용히 깨졌다. 반드시 여기 하나만 둔다.
+// ⚠️ 스크립트를 재배포하면 /exec URL 이 바뀐다 → 이 값을 갱신하고 푸시해야 한다.
+const MAIL_RELAY_URL = 'https://script.google.com/macros/s/AKfycbx3SgWGaL-3NULmni6MTg_NPzlEySmQMsJxGaVC9yypHQ6JxV1sAvmOkHjDEJDjOWnr/exec';
+// 릴레이에 SHARED_TOKEN 을 설정했다면 같은 값을 넣는다. 미설정이면 빈 문자열.
+// 이 페이지는 공개 정적 파일이라 토큰은 비밀이 될 수 없다 — 실질 방어는
+// 릴레이 쪽 ALLOWED_DOMAINS / MAX_RECIPIENTS 다 (mail-webhook.gs 주석 참고).
+const MAIL_RELAY_TOKEN = '';
+
+/**
+ * 메일 발송 공용 경로. 모든 발송은 이 함수를 거친다 —
+ * 일부만 딴 길로 보내면 발신 계정을 바꾸는 순간 그쪽이 조용히 죽는다.
+ *
+ * 반환: {ok, sent, blockedSelf[], failed[], error, unverified}
+ *   unverified=true 는 "요청은 나갔지만 브라우저가 응답을 못 읽었다"는 뜻이다.
+ *   Apps Script 는 googleusercontent.com 으로 리다이렉트하므로 CORS 때문에
+ *   응답을 못 읽는 환경이 있다. 그 경우에도 성공이라 단정하지 않는다 —
+ *   예전 코드는 무조건 '✅ 발송 완료' 를 띄워서 실패를 아무도 몰랐다.
+ */
+async function sendMailViaRelay({subject, html, recipients, text}){
+  const body = {
+    custom_subject: subject,
+    custom_html: html,
+    custom_recipients: recipients,
+  };
+  if (text) body.text = text;
+  if (MAIL_RELAY_TOKEN) body.token = MAIL_RELAY_TOKEN;
+  try{
+    // text/plain 이어야 preflight(OPTIONS)가 안 생긴다 — Apps Script 는 OPTIONS 를 못 받는다.
+    const res = await fetch(MAIL_RELAY_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify(body),
+    });
+    const raw = await res.text();
+    let out;
+    try{ out = JSON.parse(raw); }
+    catch(e){ return {ok:false, unverified:true, error:'응답을 해석할 수 없습니다(로그인 페이지일 수 있음 — 배포 액세스 권한이 "모든 사용자"인지 확인)'}; }
+    // Apps Script 는 실패도 HTTP 200 으로 준다. 상태코드가 아니라 ok 필드를 봐야 한다.
+    return {
+      ok: !!out.ok,
+      sent: out.sent || 0,
+      blockedSelf: out.blocked_self || [],
+      failed: out.failed || [],
+      error: out.error || '',
+    };
+  }catch(e){
+    // CORS 차단 등으로 응답을 못 읽은 경우. 발송 자체는 됐을 수 있다.
+    console.error('mail relay:', e);
+    return {ok:false, unverified:true, error:String(e && e.message || e)};
+  }
+}
+
+/** 발송 결과를 사용자에게 보여줄 한국어 문장으로 만든다. */
+function mailResultMessage(r, requested){
+  if(r.unverified){
+    return `📨 ${requested}건 발송을 요청했습니다.\n\n다만 브라우저가 발송 결과를 확인하지 못했습니다.\n실제 발송 여부는 charm@contec.kr 의 보낸편지함에서 확인해주세요.\n\n(사유: ${r.error})`;
+  }
+  let msg = r.ok ? `✅ ${r.sent}명에게 발송 완료!` : `⚠️ 일부만 발송됐습니다 (성공 ${r.sent}건)`;
+  if(r.blockedSelf && r.blockedSelf.length){
+    msg += `\n\n🚫 발신 주소와 같아 보낼 수 없는 주소 ${r.blockedSelf.length}건: ${r.blockedSelf.join(', ')}\n(자기 자신에게 보낸 메일은 수신측에서 차단됩니다)`;
+  }
+  if(r.failed && r.failed.length){
+    msg += `\n\n❌ 실패 ${r.failed.length}건: ${r.failed.map(f=>f.to).join(', ')}\n사유: ${r.failed[0].error}`;
+  }
+  if(!r.ok && !r.sent && r.error) msg = `❌ 발송 실패\n\n${r.error}`;
+  return msg;
+}
+
 const SB = {
   h: {'Content-Type':'application/json','apikey':CONFIG.supabaseKey,'Authorization':'Bearer '+CONFIG.supabaseKey},
   // cache:'no-store' — REST 응답에 Cache-Control이 없어 기기(특히 iOS PWA)가 옛 값을 재사용하는 문제 방지
@@ -6619,7 +6693,7 @@ function printMonthlyReport(){
 async function emailMonthlyReport(){
   if(!window._rptCache){showToast('먼저 리포트를 불러오세요');return;}
   const {label,html}=window._rptCache;
-  const GAS_URL='https://script.google.com/macros/s/AKfycbx3SgWGaL-3NULmni6MTg_NPzlEySmQMsJxGaVC9yypHQ6JxV1sAvmOkHjDEJDjOWnr/exec';
+  // 기본값을 charm@contec.kr 로 두지 않는다 — 발신 주소와 같아 수신측에서 차단된다.
   const toInput=prompt('수신 이메일 주소를 입력하세요 (여러 개는 쉼표로 구분)','contecgpt@gmail.com');
   if(!toInput)return;
   const recipients=toInput.split(',').map(s=>s.trim()).filter(Boolean);
@@ -6630,12 +6704,12 @@ async function emailMonthlyReport(){
     ${html.replace(/var\(--[^)]+\)/g,'#aaa').replace(/rgba?\([^)]+\)/g,'#334')}
   </div>`;
   showToast('📨 발송 중...');
-  fetch(GAS_URL,{
-    method:'POST',
-    headers:{'Content-Type':'text/plain;charset=utf-8'},
-    body:JSON.stringify({type:'report',custom_subject:'[CONTEC+] '+label+' 월간 리포트',custom_html:emailHtml,custom_recipients:recipients})
-  }).catch(()=>{});
-  setTimeout(()=>alert('✅ '+recipients.length+'개 주소로 월간 리포트 발송을 요청했습니다!'),300);
+  const r=await sendMailViaRelay({
+    subject:'[CONTEC+] '+label+' 월간 리포트',
+    html:emailHtml,
+    recipients
+  });
+  alert(mailResultMessage(r,recipients.length));
 }
 
 function populateTargetMonthDropdowns(){
@@ -8606,27 +8680,10 @@ async function sendEmailNow(){
   if(!selected.length){showToast('❌ 수신자를 선택해주세요');return;}
   if(!confirm(`${selected.length}명에게 지금 바로 발송할까요?`))return;
   showToast('📨 발송 중...');
-  try{
-    const GAS_URL = 'https://script.google.com/macros/s/AKfycbx3SgWGaL-3NULmni6MTg_NPzlEySmQMsJxGaVC9yypHQ6JxV1sAvmOkHjDEJDjOWnr/exec';
-    // 구글 앱스스크립트는 preflight(OPTIONS) 에러를 피하기 위해 text/plain을 사용하는 것이 안전합니다.
-    fetch(GAS_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify({
-        type: _emailModalType,
-        custom_subject: subject,
-        custom_html: html,
-        custom_recipients: selected
-      })
-    }).catch(e => console.error('GAS fetch error:', e));
-    
-    // 앱스스크립트는 리다이렉션을 하거나 CORS로 인해 opaque 응답이 올 수 있으므로 바로 성공으로 간주합니다.
-    alert(`✅ ${selected.length}명에게 메일 발송을 요청했습니다!\n\n(구글 이메일의 보낸편지함에서 실제 발송 내역을 꼭 확인해 주세요.)`);
-    document.getElementById('email-modal-overlay').classList.remove('open'); // 성공 시 모달창도 닫아주기
-  }catch(e){
-    console.error(e);
-    alert('❌ 발송 중 에러가 발생했습니다.');
-  }
+  const r=await sendMailViaRelay({subject,html,recipients:selected});
+  alert(mailResultMessage(r,selected.length));
+  // 전부 실패했을 때는 모달을 열어둔다 — 내용을 다시 입력하지 않고 재시도할 수 있게.
+  if(r.ok||r.unverified||r.sent) document.getElementById('email-modal-overlay').classList.remove('open');
 }
 
 async function scheduleEmailSend(){
