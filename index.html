@@ -2348,7 +2348,7 @@ const CONFIG = {
 // ⚠️ 예전에는 이 URL 이 emailMonthlyReport / sendEmailNow 두 곳에 각각
 //    하드코딩돼 있어서 한쪽만 고치면 조용히 깨졌다. 반드시 여기 하나만 둔다.
 // ⚠️ 스크립트를 재배포하면 /exec URL 이 바뀐다 → 이 값을 갱신하고 푸시해야 한다.
-const MAIL_RELAY_URL = 'https://script.google.com/macros/s/AKfycbx3SgWGaL-3NULmni6MTg_NPzlEySmQMsJxGaVC9yypHQ6JxV1sAvmOkHjDEJDjOWnr/exec';
+const MAIL_RELAY_URL = 'https://script.google.com/macros/s/AKfycbwswo953kTgBC3cDzrft1DhVE5K6j3uJz3Q9Wuim5nV-JHNAbbB6zhWHeAYbjmK_Ut8/exec';
 // 릴레이에 SHARED_TOKEN 을 설정했다면 같은 값을 넣는다. 미설정이면 빈 문자열.
 // 이 페이지는 공개 정적 파일이라 토큰은 비밀이 될 수 없다 — 실질 방어는
 // 릴레이 쪽 ALLOWED_DOMAINS / MAX_RECIPIENTS 다 (mail-webhook.gs 주석 참고).
