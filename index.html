@@ -600,6 +600,38 @@
     .tg-theme-card:active{transform:scale(0.97);}
     .tg-theme-card.selected{border-color:var(--purple);background:rgba(162,123,255,0.15);box-shadow:0 0 12px rgba(162,123,255,0.3);}
 
+    /* MEMORY MATCH GAME (우주 용어 매치) */
+    .mm-hud{display:flex;align-items:center;justify-content:space-between;background:rgba(0,0,0,0.3);border:1px solid var(--border);border-radius:12px;padding:8px 14px;margin-bottom:8px;}
+    .mm-hud-item{font-size:10px;color:var(--text-sub);text-align:center;}
+    .mm-hud-val{font-family:'Outfit',sans-serif;font-size:17px;font-weight:900;line-height:1.2;}
+    .mm-timebar{height:6px;background:rgba(255,255,255,0.07);border-radius:4px;overflow:hidden;margin-bottom:9px;}
+    .mm-timebar-fill{height:100%;width:100%;border-radius:4px;background:linear-gradient(90deg,#00eeff,#00ff88);transition:width 0.25s linear,background 0.3s;}
+    .mm-timebar-fill.warn{background:linear-gradient(90deg,#ff9500,#ff3b30);}
+    .mm-grid{display:grid;gap:6px;margin-bottom:10px;}
+    .mm-card{position:relative;aspect-ratio:3/4;perspective:600px;cursor:pointer;}
+    .mm-card-inner{position:absolute;inset:0;transform-style:preserve-3d;transition:transform 0.35s cubic-bezier(0.4,0,0.2,1);}
+    .mm-card.flipped .mm-card-inner{transform:rotateY(180deg);}
+    .mm-face{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;border-radius:10px;display:flex;align-items:center;justify-content:center;padding:4px 3px;text-align:center;word-break:keep-all;line-height:1.28;overflow:hidden;}
+    .mm-face-back{background:linear-gradient(160deg,#0e1a44,#04081c);border:1px solid rgba(0,200,255,0.22);font-size:17px;box-shadow:inset 0 0 12px rgba(0,150,255,0.12);}
+    .mm-face-front{transform:rotateY(180deg);}
+    .mm-face-front.term{background:rgba(0,45,62,0.9);border:1.5px solid rgba(0,238,255,0.5);color:#00eeff;font-size:11px;font-weight:800;text-shadow:0 0 8px rgba(0,238,255,0.35);}
+    .mm-face-front.desc{background:rgba(28,10,58,0.9);border:1.5px solid rgba(162,123,255,0.45);color:#e6dbff;font-size:9px;font-weight:600;}
+    .mm-card.matched{pointer-events:none;}
+    .mm-card.matched .mm-face-front{border-color:rgba(0,255,136,0.55);box-shadow:0 0 12px rgba(0,255,136,0.22);opacity:0.5;}
+    .mm-card.wrong .mm-card-inner{animation:mmShake 0.4s;}
+    @keyframes mmShake{0%,100%{transform:rotateY(180deg) translateX(0);}25%{transform:rotateY(180deg) translateX(-5px);}50%{transform:rotateY(180deg) translateX(5px);}75%{transform:rotateY(180deg) translateX(-3px);}}
+    .mm-learn{min-height:46px;display:flex;align-items:center;background:rgba(0,255,136,0.06);border:1px solid rgba(0,255,136,0.18);border-radius:12px;padding:8px 12px;font-size:11px;color:#cfeee0;line-height:1.5;margin-bottom:10px;transition:background 0.3s,border-color 0.3s;}
+    .mm-learn.info{background:rgba(0,200,255,0.06);border-color:rgba(0,200,255,0.2);color:#cfe9ff;}
+    .mm-learn.warn{background:rgba(255,149,0,0.08);border-color:rgba(255,149,0,0.25);color:#ffe0bb;}
+    .mm-stage-dots{display:flex;gap:5px;justify-content:center;margin-bottom:10px;}
+    .mm-stage-dot{font-size:10px;font-weight:700;padding:3px 10px;border-radius:10px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);color:var(--text-hint);}
+    .mm-stage-dot.active{background:rgba(0,238,255,0.15);border-color:rgba(0,238,255,0.45);color:#00eeff;}
+    .mm-stage-dot.done{background:rgba(0,255,136,0.12);border-color:rgba(0,255,136,0.35);color:#00ff88;}
+    .mm-term-row{display:flex;gap:8px;padding:9px 10px;border-bottom:1px solid var(--border);}
+    .mm-term-row:last-child{border-bottom:none;}
+    .mm-term-name{flex-shrink:0;width:88px;font-size:11px;font-weight:800;color:#00eeff;word-break:keep-all;line-height:1.4;}
+    .mm-term-desc{font-size:11px;color:var(--text-sub);line-height:1.5;word-break:keep-all;}
+
     /* TYPING LEADERBOARD */
     .rank-item {
       display: flex;
@@ -895,6 +927,15 @@
         <div id="tg-home-best" style="font-size:10px;color:rgba(162,123,255,0.7);margin-top:4px;line-height:1.4;"></div>
         <div class="hc-action" style="color:var(--purple)">도전하기 →</div>
       </div>
+      <!-- 우주 용어 매치 카드 (기본 비공개 — 관리자가 공개 설정 시 노출) -->
+      <div class="home-card" id="home-match-card" style="display:none;" onclick="switchPage('match')">
+        <div class="hc-accent" style="background:linear-gradient(90deg,#00eeff,#00ff88)"></div>
+        <div class="hc-icon">🛰️</div>
+        <div class="hc-label" style="color:rgba(180,240,255,0.92);display:flex;align-items:center;gap:4px;">우주 용어 매치 <span style="background:linear-gradient(135deg,#ff3b30,#ff9500);color:#fff;font-size:9px;font-weight:800;padding:2px 5px;border-radius:6px;line-height:1;letter-spacing:0.5px;">NEW</span></div>
+        <div class="hc-desc" style="color:rgba(150,220,255,0.6);">기억력 게임 · 우주산업 공부</div>
+        <div id="mm-home-best" style="font-size:10px;color:rgba(0,238,255,0.7);margin-top:4px;line-height:1.4;"></div>
+        <div class="hc-action" style="color:#00eeff">도전하기 →</div>
+      </div>
       <!-- 출석체크 카드 (정렬 및 크기 개선) -->
       <div id="home-attendance-card" onclick="openAttCalendar()" class="home-card" style="display:none;">
         <div class="hc-accent" style="background:linear-gradient(90deg,#F5C842,#F07C2A)"></div>
@@ -1153,20 +1194,8 @@
       <!-- 기능 공개 설정 -->
       <div class="sec-title">🔒 기능 공개 설정</div>
       <div class="card" style="margin-bottom:1.25rem;">
-        <div style="font-size:11px;color:var(--text-hint);margin-bottom:14px;line-height:1.6;">비공개 시 일반 사용자에게 숨겨집니다. 관리자는 항상 접근 가능합니다.</div>
-        <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;">
-          <div>
-            <div style="font-size:13px;font-weight:700;color:#fff;">⌨️ 타자왕</div>
-            <div style="font-size:11px;color:var(--text-hint);margin-top:2px;">홈 카드 및 하단 메뉴 표시 여부</div>
-          </div>
-          <div style="display:flex;align-items:center;gap:8px;">
-            <button onclick="adminPreviewFeature('typing')" style="font-size:11px;padding:4px 10px;background:rgba(0,200,255,0.1);border:1px solid rgba(0,200,255,0.3);border-radius:8px;color:#00eeff;cursor:pointer;font-family:inherit;white-space:nowrap;">👁️ 미리보기</button>
-            <label style="display:flex;align-items:center;gap:6px;cursor:pointer;">
-              <input type="checkbox" id="feat-typing-visible" style="accent-color:#00eeff;width:16px;height:16px;" checked>
-              <span id="feat-typing-label" style="font-size:12px;color:var(--text-sub);">공개</span>
-            </label>
-          </div>
-        </div>
+        <div style="font-size:11px;color:var(--text-hint);margin-bottom:14px;line-height:1.6;">비공개 시 일반 사용자에게 숨겨집니다. 관리자는 <b>👁️ 미리보기</b>로 언제든 확인할 수 있습니다.<br>게임을 교체할 때 이전 게임을 비공개로 내리고 새 게임을 공개하세요.</div>
+        <div id="feature-visibility-rows"></div>
         <button onclick="saveFeatureVisibility()" class="btn-main" style="width:100%;margin-top:8px;">💾 저장하기</button>
       </div>
       <!-- 승인 대기 -->
@@ -1700,6 +1729,26 @@
       <div style="font-size:12px;color:var(--text-hint);margin-bottom:14px;line-height:1.6;">테마별 기본 단어를 확인하고 단어를 추가할 수 있습니다. 추가된 단어는 해당 테마 게임에 포함됩니다.</div>
       <div id="typing-theme-cards"></div>
     </div>
+
+    <!-- 우주 용어 매치 관리 탭 -->
+    <div id="admin-tab-match-mgmt" style="display:none;">
+      <div class="sec-title">🗄️ DB 준비 상태</div>
+      <div id="match-db-status" class="card" style="margin-bottom:26px;font-size:12px;color:var(--text-hint);">확인 중...</div>
+
+      <div class="sec-title">🚫 순위 관리 (참여자 제외)</div>
+      <div style="font-size:12px;color:var(--text-hint);margin-bottom:14px;line-height:1.6;">이번 달 참여자 목록입니다. 순위에서 빼고 싶은 사람을 <b>제외</b>하세요. 기록은 삭제되지 않고 랭킹·리포트에서만 숨겨집니다.</div>
+      <div id="match-exclude-mgmt" style="margin-bottom:26px;"></div>
+
+      <div class="sec-title">🛰️ 우주산업 용어 관리</div>
+      <div style="font-size:12px;color:var(--text-hint);margin-bottom:14px;line-height:1.6;">기본 용어에 더해 회사에서 쓰는 용어를 직접 추가할 수 있습니다. 추가한 용어는 다음 날 출제 풀에 포함됩니다.<br><b style="color:rgba(255,255,255,0.6);">뜻(짧게)</b>은 카드에 표시되므로 <b style="color:var(--gold);">12자 이내</b>로 써주세요.</div>
+      <div class="card" style="margin-bottom:14px;">
+        <input type="text" id="match-add-term" placeholder="용어 (예: 페어링)" maxlength="20" style="width:100%;padding:9px 12px;margin-bottom:7px;background:rgba(255,255,255,0.07);border:1px solid var(--border);border-radius:10px;color:#fff;font-family:inherit;font-size:13px;outline:none;">
+        <input type="text" id="match-add-short" placeholder="뜻 (짧게, 12자 이내 · 카드에 표시)" maxlength="16" style="width:100%;padding:9px 12px;margin-bottom:7px;background:rgba(255,255,255,0.07);border:1px solid var(--border);border-radius:10px;color:#fff;font-family:inherit;font-size:13px;outline:none;">
+        <textarea id="match-add-desc" placeholder="자세한 설명 (짝을 맞추면 표시되는 학습 문장)" maxlength="120" rows="2" style="width:100%;padding:9px 12px;margin-bottom:9px;background:rgba(255,255,255,0.07);border:1px solid var(--border);border-radius:10px;color:#fff;font-family:inherit;font-size:13px;outline:none;resize:vertical;"></textarea>
+        <button onclick="addMatchTerm()" class="btn-main" style="background:linear-gradient(135deg,#00b8d4,#00c853);">➕ 용어 추가</button>
+      </div>
+      <div id="match-term-list"></div>
+    </div>
   </div>
 
   <!-- 마이페이지 -->
@@ -1872,6 +1921,72 @@
     </div>
   </div>
 
+  <!-- 우주 용어 매치 (기억력 게임) -->
+  <div class="page" id="page-match">
+    <div class="month-banner" style="background:linear-gradient(135deg,#001624,#00394d);">
+      <div><div class="mb-sub">🛰️ 기억력 게임</div><div class="mb-title">우주 용어 매치</div></div>
+      <div class="mb-tag">이달 랭킹</div>
+    </div>
+
+    <!-- 시작 화면 -->
+    <div id="mm-start-area">
+      <div class="card" style="padding:1.25rem;">
+        <div style="text-align:center;margin-bottom:1rem;">
+          <div style="font-size:38px;margin-bottom:6px;">🛰️</div>
+          <div style="font-size:15px;font-weight:800;color:#fff;">오늘의 우주산업 용어 24개</div>
+          <div id="mm-today-label" style="font-size:11px;color:var(--text-hint);margin-top:4px;">불러오는 중...</div>
+        </div>
+        <div style="background:rgba(0,200,255,0.05);border:1px solid rgba(0,200,255,0.15);border-radius:12px;padding:11px 13px;margin-bottom:1rem;font-size:11px;color:var(--text-sub);line-height:1.9;">
+          🔍 시작하면 <b style="color:#00eeff;">3초간 전체 공개</b> — 그동안 외우세요<br>
+          🃏 카드를 뒤집어 <b style="color:#00eeff;">용어</b>와 <b style="color:var(--purple);">뜻</b>을 짝지으세요<br>
+          🚀 스테이지 3개 (6짝 → 8짝 → 10짝) · 시간 안에 클리어<br>
+          🏆 남은 시간 + 정확도로 점수 · <b style="color:var(--gold);">하루 1회</b> 도전
+        </div>
+        <div style="font-size:10px;color:var(--text-hint);text-align:center;margin-bottom:1rem;line-height:1.6;">※ 카드 배치는 <b style="color:rgba(255,255,255,0.6);">모든 직원이 매일 동일</b>합니다 (운 아닌 실력 승부)</div>
+        <button id="mm-start-btn" onclick="startMatchCountdown()" class="btn-main" style="background:linear-gradient(135deg,#00b8d4,#00c853);font-size:16px;font-weight:800;box-shadow:0 0 20px rgba(0,200,255,0.35);">🚀 도전 시작!</button>
+      </div>
+      <div class="sec-title" style="margin-top:1rem;">🏆 이달 랭킹</div>
+      <div class="rank-list" id="mm-leaderboard-start"><div class="rank-empty">불러오는 중...</div></div>
+    </div>
+
+    <!-- 게임 화면 -->
+    <div id="mm-game-area" style="display:none;">
+      <div class="mm-hud">
+        <div class="mm-hud-item">점수<div class="mm-hud-val" style="color:var(--gold);" id="mm-score">0</div></div>
+        <div class="mm-hud-item">남은 시간<div class="mm-hud-val" id="mm-time" style="color:#00eeff;">--</div></div>
+        <div class="mm-hud-item">스테이지<div class="mm-hud-val" style="color:#00ff88;"><span id="mm-stage">1</span>/3</div></div>
+      </div>
+      <div class="mm-timebar"><div class="mm-timebar-fill" id="mm-timebar-fill"></div></div>
+      <div class="mm-stage-dots" id="mm-stage-dots"></div>
+      <div class="mm-grid" id="mm-grid"></div>
+      <div class="mm-learn info" id="mm-learn">카드를 뒤집어 용어와 뜻을 짝지으세요</div>
+      <button onclick="quitMatchGame()" style="width:100%;padding:9px;background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:10px;color:var(--text-hint);font-size:12px;font-family:inherit;cursor:pointer;">포기하고 나가기</button>
+    </div>
+
+    <!-- 결과 화면 -->
+    <div id="mm-result-area" style="display:none;">
+      <div class="card" style="text-align:center;padding:1.5rem;margin-bottom:1rem;">
+        <div style="font-size:36px;margin-bottom:8px;" id="mm-result-icon">🏁</div>
+        <div style="font-size:14px;font-weight:700;color:var(--text-sub);margin-bottom:14px;" id="mm-result-msg">게임 종료!</div>
+        <div style="font-family:'Outfit',sans-serif;font-size:42px;font-weight:900;color:var(--gold);text-shadow:0 0 20px rgba(245,200,66,0.5);margin-bottom:14px;" id="mm-result-score">0</div>
+        <div style="display:flex;gap:8px;margin-bottom:1.25rem;">
+          <div class="tg-result-stat"><div style="font-size:20px;font-weight:900;color:#fff;" id="mm-result-pairs">0</div><div style="font-size:10px;color:var(--text-hint);margin-top:2px;">맞춘 짝</div></div>
+          <div class="tg-result-stat"><div style="font-size:20px;font-weight:900;color:#00ff88;" id="mm-result-stages">0</div><div style="font-size:10px;color:var(--text-hint);margin-top:2px;">클리어</div></div>
+          <div class="tg-result-stat"><div style="font-size:20px;font-weight:900;color:var(--sky);" id="mm-result-acc">0%</div><div style="font-size:10px;color:var(--text-hint);margin-top:2px;">정확도</div></div>
+        </div>
+        <div id="mm-result-rank" style="font-size:13px;color:var(--gold);margin-bottom:1rem;"></div>
+        <div style="display:flex;gap:8px;">
+          <button id="mm-retry-btn" onclick="startMatchCountdown()" class="btn-main" style="flex:1;background:linear-gradient(135deg,#00b8d4,#00c853);">🔄 다시 하기</button>
+          <button onclick="switchPage('home')" style="flex:1;padding:13px;background:rgba(255,255,255,0.07);border:1px solid var(--border);border-radius:10px;color:var(--text-sub);font-size:15px;font-weight:700;font-family:inherit;cursor:pointer;">🏠 홈으로</button>
+        </div>
+      </div>
+      <div class="sec-title">📚 오늘 배운 우주산업 용어</div>
+      <div class="card" style="padding:4px 6px;margin-bottom:1rem;" id="mm-learned-list"></div>
+      <div class="sec-title">🏆 이달 랭킹</div>
+      <div class="rank-list" id="mm-leaderboard-result"><div class="rank-empty">불러오는 중...</div></div>
+    </div>
+  </div>
+
   <!-- 직원 네비 -->
   <div class="bottom-nav" id="nav-user">
     <button class="nav-btn active" onclick="switchPage('home')"><div class="nav-icon">🏠</div><div class="nav-label">홈</div></button>
@@ -1880,6 +1995,7 @@
     <button class="nav-btn" onclick="switchPage('idea')"><div class="nav-icon">💡</div><div class="nav-label">아이디어</div></button>
     <button class="nav-btn" onclick="switchPage('race')"><div class="nav-icon">🎱</div><div class="nav-label">레이스</div></button>
     <button class="nav-btn" id="nav-btn-typing" onclick="switchPage('typing')"><div class="nav-icon">⌨️</div><div class="nav-label">타자왕</div></button>
+    <button class="nav-btn" id="nav-btn-match" style="display:none;" onclick="switchPage('match')"><div class="nav-icon">🛰️</div><div class="nav-label">용어매치</div></button>
     <button class="nav-btn" onclick="switchPage('faq')"><div class="nav-icon">❓</div><div class="nav-label">Q&amp;A</div></button>
     <button class="nav-btn" onclick="switchPage('mypage')"><div class="nav-icon">👤</div><div class="nav-label">마이페이지</div></button>
   </div>
@@ -2344,33 +2460,60 @@ function closeMayWinners() {
 }
 
 // ── 기능 공개 설정 ──
+// 게임을 추가/교체할 때는 여기에 한 줄만 추가하면 홈 카드·하단 메뉴·관리자 토글·미리보기가 함께 붙는다.
+//   key: app_settings.feature_visibility 안의 키 / def: 기본 공개 여부(신규 게임은 false 로 두고 준비되면 켤 것)
+const FEATURE_DEFS = [
+  {key:'typing', icon:'⌨️', name:'타자왕',        page:'typing', nav:'nav-btn-typing', card:'home-typing-card', def:true},
+  {key:'match',  icon:'🛰️', name:'우주 용어 매치', page:'match',  nav:'nav-btn-match',  card:'home-match-card',  def:false},
+];
+
+function isFeatureVisible(cfg, f){
+  return f.def ? cfg[f.key] !== false : cfg[f.key] === true;
+}
+
 async function applyFeatureVisibility() {
   const rows = await SB.get('app_settings', 'key=eq.feature_visibility');
   const cfg = rows.length ? JSON.parse(rows[0].value || '{}') : {};
-  const showTyping = cfg.typing !== false;
-  const typingNav = document.getElementById('nav-btn-typing');
-  const typingCard = document.getElementById('home-typing-card');
-  if (typingNav) typingNav.style.display = showTyping ? '' : 'none';
-  if (typingCard) typingCard.style.display = showTyping ? '' : 'none';
+  FEATURE_DEFS.forEach(f=>{
+    const show = isFeatureVisible(cfg, f);
+    const nav = document.getElementById(f.nav);
+    const card = document.getElementById(f.card);
+    if (nav) nav.style.display = show ? '' : 'none';
+    if (card) card.style.display = show ? '' : 'none';
+  });
 }
 
 async function loadFeatureVisibilityAdmin() {
+  const wrap = document.getElementById('feature-visibility-rows');
+  if (!wrap) return;
   const rows = await SB.get('app_settings', 'key=eq.feature_visibility');
   const cfg = rows.length ? JSON.parse(rows[0].value || '{}') : {};
-  const tEl = document.getElementById('feat-typing-visible');
-  const tLbl = document.getElementById('feat-typing-label');
-  if (tEl) {
-    tEl.checked = cfg.typing !== false;
-    if (tLbl) tLbl.textContent = cfg.typing !== false ? '공개' : '비공개';
-    tEl.onchange = function() { if(tLbl) tLbl.textContent = this.checked ? '공개' : '비공개'; };
-  }
+  wrap.innerHTML = FEATURE_DEFS.map((f,i)=>{
+    const on = isFeatureVisible(cfg, f);
+    return `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;${i<FEATURE_DEFS.length-1?'border-bottom:1px solid var(--border);':''}">
+      <div>
+        <div style="font-size:13px;font-weight:700;color:#fff;">${f.icon} ${f.name}</div>
+        <div style="font-size:11px;color:var(--text-hint);margin-top:2px;">홈 카드 및 하단 메뉴 표시 여부</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <button onclick="adminPreviewFeature('${f.key}')" style="font-size:11px;padding:4px 10px;background:rgba(0,200,255,0.1);border:1px solid rgba(0,200,255,0.3);border-radius:8px;color:#00eeff;cursor:pointer;font-family:inherit;white-space:nowrap;">👁️ 미리보기</button>
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;">
+          <input type="checkbox" id="feat-${f.key}-visible" style="accent-color:#00eeff;width:16px;height:16px;" ${on?'checked':''} onchange="document.getElementById('feat-${f.key}-label').textContent=this.checked?'공개':'비공개'">
+          <span id="feat-${f.key}-label" style="font-size:12px;color:var(--text-sub);">${on?'공개':'비공개'}</span>
+        </label>
+      </div>
+    </div>`;
+  }).join('');
 }
 
 async function saveFeatureVisibility() {
-  const cfg = {
-    typing: document.getElementById('feat-typing-visible')?.checked !== false
-  };
-  await SB.upsert('app_settings', {key: 'feature_visibility', value: JSON.stringify(cfg)}, 'key');
+  const cfg = {};
+  FEATURE_DEFS.forEach(f=>{
+    const el = document.getElementById('feat-'+f.key+'-visible');
+    cfg[f.key] = el ? el.checked : f.def;
+  });
+  const ok = await SB.upsert('app_settings', {key: 'feature_visibility', value: JSON.stringify(cfg)}, 'key');
+  if (!ok) { showToast('⚠️ 저장에 실패했어요. 다시 시도해주세요'); return; }
   showToast('✅ 기능 공개 설정 저장됨');
 }
 
@@ -2435,18 +2578,19 @@ async function resetReportEdit() {
 
 // ── 관리자 기능 미리보기 ──
 function adminPreviewFeature(feat) {
+  const f = FEATURE_DEFS.find(x=>x.key===feat);
+  if (!f) return;
   const backBtn = document.getElementById('btn-back-to-admin');
   if (backBtn) backBtn.style.display = '';
-  if (feat === 'typing') {
-    const typingNav = document.getElementById('nav-btn-typing');
-    const typingCard = document.getElementById('home-typing-card');
-    if (typingNav) typingNav.style.display = '';
-    if (typingCard) typingCard.style.display = '';
-    document.getElementById('nav-admin').style.display = 'none';
-    document.getElementById('nav-user').style.display = 'flex';
-    switchPage('typing');
-    showToast('👁️ 타자왕 미리보기 — 상단 [← 관리자로] 버튼으로 돌아가세요');
-  }
+  // 비공개 상태여도 관리자는 미리보기로 진입할 수 있게 잠시 노출
+  const nav = document.getElementById(f.nav);
+  const card = document.getElementById(f.card);
+  if (nav) nav.style.display = '';
+  if (card) card.style.display = '';
+  document.getElementById('nav-admin').style.display = 'none';
+  document.getElementById('nav-user').style.display = 'flex';
+  switchPage(f.page);
+  showToast('👁️ '+f.name+' 미리보기 — 상단 [← 관리자로] 버튼으로 돌아가세요');
 }
 
 function backToAdmin() {
@@ -2457,6 +2601,7 @@ function backToAdmin() {
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.getElementById('screen-main').classList.add('active');
   switchPage('admin');
+  applyFeatureVisibility(); // 미리보기로 임시 노출했던 항목을 실제 설정대로 되돌림
 }
 
 async function saveReportNote() {
@@ -2699,6 +2844,8 @@ function switchPage(page){
   if(page==='faq')loadFAQPage();
   if(page==='typing')loadTypingPage();
   else stopTypingGame(); // 타자게임 이탈 시 게임 중단
+  if(page==='match')loadMatchPage();
+  else stopMatchGame(); // 용어매치 이탈 시 타이머 정지
 }
 
 // ── TYPING GAME ──
@@ -3344,6 +3491,508 @@ function quitTypingGame(){
   loadTypingLeaderboard('tg-leaderboard-start');
 }
 
+// ══════════════════════════════════════════════════════════════
+//  MEMORY MATCH — 우주 용어 매치 (기억력 + 우주산업 학습)
+//  · 용어 카드 ↔ 뜻 카드를 짝짓는 신경쇠약 게임
+//  · 카드 배치는 '날짜 시드' 기반이라 그날 모든 직원이 동일한 판을 받는다 (운 배제)
+//  · 점수는 typing_scores 가 아니라 공통 테이블 game_scores(game_key='match') 에 저장
+//    → 앞으로 게임을 교체할 때 DB 작업(DDL) 없이 코드만 추가하면 됨. supabase/game_scores.sql 참고
+// ══════════════════════════════════════════════════════════════
+
+// t: 용어(카드 앞면) / s: 짧은 뜻(카드 앞면, 12자 내외) / d: 자세한 설명(짝 맞추면 노출)
+const _MM_TERMS=[
+  // ── 궤도 · 위성 ──
+  {t:'LEO (저궤도)',s:'고도 2,000km 이하',d:'지구 상공 200~2,000km 궤도. 지연이 짧고 발사비가 낮아 관측·통신위성이 가장 많이 쓴다.'},
+  {t:'GEO (정지궤도)',s:'지구 자전과 같은 속도',d:'고도 약 35,786km. 지상에서 한 점에 멈춘 듯 보여 방송·기상위성에 쓰인다.'},
+  {t:'SSO (태양동기)',s:'매일 같은 지방시 통과',d:'항상 같은 태양 각도로 촬영해 시기가 다른 영상끼리 비교하기 좋은 극궤도.'},
+  {t:'궤도경사각',s:'적도면과 이루는 각',d:'궤도면이 적도와 이루는 각도. 90도에 가까울수록 극지방까지 관측할 수 있다.'},
+  {t:'근지점',s:'궤도상 가장 가까운 점',d:'위성이 지구에 가장 가까워지는 지점. 반대는 원지점(Apogee)이다.'},
+  {t:'원지점',s:'궤도상 가장 먼 점',d:'위성이 지구에서 가장 멀어지는 지점. 반대는 근지점(Perigee)이다.'},
+  {t:'TLE',s:'궤도 예측용 좌표',d:'Two-Line Element. 위성 궤도를 두 줄 숫자로 표현한 표준 데이터로 통과 시각 예측에 쓴다.'},
+  {t:'궤도주기',s:'한 바퀴 도는 시간',d:'저궤도 위성은 약 90~100분마다 지구를 한 바퀴 돈다.'},
+  {t:'디오빗',s:'임무 후 궤도 이탈',d:'수명이 끝난 위성을 대기권으로 내려 태우는 절차. 우주쓰레기 저감을 위해 의무화되는 추세다.'},
+  {t:'자세제어',s:'위성이 향할 방향 조정',d:'반작용휠·추력기로 위성 자세를 유지·변경해 안테나와 카메라를 원하는 곳에 겨눈다.'},
+  {t:'군집위성',s:'여러 대를 한 팀으로',d:'소형위성 여러 기를 같은 목적으로 묶어 운용해 같은 지역 재방문 주기를 크게 줄인다.'},
+  {t:'큐브샛',s:'10cm 규격 초소형위성',d:'10cm 정육면체(1U)를 단위로 만드는 초소형 위성. 저비용이라 실증·교육에 널리 쓰인다.'},
+  // ── 지상국 · 통신 ──
+  {t:'지상국',s:'위성과 교신하는 설비',d:'안테나와 송수신 장비로 위성 데이터를 받고 명령을 보내는 지상 거점. CONTEC의 핵심 사업이다.'},
+  {t:'업링크',s:'지상 → 위성 전송',d:'지상국이 위성으로 명령이나 소프트웨어를 올려보내는 방향의 통신.'},
+  {t:'다운링크',s:'위성 → 지상 전송',d:'위성이 관측 데이터와 상태 정보를 지상으로 내려보내는 방향의 통신.'},
+  {t:'TT&C',s:'추적·상태확인·명령',d:'Tracking, Telemetry & Command. 위성 상태를 감시하고 명령을 주고받는 기본 관제 링크.'},
+  {t:'텔레메트리',s:'위성의 건강 상태값',d:'전압·온도·자세 등 위성이 정상인지 알려주는 상태 데이터를 지상으로 내려보내는 것.'},
+  {t:'AOS',s:'교신 시작 시점',d:'Acquisition of Signal. 위성이 지상국 시야에 들어와 신호가 잡히기 시작하는 순간.'},
+  {t:'LOS',s:'교신 종료 시점',d:'Loss of Signal. 위성이 지상국 시야를 벗어나 신호가 끊기는 순간.'},
+  {t:'패스 (Pass)',s:'1회 교신 가능 구간',d:'위성이 지상국 상공을 지나가며 교신할 수 있는 시간. 저궤도는 보통 5~12분이다.'},
+  {t:'S밴드',s:'명령·상태용 주파수',d:'2GHz대 주파수. 데이터량이 적은 관제(TT&C) 통신에 주로 쓰인다.'},
+  {t:'X밴드',s:'대용량 영상 전송용',d:'8GHz대 주파수. 관측 영상처럼 큰 데이터를 빠르게 내려받을 때 쓴다.'},
+  {t:'도플러 효과',s:'속도로 주파수가 밀림',d:'빠르게 이동하는 위성의 신호는 주파수가 밀려 도착하며, 지상국은 이를 보정해 추적한다.'},
+  {t:'G/T',s:'수신 성능 지표',d:'안테나 이득 대비 잡음온도. 값이 클수록 약한 위성 신호까지 잘 잡아낸다.'},
+  {t:'EIRP',s:'실효 송신 세기',d:'안테나가 실제로 뿜어내는 송신 전력의 세기를 나타내는 값.'},
+  {t:'GSaaS',s:'지상국 구독 서비스',d:'전 세계 지상국을 빌려 쓰는 서비스. 위성 사업자가 설비 투자 없이 교신할 수 있게 해준다.'},
+  {t:'지상 세그먼트',s:'지상 시스템 전체',d:'지상국·관제센터·데이터 처리까지 지상에 있는 시스템 전체를 뜻한다.'},
+  // ── 발사 · 우주선 ──
+  {t:'발사체',s:'위성을 올리는 로켓',d:'위성을 목표 궤도까지 실어 나르는 로켓. 한국은 누리호를 독자 개발했다.'},
+  {t:'페이로드',s:'로켓이 싣는 화물',d:'발사체가 궤도로 올리는 위성·화물 등 실제 임무 대상을 뜻한다.'},
+  {t:'페어링',s:'위성을 감싼 덮개',d:'발사 중 공기 마찰과 압력에서 위성을 지키는 로켓 앞부분 덮개. 대기권을 벗어나면 분리된다.'},
+  {t:'단분리',s:'다 쓴 로켓단 분리',d:'연료를 소모한 하단 로켓을 떼어내 무게를 줄이고 다음 단에 점화하는 과정.'},
+  {t:'라이드셰어',s:'여러 위성 함께 발사',d:'한 발사체에 여러 고객의 위성을 같이 실어 발사 비용을 나누는 방식.'},
+  {t:'재사용 발사체',s:'회수해 다시 쓰는 로켓',d:'1단 로켓을 착륙시켜 회수·재사용함으로써 발사 단가를 크게 낮춘 기술.'},
+  {t:'GTO',s:'정지궤도행 중간궤도',d:'정지천이궤도. 정지궤도로 올라가기 위해 거치는 길쭉한 타원 궤도.'},
+  {t:'델타-V',s:'궤도변경 속도 예산',d:'궤도를 바꾸는 데 필요한 속도 변화량. 위성이 쓸 수 있는 연료 수명을 좌우한다.'},
+  {t:'발사창',s:'발사 가능한 시간대',d:'목표 궤도에 맞춰 발사가 허용되는 짧은 시간 구간. 놓치면 다음 창을 기다려야 한다.'},
+  {t:'추력',s:'엔진이 밀어내는 힘',d:'로켓 엔진이 만들어내는 밀어내는 힘. 중력을 이겨야 이륙할 수 있다.'},
+  {t:'우주정거장',s:'사람이 머무는 궤도시설',d:'궤도에서 사람이 장기 체류하며 실험하는 시설. 대표적으로 ISS가 있다.'},
+  // ── 위성 제작 · 시험 ──
+  {t:'위성버스',s:'위성의 기본 몸체',d:'전력·통신·자세제어 등 공통 기능을 담당하는 위성의 플랫폼 부분.'},
+  {t:'탑재체',s:'임무를 수행하는 장비',d:'카메라·레이더·중계기 등 위성이 실제 임무를 수행하는 핵심 장비.'},
+  {t:'AIT',s:'조립·통합·시험',d:'Assembly, Integration & Test. 부품을 조립·통합하고 발사 전 성능을 검증하는 전 과정.'},
+  {t:'클린룸',s:'먼지 통제된 조립실',d:'미세먼지를 극도로 걸러낸 공간. 작은 이물질도 위성 고장 원인이 되기 때문이다.'},
+  {t:'진동시험',s:'발사 진동 견딤 시험',d:'발사 순간의 극심한 진동을 지상에서 재현해 위성이 버티는지 확인하는 시험.'},
+  {t:'열진공시험',s:'진공·극한온도 시험',d:'진공 챔버에서 영하·영상 극한 온도를 오가며 위성이 정상 작동하는지 확인한다.'},
+  {t:'EMC 시험',s:'전자파 간섭 시험',d:'위성 내부 장비들이 서로 전자파로 방해하지 않는지 검증하는 시험.'},
+  {t:'플라이트 모델',s:'실제 발사되는 기체',d:'FM. 시험용 모델을 거쳐 최종적으로 우주로 올라가는 실기체.'},
+  {t:'리던던시',s:'고장 대비 이중화',d:'핵심 장비를 두 벌 이상 두어 하나가 고장 나도 임무를 이어가게 하는 설계.'},
+  {t:'방사선 내성',s:'우주 방사선 견딤',d:'우주 방사선에 부품이 손상되지 않도록 견디게 만드는 설계 요구조건.'},
+  // ── 데이터 · 활용 ──
+  {t:'광학위성',s:'빛으로 촬영하는 위성',d:'가시광선을 받아 사진처럼 촬영하는 위성. 밤이나 구름이 끼면 촬영이 어렵다.'},
+  {t:'SAR 위성',s:'전파 촬영, 밤·구름 OK',d:'합성개구레이더. 전파를 쏘아 지표를 촬영해 야간·악천후에도 관측할 수 있다.'},
+  {t:'GSD',s:'픽셀 1개의 실제 크기',d:'Ground Sample Distance. 30cm급이면 영상 픽셀 하나가 지상 30cm에 해당한다.'},
+  {t:'관측폭',s:'한 번에 찍는 폭',d:'Swath. 위성이 한 번 지나가며 촬영하는 지표의 폭. 넓을수록 빨리 훑는다.'},
+  {t:'재방문주기',s:'같은 곳 재촬영 간격',d:'같은 지역을 다시 촬영하기까지 걸리는 시간. 위성 수를 늘리면 짧아진다.'},
+  {t:'전처리',s:'원본 영상 보정 작업',d:'위성 원본 데이터의 왜곡과 좌표를 보정해 실제로 쓸 수 있는 영상으로 만드는 과정.'},
+  {t:'지구관측 (EO)',s:'우주에서 지구 살피기',d:'Earth Observation. 위성으로 지표·해양·대기를 관측하는 분야 전체를 뜻한다.'},
+  {t:'위성 AIS',s:'선박 위치신호 수신',d:'선박이 쏘는 위치 신호를 위성이 받아 전 세계 해상 교통을 파악하는 서비스.'},
+  {t:'GNSS',s:'위성 항법 시스템',d:'GPS를 포함한 위성 기반 위치·항법·시각 정보 체계의 총칭.'},
+  {t:'위성 IoT',s:'오지 센서 데이터 수집',d:'통신망이 없는 사막·해상 센서의 데이터를 위성으로 모으는 서비스.'},
+  {t:'초분광',s:'수백 파장으로 촬영',d:'수백 개 좁은 파장대로 나눠 촬영해 작물 상태·수질 같은 성분까지 구분한다.'},
+  {t:'다운스트림',s:'위성 데이터 활용산업',d:'위성이 보내온 데이터를 가공·분석해 서비스로 파는 산업 영역.'},
+  {t:'업스트림',s:'위성 제조·발사 산업',d:'위성과 발사체를 만들고 쏘아 올리는 산업 영역.'},
+  // ── 산업 · 정책 ──
+  {t:'뉴스페이스',s:'민간 주도 우주산업',d:'정부 주도를 넘어 민간 기업이 개발과 투자를 이끄는 우주산업의 흐름.'},
+  {t:'우주항공청',s:'한국 우주 전담기관',d:'KASA. 2024년 출범한 대한민국 우주항공 정책 전담 기관.'},
+  {t:'우주쓰레기',s:'궤도에 남은 폐기물',d:'수명이 끝난 위성과 파편. 초속 7km로 돌아 작은 조각도 위성을 파괴할 수 있다.'},
+  {t:'SSA',s:'궤도 물체 감시',d:'우주상황인식. 위성과 잔해의 위치를 추적해 충돌 위험을 예측하는 활동.'},
+  {t:'충돌회피기동',s:'부딪힐 위험 피하기',d:'충돌 경보를 받은 위성이 추력기를 써서 궤도를 살짝 바꿔 피하는 조작.'},
+  {t:'ITU 주파수 조율',s:'국제 주파수 등록',d:'위성 주파수와 정지궤도 위치는 국제전기통신연합에 등록해 간섭을 조정한다.'},
+  {t:'누리호',s:'한국 독자 발사체',d:'대한민국이 독자 개발한 3단 우주발사체. 2022년 위성 궤도 투입에 성공했다.'},
+  {t:'아르테미스',s:'유인 달 탐사 계획',d:'미국 주도의 국제 달 탐사 프로그램. 한국도 참여 약정에 서명했다.'},
+  {t:'위성 인터넷',s:'저궤도 통신 군집',d:'수천 기의 저궤도 위성으로 전 세계 어디서나 인터넷을 제공하는 서비스.'},
+  {t:'우주보험',s:'발사·운용 위험 보장',d:'발사 실패나 궤도상 고장으로 인한 손실을 보상하는 보험. 우주산업의 필수 인프라다.'},
+];
+
+// 스테이지 구성: 짝 수 / 그리드 열 수 / 제한 시간(초)
+const _MM_STAGES=[{pairs:6,cols:3,sec:60},{pairs:8,cols:4,sec:80},{pairs:10,cols:4,sec:100}];
+const _MM_TOTAL_PAIRS=_MM_STAGES.reduce((s,st)=>s+st.pairs,0); // 24
+
+let _mmCustomTerms=[];     // 관리자가 추가한 용어
+let _mmPlayedToday=false;  // 하루 1회 제한
+let _mmCards=[], _mmStageIdx=0, _mmFirst=null, _mmLock=false, _mmRunning=false;
+let _mmScore=0, _mmPairs=0, _mmAttempts=0, _mmStagesCleared=0, _mmLearned=[];
+let _mmStagePairs=0, _mmStageAttempts=0; // 스테이지별 정확도 보너스 계산용
+let _mmTimer=null, _mmPreviewTimer=null, _mmNextTimer=null, _mmDeadline=0, _mmStageLimit=0;
+
+// ── 날짜 시드 PRNG (mulberry32) — 같은 날이면 전 직원이 같은 판을 받는다 ──
+function _mmHashSeed(str){
+  let h=1779033703^str.length;
+  for(let i=0;i<str.length;i++){h=Math.imul(h^str.charCodeAt(i),3432918353);h=h<<13|h>>>19;}
+  return h>>>0;
+}
+function _mmRng(seed){
+  let a=seed>>>0;
+  return function(){
+    a|=0;a=a+0x6D2B79F5|0;
+    let t=Math.imul(a^a>>>15,1|a);
+    t=t+Math.imul(t^t>>>7,61|t)^t;
+    return ((t^t>>>14)>>>0)/4294967296;
+  };
+}
+function _mmShuffle(arr,rng){
+  const a=[...arr];
+  for(let i=a.length-1;i>0;i--){const j=Math.floor(rng()*(i+1));[a[i],a[j]]=[a[j],a[i]];}
+  return a;
+}
+
+// 오늘의 용어 24개
+//   단순히 매일 랜덤으로 24개를 뽑으면 어떤 용어는 자주, 어떤 용어는 거의 안 나온다(학습 편중).
+//   그래서 '풀 전체를 섞은 한 바퀴(cycle)'를 만들어 놓고 하루에 24개씩 순서대로 소비한다.
+//   → 용어 71개 기준 약 3일이면 전 용어가 한 번씩 노출되고, 그 뒤 새로 섞인 다음 바퀴가 시작된다.
+//   날짜만 알면 결과가 정해지므로 그날 모든 직원이 같은 판을 받는 성질은 그대로 유지된다.
+function getMatchDailyTerms(){
+  const pool=[..._MM_TERMS,...(_mmCustomTerms||[])];
+  if(pool.length<=_MM_TOTAL_PAIRS)return pool.slice(0,_MM_TOTAL_PAIRS); // 용어가 모자라면 있는 만큼
+  const dayIdx=Math.floor(Date.parse(getTodayStr()+'T00:00:00Z')/86400000);
+  const start=dayIdx*_MM_TOTAL_PAIRS;
+  let cycle=Math.floor(start/pool.length);
+  let off=start%pool.length;
+  const out=[], used=new Set();
+  let guard=0;
+  while(out.length<_MM_TOTAL_PAIRS&&guard++<20){
+    const shuffled=_mmShuffle(pool,_mmRng(_mmHashSeed('mm-cycle-'+cycle)));
+    for(let i=off;i<shuffled.length&&out.length<_MM_TOTAL_PAIRS;i++){
+      const t=shuffled[i];
+      if(used.has(t.t))continue; // 바퀴 경계에서 같은 용어가 두 번 나오지 않도록
+      used.add(t.t);out.push(t);
+    }
+    cycle++;off=0;
+  }
+  return out;
+}
+
+async function loadMatchCustomTerms(){
+  const rows=await SB.get('app_settings','key=eq.match_custom_terms');
+  try{_mmCustomTerms=(rows.length&&rows[0].value)?JSON.parse(rows[0].value):[];}
+  catch(e){_mmCustomTerms=[];}
+  return _mmCustomTerms;
+}
+
+// ── 시작 화면 ──
+async function loadMatchPage(){
+  stopMatchGame();
+  document.getElementById('mm-start-area').style.display='';
+  document.getElementById('mm-game-area').style.display='none';
+  document.getElementById('mm-result-area').style.display='none';
+  loadMatchLeaderboard('mm-leaderboard-start');
+  loadMatchHomeBest();
+  await loadMatchCustomTerms();
+  const label=document.getElementById('mm-today-label');
+  if(label){
+    const pool=_MM_TERMS.length+(_mmCustomTerms?_mmCustomTerms.length:0);
+    const d=new Date();
+    label.textContent=`${d.getMonth()+1}월 ${d.getDate()}일 출제 · 전체 용어 ${pool}개 중 24개`;
+  }
+  hasPlayedMatchToday().then(p=>{_mmPlayedToday=p;applyMatchLimitUI();});
+}
+
+async function hasPlayedMatchToday(){
+  if(!app||!app.empNo)return false;
+  const rows=await SB.get('game_scores','game_key=eq.match&emp_no=eq.'+encodeURIComponent(app.empNo)+'&order=created_at.desc&limit=50');
+  const today=getTodayStr();
+  return rows.some(r=>r.created_at&&fmtLocalDate(new Date(r.created_at))===today);
+}
+
+function applyMatchLimitUI(){
+  const startBtn=document.getElementById('mm-start-btn');
+  const retryBtn=document.getElementById('mm-retry-btn');
+  if(_mmPlayedToday){
+    if(startBtn){startBtn.disabled=true;startBtn.style.opacity='0.5';startBtn.style.cursor='not-allowed';startBtn.innerHTML='🌙 내일 다시 도전!';}
+    if(retryBtn){retryBtn.disabled=true;retryBtn.style.opacity='0.5';retryBtn.style.cursor='not-allowed';retryBtn.innerHTML='🌙 내일 다시';}
+  }else{
+    if(startBtn){startBtn.disabled=false;startBtn.style.opacity='';startBtn.style.cursor='';startBtn.innerHTML='🚀 도전 시작!';}
+    if(retryBtn){retryBtn.disabled=false;retryBtn.style.opacity='';retryBtn.style.cursor='';retryBtn.innerHTML='🔄 다시 하기';}
+  }
+}
+
+async function loadMatchHomeBest(){
+  const el=document.getElementById('mm-home-best');
+  if(!el||!app.empNo)return;
+  const ym=getYM();
+  const rows=await SB.get('game_scores','game_key=eq.match&year_month=eq.'+ym+'&emp_no=eq.'+encodeURIComponent(app.empNo)+'&order=score.desc&limit=1');
+  if(rows.length)el.innerHTML='내 최고<br><span style="font-size:14px;font-weight:900;color:#00eeff;">'+rows[0].score+'점</span>';
+  else el.innerHTML='도전해보세요!<br><span style="font-size:11px;color:rgba(0,238,255,0.5);">기록 없음</span>';
+}
+
+// ── 랭킹 ──
+async function getMatchExcluded(){
+  const rows=await SB.get('app_settings','key=eq.match_excluded');
+  const arr=(rows.length&&rows[0].value)?JSON.parse(rows[0].value):[];
+  return new Set(arr.map(String));
+}
+
+async function loadMatchLeaderboard(targetId){
+  const el=document.getElementById(targetId);if(!el)return;
+  el.innerHTML='<div class="rank-empty">불러오는 중...</div>';
+  const ym=getYM();
+  const rows=await SB.get('game_scores','game_key=eq.match&year_month=eq.'+ym+'&order=score.desc&limit=500');
+  if(!rows.length){el.innerHTML='<div class="rank-empty">아직 기록이 없어요! 첫 도전자가 되세요 🛰️</div>';return;}
+  const excluded=await getMatchExcluded();
+  const bestMap={};
+  rows.forEach(r=>{
+    if(excluded.has(String(r.emp_no)))return;
+    if(!bestMap[r.emp_no]||r.score>bestMap[r.emp_no].score)bestMap[r.emp_no]=r;
+  });
+  const allRanked=Object.values(bestMap).sort((a,b)=>b.score-a.score);
+  if(!allRanked.length){el.innerHTML='<div class="rank-empty">아직 기록이 없어요! 첫 도전자가 되세요 🛰️</div>';return;}
+
+  const displayLimit=10;
+  const ranked=allRanked.slice(0,displayLimit);
+  const myIndex=allRanked.findIndex(r=>r.emp_no===app.empNo);
+  const showMine=myIndex>=displayLimit;
+  const medals=['🥇','🥈','🥉'];
+
+  const renderRow=(r,idx)=>{
+    const isMe=r.emp_no===app.empNo;
+    const rankNum=idx+1;
+    const medalSymbol=rankNum<=3?medals[rankNum-1]:`<span class="ri-rank-num">${rankNum}</span>`;
+    const nameChar=r.employee_name?r.employee_name.trim().charAt(0):'?';
+    let avatarClass='rn';
+    if(rankNum===1)avatarClass='r1';else if(rankNum===2)avatarClass='r2';else if(rankNum===3)avatarClass='r3';
+    const d=r.detail||{};
+    return `<div class="rank-item${isMe?' rank-me':''}">
+      <div class="ri-rank">${medalSymbol}</div>
+      <div class="ri-avatar ${avatarClass}">${nameChar}</div>
+      <div class="ri-name">${r.employee_name}${isMe?'<span class="ri-me-badge">나</span>':''}</div>
+      <div class="ri-stats-wrap">
+        <div class="ri-score-val">${(r.score||0).toLocaleString()}<span class="ri-score-unit">점</span></div>
+        <div class="ri-details">${d.pairs||0}짝 · ${d.stages||0}스테이지</div>
+      </div>
+    </div>`;
+  };
+
+  let html=ranked.map((r,i)=>renderRow(r,i)).join('');
+  if(showMine){html+=`<div class="rank-divider">•••</div>`+renderRow(allRanked[myIndex],myIndex);}
+  el.innerHTML=html;
+}
+
+// ── 게임 진행 ──
+async function startMatchCountdown(){
+  if(await hasPlayedMatchToday()){
+    _mmPlayedToday=true;
+    applyMatchLimitUI();
+    showToast('🌙 오늘은 이미 도전했어요! 내일 다시 도전하세요');
+    document.getElementById('mm-start-area').style.display='';
+    document.getElementById('mm-result-area').style.display='none';
+    document.getElementById('mm-game-area').style.display='none';
+    return;
+  }
+  await loadMatchCustomTerms();
+  document.getElementById('mm-start-area').style.display='none';
+  document.getElementById('mm-result-area').style.display='none';
+  document.getElementById('mm-game-area').style.display='';
+  _mmScore=0;_mmPairs=0;_mmAttempts=0;_mmStagesCleared=0;_mmLearned=[];_mmStageIdx=0;
+  _mmRunning=true;
+  mmBuildStage(0);
+}
+
+function mmRenderStageDots(){
+  const el=document.getElementById('mm-stage-dots');
+  if(!el)return;
+  el.innerHTML=_MM_STAGES.map((s,i)=>{
+    const cls=i<_mmStagesCleared?'done':(i===_mmStageIdx?'active':'');
+    return `<div class="mm-stage-dot ${cls}">${i<_mmStagesCleared?'✓ ':''}${s.pairs}짝</div>`;
+  }).join('');
+}
+
+function mmBuildStage(idx){
+  _mmStageIdx=idx;
+  const stage=_MM_STAGES[idx];
+  const daily=getMatchDailyTerms();
+  const offset=_MM_STAGES.slice(0,idx).reduce((s,st)=>s+st.pairs,0);
+  const terms=daily.slice(offset,offset+stage.pairs);
+
+  // 카드 배치도 날짜 시드 기반 — 같은 날이면 모두가 같은 자리에서 시작
+  const rng=_mmRng(_mmHashSeed('mm-board-'+getTodayStr()+'-'+idx));
+  const cards=[];
+  terms.forEach((t,pid)=>{
+    cards.push({pid,type:'term',text:t.t,term:t});
+    cards.push({pid,type:'desc',text:t.s,term:t});
+  });
+  _mmCards=_mmShuffle(cards,rng);
+  _mmFirst=null;_mmLock=true; // 미리보기 동안 잠금
+  _mmStagePairs=0;_mmStageAttempts=0;
+
+  document.getElementById('mm-stage').textContent=idx+1;
+  document.getElementById('mm-score').textContent=_mmScore;
+  // 미리보기 동안에도 이번 스테이지 제한시간이 보이도록 미리 초기화 (이전 판 값 잔류 방지)
+  const timeEl=document.getElementById('mm-time');
+  if(timeEl)timeEl.textContent=stage.sec;
+  const fillEl=document.getElementById('mm-timebar-fill');
+  if(fillEl){fillEl.style.width='100%';fillEl.classList.remove('warn');}
+  mmRenderStageDots();
+
+  const grid=document.getElementById('mm-grid');
+  grid.style.gridTemplateColumns=`repeat(${stage.cols},1fr)`;
+  grid.innerHTML=_mmCards.map((c,i)=>`
+    <div class="mm-card flipped" id="mm-c${i}" onclick="mmFlip(${i})">
+      <div class="mm-card-inner">
+        <div class="mm-face mm-face-back">🛰️</div>
+        <div class="mm-face mm-face-front ${c.type}">${c.text}</div>
+      </div>
+    </div>`).join('');
+
+  // 3초 미리보기 → 뒤집고 시작
+  let cnt=3;
+  mmSetLearn(`🔍 <b>${cnt}초</b> 안에 최대한 외우세요! (스테이지 ${idx+1} · ${stage.pairs}짝)`,'warn');
+  clearInterval(_mmPreviewTimer);
+  _mmPreviewTimer=setInterval(()=>{
+    cnt--;
+    if(cnt<=0){
+      clearInterval(_mmPreviewTimer);_mmPreviewTimer=null;
+      document.querySelectorAll('#mm-grid .mm-card').forEach(el=>el.classList.remove('flipped'));
+      _mmLock=false;
+      mmSetLearn('카드를 뒤집어 <b style="color:#00eeff;">용어</b>와 <b style="color:#a27bff;">뜻</b>을 짝지으세요','info');
+      mmStartTimer(_MM_STAGES[idx].sec);
+    }else{
+      mmSetLearn(`🔍 <b>${cnt}초</b> 안에 최대한 외우세요! (스테이지 ${idx+1} · ${stage.pairs}짝)`,'warn');
+    }
+  },1000);
+}
+
+function mmSetLearn(html,cls){
+  const el=document.getElementById('mm-learn');
+  if(!el)return;
+  el.className='mm-learn'+(cls?' '+cls:'');
+  // 배너는 세로중앙 정렬용 flex 컨테이너라, 안의 <b> 같은 요소가 각각 별도 flex 항목이 되어
+  // 단어가 쪼개져 보인다. div 하나로 감싸 한 덩어리 텍스트로 흐르게 한다.
+  el.innerHTML='<div style="width:100%;">'+html+'</div>';
+}
+
+function mmStartTimer(sec){
+  _mmStageLimit=sec;
+  _mmDeadline=performance.now()+sec*1000;
+  clearInterval(_mmTimer);
+  mmTickTimer();
+  _mmTimer=setInterval(mmTickTimer,200);
+}
+
+function mmTickTimer(){
+  const remainMs=Math.max(0,_mmDeadline-performance.now());
+  const remainSec=Math.ceil(remainMs/1000);
+  const tEl=document.getElementById('mm-time');
+  if(tEl)tEl.textContent=remainSec;
+  const fill=document.getElementById('mm-timebar-fill');
+  if(fill){
+    const pct=Math.max(0,Math.min(100,remainMs/(_mmStageLimit*1000)*100));
+    fill.style.width=pct+'%';
+    fill.classList.toggle('warn',pct<30);
+  }
+  if(remainMs<=0){
+    clearInterval(_mmTimer);_mmTimer=null;
+    endMatchGame(false);
+  }
+}
+
+function mmFlip(i){
+  if(!_mmRunning||_mmLock)return;
+  const card=_mmCards[i];
+  const el=document.getElementById('mm-c'+i);
+  if(!card||!el||el.classList.contains('matched')||el.classList.contains('flipped'))return;
+  el.classList.add('flipped');
+
+  if(_mmFirst===null){_mmFirst=i;return;}
+  if(_mmFirst===i)return;
+
+  _mmAttempts++;_mmStageAttempts++;
+  const a=_mmCards[_mmFirst], b=card;
+  const aEl=document.getElementById('mm-c'+_mmFirst), bEl=el;
+  const firstIdx=_mmFirst;
+  _mmFirst=null;
+
+  if(a.pid===b.pid&&a.type!==b.type){
+    // 정답 — 용어 설명 노출(학습)
+    aEl.classList.add('matched');bEl.classList.add('matched');
+    _mmPairs++;_mmStagePairs++;
+    if(!_mmLearned.some(t=>t.t===a.term.t))_mmLearned.push(a.term);
+    mmSetLearn(`✅ <b style="color:#00ff88;">${a.term.t}</b> — ${a.term.d}`,'');
+    const stage=_MM_STAGES[_mmStageIdx];
+    const cleared=document.querySelectorAll('#mm-grid .mm-card.matched').length/2;
+    if(cleared>=stage.pairs)mmStageClear();
+  }else{
+    // 오답 — 잠시 보여준 뒤 다시 뒤집기
+    _mmLock=true;
+    aEl.classList.add('wrong');bEl.classList.add('wrong');
+    setTimeout(()=>{
+      if(!_mmRunning)return;
+      aEl.classList.remove('flipped','wrong');
+      bEl.classList.remove('flipped','wrong');
+      _mmLock=false;
+    },850);
+  }
+}
+
+function mmStageClear(){
+  clearInterval(_mmTimer);_mmTimer=null;
+  _mmLock=true;
+  _mmStagesCleared++;
+  const stage=_MM_STAGES[_mmStageIdx];
+  const remainSec=Math.max(0,Math.floor((_mmDeadline-performance.now())/1000));
+  // 스테이지 점수 = 기본 200 + 남은시간×10 + 정확도 보너스(최대 150, 해당 스테이지 기준)
+  const stageAttempts=Math.max(1,_mmStageAttempts);
+  const accBonus=Math.round(150*Math.min(1,_mmStagePairs/stageAttempts));
+  const gained=200+remainSec*10+accBonus;
+  _mmScore+=gained;
+  document.getElementById('mm-score').textContent=_mmScore;
+  mmRenderStageDots();
+  mmSetLearn(`🎉 <b>스테이지 ${_mmStageIdx+1} 클리어!</b> +${gained}점 <span style="color:var(--text-hint);">(남은시간 ${remainSec}초 · 정확도 보너스 ${accBonus})</span>`,'');
+
+  const next=_mmStageIdx+1;
+  clearTimeout(_mmNextTimer);
+  _mmNextTimer=setTimeout(()=>{
+    if(!_mmRunning)return;
+    if(next>=_MM_STAGES.length)endMatchGame(true);
+    else mmBuildStage(next);
+  },1800);
+}
+
+function stopMatchGame(){
+  _mmRunning=false;_mmLock=false;_mmFirst=null;
+  clearInterval(_mmTimer);_mmTimer=null;
+  clearInterval(_mmPreviewTimer);_mmPreviewTimer=null;
+  clearTimeout(_mmNextTimer);_mmNextTimer=null;
+}
+
+function quitMatchGame(){
+  stopMatchGame();
+  document.getElementById('mm-game-area').style.display='none';
+  document.getElementById('mm-start-area').style.display='';
+  loadMatchLeaderboard('mm-leaderboard-start');
+}
+
+async function endMatchGame(allCleared){
+  stopMatchGame();
+  document.getElementById('mm-game-area').style.display='none';
+  document.getElementById('mm-result-area').style.display='';
+
+  const acc=_mmAttempts?Math.round(_mmPairs/_mmAttempts*100):0;
+  document.getElementById('mm-result-icon').textContent=allCleared?'🏆':'⏱️';
+  document.getElementById('mm-result-msg').textContent=allCleared?'전 스테이지 클리어!':'시간 종료!';
+  document.getElementById('mm-result-score').textContent=_mmScore;
+  document.getElementById('mm-result-pairs').textContent=_mmPairs;
+  document.getElementById('mm-result-stages').textContent=_mmStagesCleared+'/3';
+  document.getElementById('mm-result-acc').textContent=acc+'%';
+
+  // 오늘 배운 용어 복습 카드
+  const learnEl=document.getElementById('mm-learned-list');
+  if(learnEl){
+    learnEl.innerHTML=_mmLearned.length
+      ? _mmLearned.map(t=>`<div class="mm-term-row"><div class="mm-term-name">${t.t}</div><div class="mm-term-desc">${t.d}</div></div>`).join('')
+      : '<div style="font-size:12px;color:var(--text-hint);text-align:center;padding:16px;">맞춘 용어가 없어요. 내일 다시 도전해보세요!</div>';
+  }
+
+  if(_mmScore>0){await submitMatchScore(acc);_mmPlayedToday=true;}
+  applyMatchLimitUI();
+  loadMatchLeaderboard('mm-leaderboard-result');
+
+  // 내 순위 (인당 최고점 기준)
+  const ym=getYM();
+  const all=await SB.get('game_scores','game_key=eq.match&year_month=eq.'+ym+'&order=score.desc&limit=500');
+  const excluded=await getMatchExcluded();
+  const bestMap={};
+  all.forEach(r=>{if(excluded.has(String(r.emp_no)))return;if(!bestMap[r.emp_no]||r.score>bestMap[r.emp_no].score)bestMap[r.emp_no]=r;});
+  const ranked=Object.values(bestMap).sort((a,b)=>b.score-a.score);
+  const rank=ranked.findIndex(r=>r.emp_no===app.empNo);
+  const rankEl=document.getElementById('mm-result-rank');
+  if(rankEl)rankEl.textContent=rank>=0?'🏆 이달 '+(rank+1)+'위 기록!':'';
+}
+
+async function submitMatchScore(acc){
+  const ym=getYM();
+  // 점수 조작 방지 — 서버 CHECK 제약과 같은 규칙으로 사전 검증 (정상 플레이는 항상 통과)
+  const valid=_mmScore>=0&&_mmScore<=4000
+    &&_mmPairs>=0&&_mmPairs<=_MM_TOTAL_PAIRS
+    &&_mmStagesCleared>=0&&_mmStagesCleared<=_MM_STAGES.length
+    &&_mmAttempts>=_mmPairs;
+  if(!valid){
+    console.warn('[match] 비정상 점수 감지 — 저장 건너뜀',{score:_mmScore,pairs:_mmPairs,attempts:_mmAttempts,stages:_mmStagesCleared});
+    return;
+  }
+  const ok=await SB.post('game_scores',{
+    game_key:'match', emp_no:app.empNo, employee_name:app.name,
+    score:_mmScore, year_month:ym,
+    detail:{pairs:_mmPairs,attempts:_mmAttempts,stages:_mmStagesCleared,acc:acc}
+  });
+  if(!ok)showToast('⚠️ 점수 저장에 실패했어요. 관리자에게 문의해주세요');
+}
+
 // ── QUIZ ──
 let quizTimer=null;
 let quizActive=false;
@@ -3375,17 +4024,17 @@ async function loadQuizPage(){
   loadComments('quiz');
   const now=new Date();
 
-  // 마감/발표 시간 계산
-  const lastWeekday=getLastWeekdayOfMonth(ym);
-  const deadlineTime=new Date(lastWeekday); deadlineTime.setHours(14,0,0,0);
-  const announceTime=new Date(lastWeekday); announceTime.setHours(15,0,0,0);
+  // 마감/발표 시간 계산 (종료일 = 마지막 판정 가능 주차의 마지막 평일. getQuizEndDate 주석 참고)
+  const quizEnd=getQuizEndDate(ym);
+  const deadlineTime=new Date(quizEnd); deadlineTime.setHours(14,0,0,0);
+  const announceTime=new Date(quizEnd); announceTime.setHours(15,0,0,0);
 
   // 마감일 배너 업데이트
   const dlBanner=document.getElementById('quiz-deadline-banner');
   if(dlBanner){
-    const mo=lastWeekday.getMonth()+1,da=lastWeekday.getDate();
+    const mo=quizEnd.getMonth()+1,da=quizEnd.getDate();
     const days=['일','월','화','수','목','금','토'];
-    const dayStr=days[lastWeekday.getDay()];
+    const dayStr=days[quizEnd.getDay()];
     let dlMsg;
     if(now>=announceTime) dlMsg=`<span style="color:rgba(255,215,0,0.9);">🏆 이달 최종 결과 발표 완료</span>`;
     else if(now>=deadlineTime) dlMsg=`<span style="color:rgba(255,150,100,0.95);">🔒 참여 마감 · 오후 3시 결과 발표 예정</span>`;
@@ -3417,10 +4066,12 @@ async function loadQuizPage(){
     prizeEl.appendChild(div);
   }
 
-  if(isEliminated){el.innerHTML=`<div style="background:#fff5f5;border:1.5px solid #ffcccc;border-radius:16px;padding:1.5rem;text-align:center;"><div style="font-size:36px;margin-bottom:8px;">💥</div><div style="font-size:16px;font-weight:700;color:var(--red);">퀴즈 탈락!</div><div style="font-size:12px;color:var(--text-sub);margin-top:4px;">매주 정답을 맞춘 생존자만 계속 참여할 수 있습니다.</div></div>`;return;}
-
   // 오후 3시 이후: 최종 생존자 명단 공개
-  if(now>=announceTime){renderFinalSurvivors(el,ym,all);return;}
+  // 탈락 안내보다 먼저 건다 — 결과가 발표된 뒤에도 탈락자에게 '퀴즈 탈락!' 화면만 보이면
+  // 이달 우승자를 아무도 못 본다.
+  if(now>=announceTime){await renderFinalSurvivors(el,ym);return;}
+
+  if(isEliminated){el.innerHTML=`<div style="background:#fff5f5;border:1.5px solid #ffcccc;border-radius:16px;padding:1.5rem;text-align:center;"><div style="font-size:36px;margin-bottom:8px;">💥</div><div style="font-size:16px;font-weight:700;color:var(--red);">퀴즈 탈락!</div><div style="font-size:12px;color:var(--text-sub);margin-top:4px;">매주 정답을 맞춘 생존자만 계속 참여할 수 있습니다.</div></div>`;return;}
 
   // 오후 2시~3시: 집계 중
   if(now>=deadlineTime){
@@ -3574,16 +4225,19 @@ function startQuizCountdown(){
   tick();
 }
 
-function renderFinalSurvivors(el,ym,all){
-  const dead=new Set(all.filter(a=>!a.is_correct).map(a=>a.name));
-  const correctAll=all.filter(a=>a.is_correct);
-  const seen=new Set();
-  const survivors=correctAll.filter(a=>!dead.has(a.name)&&!seen.has(a.name)&&seen.add(a.name));
+// 최종 생존자 판정은 월 내내 쓰던 getQuizSurvivors 를 그대로 재사용한다.
+// 예전에는 여기서 '오답 없고 정답 1회 이상'이라는 느슨한 별도 규칙을 썼는데,
+// 그러면 화면 위쪽 생존자 수와 발표 명단이 서로 어긋나고 마지막 주를 통째로
+// 건너뛴 사람도 우승자가 됐다. (게다가 정의되지 않은 변수를 참조해 실제로는
+// 매달 ReferenceError 로 죽어 이 화면이 뜬 적이 없다.)
+// currentWk 로 getQuizFinalWeekKey 를 넘겨 마지막 주차까지 판정에 포함시킨다.
+async function renderFinalSurvivors(el,ym){
+  const survivors=await getQuizSurvivors(ym,getQuizFinalWeekKey(ym));
   const prize=getCurrentPrize(survivors.length);
   const [y,m]=ym.split('-').map(Number);
   const ymDisp=y+'년 '+m+'월';
   const survHtml=survivors.length
-    ?survivors.map(a=>`<div style="display:flex;align-items:center;background:rgba(0,255,136,0.07);border:1px solid rgba(0,255,136,0.25);border-radius:10px;padding:10px 14px;margin-bottom:6px;"><span style="font-size:20px;margin-right:10px;">🟢</span><span style="font-size:14px;font-weight:700;color:#fff;">${a.name}</span></div>`).join('')
+    ?survivors.map(name=>`<div style="display:flex;align-items:center;background:rgba(0,255,136,0.07);border:1px solid rgba(0,255,136,0.25);border-radius:10px;padding:10px 14px;margin-bottom:6px;"><span style="font-size:20px;margin-right:10px;">🟢</span><span style="font-size:14px;font-weight:700;color:#fff;">${name}</span></div>`).join('')
     :`<div style="font-size:13px;color:var(--text-hint);text-align:center;padding:12px 0;">이번 달 최종 생존자가 없습니다</div>`;
   el.innerHTML=`<div class="quiz-card"><div style="text-align:center;margin-bottom:14px;"><div style="font-size:40px;margin-bottom:6px;">🏆</div><div style="font-size:17px;font-weight:900;color:#FFD700;">${ymDisp} 최종 결과</div><div style="font-size:12px;color:var(--text-hint);margin-top:4px;">최종 생존자 ${survivors.length}명</div></div>${survHtml}<div style="margin-top:14px;background:rgba(255,215,0,0.1);border:1px solid rgba(255,215,0,0.3);border-radius:12px;padding:12px;text-align:center;"><div style="font-size:11px;color:rgba(255,255,255,0.6);margin-bottom:4px;">🎁 경품</div><div style="font-size:15px;font-weight:700;color:#FFD700;">${prize.prize}</div></div></div>`;
 }
@@ -3916,6 +4570,36 @@ function getLastWeekdayOfMonth(ym){
   const d=new Date(y,m,0); // 해당 월의 마지막 날
   while(d.getDay()===0||d.getDay()===6) d.setDate(d.getDate()-1);
   return d;
+}
+
+// 릴레이퀴즈 월 라운드의 종료일(= 마감·발표일).
+// '그 달 마지막 평일'이 아니라 '그 달 마지막 판정 가능 주차의 마지막 평일'이다.
+// 달 끝에 걸린 조각 주차(평일 3일 미만)를 라운드에서 통째로 빼기 위함 —
+// 조각 주차는 isJudgeableWeek 때문에 생존 판정에서 제외되는데, 그 주에도 문제는
+// 배정돼서 "안 푼 사람은 살고 풀었다가 틀린 사람만 죽는" 역전이 마지막 날에 생겼다.
+// 예) 2026-08: 8/31(월)이 W36의 하루뿐인 조각 주차 → 8/28(금) 종료.
+//     2026-09: 마지막 W40이 9/28~9/30 평일 3일이라 판정 가능 → 9/30(수) 종료(옛 규칙과 동일).
+// getWeeksInMonth 는 1일부터 하루씩 훑으며 Set에 넣으므로 배열이 이미 날짜순이다.
+// 12월 말이 다음 해 W01로 넘어가는 해에는 문자열 정렬이 뒤집히므로 정렬하지 말 것.
+function getQuizEndDate(ym){
+  const [y,m]=ym.split('-').map(Number);
+  const judgeable=getWeeksInMonth(ym).filter(w=>isJudgeableWeek(w,ym));
+  if(!judgeable.length) return getLastWeekdayOfMonth(ym);   // 판정 가능 주차가 없으면 옛 규칙
+  const lastWk=judgeable[judgeable.length-1];
+  for(let d=new Date(y,m,0); d.getMonth()===m-1; d.setDate(d.getDate()-1)){
+    const dow=d.getDay();
+    if(dow!==0&&dow!==6&&getWeekKeyFromDate(d)===lastWk) return new Date(d);
+  }
+  return getLastWeekdayOfMonth(ym);
+}
+
+// 최종 발표 시점에 '현재 주차'로 넘길 값 — 종료 주차의 다음 주 월요일이 속한 주차.
+// getWeekKey()를 그냥 쓰면 종료 주차가 아직 '현재 주차'라 getQuizSurvivors 의
+// pastWeeks(w < currentWk)에서 빠지고, 마지막 주를 통째로 건너뛴 사람도 최종 생존자가 된다.
+function getQuizFinalWeekKey(ym){
+  const monday=getWeekMondayDate(getWeekKeyFromDate(getQuizEndDate(ym)));
+  monday.setDate(monday.getDate()+7);
+  return getWeekKeyFromDate(monday);
 }
 
 function getWeeksInMonth(ym){
@@ -4561,6 +5245,117 @@ async function deleteTypingWord(themeKey, idx){
   _tgCustomWords = null;
   renderTypingThemeCards();
   showToast('🗑️ 삭제됨: '+word);
+}
+
+// ── 우주 용어 매치 관리 ──
+async function loadMatchMgmt(){
+  checkMatchDbStatus();
+  await loadMatchCustomTerms();
+  renderMatchTermAdmin();
+  renderMatchExcludeMgmt();
+}
+
+// game_scores 테이블이 실제로 준비됐는지 확인 (supabase/game_scores.sql 실행 여부)
+async function checkMatchDbStatus(){
+  const el=document.getElementById('match-db-status');
+  if(!el)return;
+  el.innerHTML='확인 중...';
+  let status=0;
+  try{
+    const r=await fetch(CONFIG.supabaseUrl+'/rest/v1/game_scores?limit=1',{headers:SB.h,cache:'no-store'});
+    status=r.status;
+  }catch(e){status=0;}
+  if(status>=200&&status<300){
+    el.innerHTML='<div style="font-size:12px;color:#00ff88;font-weight:700;">✅ game_scores 테이블 준비 완료</div><div style="font-size:11px;color:var(--text-hint);margin-top:6px;line-height:1.6;">기능 공개 설정에서 <b>🛰️ 우주 용어 매치</b>를 공개로 켜면 직원에게 노출됩니다.</div>';
+  }else{
+    el.innerHTML='<div style="font-size:12px;color:#ff6b6b;font-weight:700;">❌ game_scores 테이블 없음 (응답 '+(status||'연결 실패')+')</div><div style="font-size:11px;color:var(--text-hint);margin-top:6px;line-height:1.7;">점수 저장이 되지 않습니다. 서버 관리자가 <b style="color:#00eeff;">supabase/game_scores.sql</b> 을 회사 Postgres에 한 번 실행해야 합니다.<br>실행 전까지는 <b>비공개</b>로 두세요.</div>';
+  }
+}
+
+async function renderMatchExcludeMgmt(){
+  const container=document.getElementById('match-exclude-mgmt');
+  if(!container)return;
+  container.innerHTML='<div style="font-size:12px;color:var(--text-hint);padding:6px 0;">불러오는 중...</div>';
+  const ym=getYM();
+  const rows=await SB.get('game_scores','game_key=eq.match&year_month=eq.'+ym+'&order=score.desc&limit=500');
+  const excluded=await getMatchExcluded();
+  const bestMap={};
+  rows.forEach(r=>{if(!bestMap[r.emp_no]||r.score>bestMap[r.emp_no].score)bestMap[r.emp_no]=r;});
+  const list=Object.values(bestMap).sort((a,b)=>b.score-a.score);
+  if(!list.length){container.innerHTML='<div class="card" style="font-size:12px;color:var(--text-hint);text-align:center;padding:16px;">이번 달 참여자가 없습니다.</div>';return;}
+  const exCount=list.filter(r=>excluded.has(String(r.emp_no))).length;
+  container.innerHTML=`
+    <div style="font-size:11px;color:var(--text-hint);margin-bottom:8px;">참여자 ${list.length}명${exCount?` · 제외 ${exCount}명`:''}</div>
+    <div class="card" style="padding:4px 6px;">
+    ${list.map((r,i)=>{
+      const isEx=excluded.has(String(r.emp_no));
+      const d=r.detail||{};
+      return `<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:9px 8px;${i<list.length-1?'border-bottom:1px solid var(--border);':''}">
+        <div style="display:flex;flex-direction:column;min-width:0;">
+          <span style="font-size:13px;font-weight:700;color:${isEx?'var(--text-hint)':'#fff'};${isEx?'text-decoration:line-through;':''}overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${r.employee_name} <span style="font-size:11px;font-weight:400;color:var(--text-hint);">(${r.emp_no})</span></span>
+          <span style="font-size:11px;color:var(--text-hint);">${r.score}점 · ${d.pairs||0}짝 · ${d.stages||0}스테이지 · 정확도 ${d.acc||0}%</span>
+        </div>
+        <button onclick="toggleMatchExclude('${String(r.emp_no).replace(/'/g,"\\'")}')" style="flex-shrink:0;font-size:12px;font-weight:700;padding:6px 14px;border-radius:8px;cursor:pointer;font-family:inherit;border:1px solid ${isEx?'rgba(0,200,255,0.35)':'rgba(244,67,54,0.4)'};background:${isEx?'rgba(0,200,255,0.12)':'rgba(244,67,54,0.12)'};color:${isEx?'#00eeff':'#ff6b6b'};">${isEx?'복구':'제외'}</button>
+      </div>`;
+    }).join('')}
+    </div>`;
+}
+
+async function toggleMatchExclude(empNo){
+  const excluded=await getMatchExcluded();
+  const key=String(empNo);
+  let nowExcluded;
+  if(excluded.has(key)){excluded.delete(key);nowExcluded=false;}
+  else{excluded.add(key);nowExcluded=true;}
+  const ok=await SB.upsert('app_settings',{key:'match_excluded',value:JSON.stringify([...excluded])},'key');
+  if(!ok){showToast('⚠️ 저장에 실패했어요. 다시 시도해주세요');return;}
+  await renderMatchExcludeMgmt();
+  showToast(nowExcluded?'🚫 순위에서 제외했습니다':'✅ 순위에 복구했습니다');
+}
+
+function renderMatchTermAdmin(){
+  const el=document.getElementById('match-term-list');
+  if(!el)return;
+  const custom=_mmCustomTerms||[];
+  el.innerHTML=`
+    <div style="font-size:11px;color:var(--text-hint);margin-bottom:8px;">기본 용어 ${_MM_TERMS.length}개 · 추가 용어 ${custom.length}개 (총 ${_MM_TERMS.length+custom.length}개 중 매일 24개 출제)</div>
+    ${custom.length?`<div class="card" style="padding:4px 6px;">
+      ${custom.map((t,i)=>`<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;padding:9px 8px;${i<custom.length-1?'border-bottom:1px solid var(--border);':''}">
+        <div style="min-width:0;">
+          <div style="font-size:12px;font-weight:800;color:#00eeff;">${t.t} <span style="font-size:11px;font-weight:600;color:var(--purple);">— ${t.s}</span></div>
+          <div style="font-size:11px;color:var(--text-hint);margin-top:3px;line-height:1.5;word-break:keep-all;">${t.d}</div>
+        </div>
+        <button onclick="deleteMatchTerm(${i})" style="flex-shrink:0;font-size:12px;font-weight:700;padding:6px 12px;border-radius:8px;cursor:pointer;font-family:inherit;border:1px solid rgba(244,67,54,0.4);background:rgba(244,67,54,0.12);color:#ff6b6b;">삭제</button>
+      </div>`).join('')}
+    </div>`:'<div class="card" style="font-size:12px;color:var(--text-hint);text-align:center;padding:16px;">추가한 용어가 없습니다. 기본 용어 '+_MM_TERMS.length+'개로 출제됩니다.</div>'}`;
+}
+
+async function addMatchTerm(){
+  const tEl=document.getElementById('match-add-term');
+  const sEl=document.getElementById('match-add-short');
+  const dEl=document.getElementById('match-add-desc');
+  const t=(tEl?.value||'').trim(), s=(sEl?.value||'').trim(), d=(dEl?.value||'').trim();
+  if(!t||!s||!d){showToast('⚠️ 용어·짧은 뜻·설명을 모두 입력해주세요');return;}
+  if(s.length>16){showToast('⚠️ 짧은 뜻은 16자 이내로 입력해주세요');return;}
+  const all=[..._MM_TERMS,...(_mmCustomTerms||[])];
+  if(all.some(x=>x.t===t)){showToast('⚠️ 이미 있는 용어입니다');return;}
+  _mmCustomTerms=[...(_mmCustomTerms||[]),{t,s,d}];
+  const ok=await SB.upsert('app_settings',{key:'match_custom_terms',value:JSON.stringify(_mmCustomTerms)},'key');
+  if(!ok){_mmCustomTerms.pop();showToast('⚠️ 저장에 실패했어요. 다시 시도해주세요');return;}
+  if(tEl)tEl.value='';if(sEl)sEl.value='';if(dEl)dEl.value='';
+  renderMatchTermAdmin();
+  showToast('✅ 용어 추가됨: '+t);
+}
+
+async function deleteMatchTerm(idx){
+  if(!_mmCustomTerms||!_mmCustomTerms[idx])return;
+  const removed=_mmCustomTerms[idx];
+  const backup=[..._mmCustomTerms];
+  _mmCustomTerms.splice(idx,1);
+  const ok=await SB.upsert('app_settings',{key:'match_custom_terms',value:JSON.stringify(_mmCustomTerms)},'key');
+  if(!ok){_mmCustomTerms=backup;showToast('⚠️ 삭제에 실패했어요. 다시 시도해주세요');return;}
+  renderMatchTermAdmin();
+  showToast('🗑️ 삭제됨: '+removed.t);
 }
 
 async function saveAttRewards(){
@@ -5392,7 +6187,7 @@ function drawJoinOrbit(canvas,W,H,CX,CY){
 const ADMIN_GROUPS = {
   pending: {tabs:['pending'], labels:[]},
   content: {tabs:['funny-all','idea-all','comment-mgmt'], labels:['😂 웃수저','💡 아이디어','💬 댓글관리']},
-  events:  {tabs:['quiz-mgmt','race-mgmt','typing-mgmt'], labels:['🚀 퀴즈','🎱 레이스','⌨️ 타자왕']},
+  events:  {tabs:['quiz-mgmt','race-mgmt','typing-mgmt','match-mgmt'], labels:['🚀 퀴즈','🎱 레이스','⌨️ 타자왕','🛰️ 용어매치']},
   stats:   {tabs:['attendance','report','storage'], labels:['📅 출석현황','📊 월간리포트','💾 스토리지']},
   cfg:     {tabs:['faq','popup'], labels:['❓ FAQ','📢 설정']},
 };
@@ -5430,6 +6225,7 @@ function _runAdminTabLogic(tab){
   if(tab==='storage')loadStorageTab();
   if(tab==='quiz-mgmt'){populateWeekSelect();quizHistoryMonth=getYM();loadQuizAdminList();renderPrizeTiers();loadElimList();loadSurvivorList();loadQuizTimeDisplay();}
   if(tab==='typing-mgmt')loadTypingMgmt();
+  if(tab==='match-mgmt')loadMatchMgmt();
   if(tab==='race-mgmt'){rewardHistoryMonth=getYM();loadAdminRewardList();loadRaceAutoDaySetting();loadRaceHistory();const el=document.getElementById('admin-race-entry-list');const btn=document.getElementById('race-entry-toggle-btn');if(el){el.style.display='none';}if(btn)btn.textContent='▼';SB.get('race_entries','year_month=eq.'+getYM()).then(r=>{const ec=document.getElementById('race-entry-count-admin');if(ec)ec.textContent=r.length;});}
   if(tab==='faq'){loadFAQAdmin();loadAllQAAdmin();}
   if(tab==='attendance'){initAttendanceAdminTab();document.getElementById('att-admin-body-wrap').style.display='none';document.getElementById('att-admin-body-toggle-btn').textContent='명단보기 ▼';}
@@ -5439,7 +6235,7 @@ function _runAdminTabLogic(tab){
 }
 
 function _showAdminTab(tab){
-  ['pending','funny-all','idea-all','comment-mgmt','quiz-mgmt','race-mgmt','typing-mgmt','faq','storage','attendance','report','popup'].forEach(t=>{
+  ['pending','funny-all','idea-all','comment-mgmt','quiz-mgmt','race-mgmt','typing-mgmt','match-mgmt','faq','storage','attendance','report','popup'].forEach(t=>{
     const el=document.getElementById('admin-tab-'+t);
     if(el)el.style.display=t===tab?'block':'none';
   });
@@ -5683,6 +6479,19 @@ async function loadMonthlyReport(){
   });
   const tgList=Object.values(tgBest).sort((a,b)=>b.score-a.score).slice(0,5);
 
+  // ── 우주 용어 매치: emp_no 기준 1인 최고점 (순위 제외 참여자 제거)
+  const mmRows=await SB.get('game_scores','game_key=eq.match&year_month=eq.'+ym+'&order=score.desc&limit=500');
+  const mmExRows=await SB.get('app_settings','key=eq.match_excluded');
+  const mmExcluded=new Set(((mmExRows.length&&mmExRows[0].value)?JSON.parse(mmExRows[0].value):[]).map(String));
+  const mmBest={};
+  mmRows.forEach(r=>{
+    if(mmExcluded.has(String(r.emp_no)))return;
+    const d=r.detail||{};
+    if(!mmBest[r.emp_no]||r.score>mmBest[r.emp_no].score)
+      mmBest[r.emp_no]={name:r.employee_name,score:r.score,pairs:d.pairs||0,stages:d.stages||0,acc:d.acc||0};
+  });
+  const mmList=Object.values(mmBest).sort((a,b)=>b.score-a.score).slice(0,5);
+
   // ── 아이디어: status 'approved' 또는 'winner'
   const ideaApproved=ideaRows.filter(r=>r.status==='approved'||r.status==='winner');
   const ideaPending=ideaRows.filter(r=>r.status==='submitted');
@@ -5721,6 +6530,13 @@ async function loadMonthlyReport(){
       ${tgList.length?`<table class="rpt-table">
         <tr><th>순위</th><th>이름</th><th>최고점</th><th>단어수</th><th>콤보</th></tr>
         ${tgList.map((r,i)=>`<tr><td>${medals[i]||i+1+'위'}</td><td><b>${r.name}</b></td><td style="color:#f5c842;font-weight:700;">${r.score}점</td><td>${r.words}개</td><td>${r.combo}</td></tr>`).join('')}
+      </table>`:'<div style="color:var(--text-hint);font-size:12px;padding:8px 0;">이달 게임 기록 없음</div>'}
+    </div>`},
+    {key:'match', html:`<div class="rpt-section" id="rpt-sec-match">
+      <div class="rpt-section-title">🛰️ 우주 용어 매치 TOP5</div>
+      ${mmList.length?`<table class="rpt-table">
+        <tr><th>순위</th><th>이름</th><th>최고점</th><th>맞춘 짝</th><th>정확도</th></tr>
+        ${mmList.map((r,i)=>`<tr><td>${medals[i]||i+1+'위'}</td><td><b>${r.name}</b></td><td style="color:#f5c842;font-weight:700;">${r.score}점</td><td>${r.pairs}짝</td><td>${r.acc}%</td></tr>`).join('')}
       </table>`:'<div style="color:var(--text-hint);font-size:12px;padding:8px 0;">이달 게임 기록 없음</div>'}
     </div>`},
     {key:'funny', html:`<div class="rpt-section" id="rpt-sec-funny">
@@ -5772,7 +6588,7 @@ async function loadMonthlyReport(){
   }
 
   // 항목 선택 토글 버튼
-  const TOGGLE_LABELS={quiz:'🚀 퀴즈',race:'🎱 레이스',att:'📅 출석체크',typing:'⌨️ 타자왕',funny:'😂 웃수저',idea:'💡 아이디어'};
+  const TOGGLE_LABELS={quiz:'🚀 퀴즈',race:'🎱 레이스',att:'📅 출석체크',typing:'⌨️ 타자왕',match:'🛰️ 용어매치',funny:'😂 웃수저',idea:'💡 아이디어'};
   const toggleWrap=document.getElementById('rpt-section-toggles');
   if(toggleWrap){
     toggleWrap.style.display='block';
