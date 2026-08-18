@@ -28,6 +28,11 @@
  * ── 배포 절차 ────────────────────────────────────────────────────────────
  * 1) charm@contec.kr 로 로그인한 상태에서 script.google.com → 새 프로젝트
  * 2) 이 파일 내용을 전부 붙여넣기
+ * 2-1) ⚙ 프로젝트 설정 → "appsscript.json 매니페스트 파일을 편집기에 표시" 체크 후,
+ *      같은 폴더의 appsscript.json 내용으로 교체한다.
+ *      ⚠️ 이 단계를 건너뛰면 Apps Script 의 스코프 자동 감지가 script.send_mail 을
+ *      놓치는 경우가 있다. 그러면 승인 팝업조차 뜨지 않은 채 배포되고, 실제 발송에서만
+ *      "MailApp ... 권한이 없습니다" 로 실패한다 (2026-08 실제 발생).
  * 3) (권장) 좌측 ⚙ 프로젝트 설정 → 스크립트 속성에 SHARED_TOKEN 추가
  * 4) 배포 → 새 배포 → 유형 "웹 앱"
  *      - 실행 계정   : 나              ← 이 계정이 발신자가 된다
@@ -239,6 +244,36 @@ function setToken() {
   }
   PropertiesService.getScriptProperties().setProperty('SHARED_TOKEN', value);
   Logger.log('SHARED_TOKEN 저장 완료 (길이 %s). 이제 value 를 다시 비우고 저장하세요.', value.length);
+}
+
+
+/**
+ * 발송 권한 진단용 — 편집기에서 직접 실행한다 (웹앱 배포와 무관).
+ *
+ * doGet/doPost 는 웹앱 경로라 권한 문제를 "왜 실패했는지" 알려주지 않는다.
+ * 이 함수는 MailApp 을 편집기 컨텍스트에서 직접 호출하므로,
+ *   - 승인 팝업이 뜬다      → 원래 권한이 없었던 것. 승인 후 배포 버전을 갱신하면 해결.
+ *   - 실행되고 메일이 온다  → 권한은 정상. 문제는 배포 설정(실행 계정/액세스 권한) 쪽.
+ *   - 빨간 권한 오류        → 계정의 승인 기록이 깨진 것. 새 프로젝트로 다시 만드는 편이 빠르다.
+ *
+ * ⚠️ TEST_TO 는 반드시 발신 계정과 다른 주소로 (파일 상단 "자기 주소" 항목 참고).
+ */
+function testSend() {
+  var TEST_TO = '';   // ← 개인 Gmail 등 발신 계정과 다른 주소를 넣고 실행
+
+  var sender = senderAddress_();
+  if (!TEST_TO) {
+    throw new Error('testSend(): TEST_TO 가 비어있습니다 — 받을 주소를 넣고 실행하세요');
+  }
+  if (sender && TEST_TO.toLowerCase() === sender.toLowerCase()) {
+    throw new Error('testSend(): 발신 주소(' + sender + ')로는 보낼 수 없습니다 — 다른 주소로 바꾸세요');
+  }
+
+  MailApp.sendEmail(TEST_TO, 'CONTEC+ 발송 테스트', '이 메일이 도착했다면 발송 권한은 정상입니다.', {
+    name: DEFAULT_FROM_NAME,
+  });
+  Logger.log('발신: %s → 수신: %s / 남은 쿼터: %s',
+             sender || '(조회 실패)', TEST_TO, MailApp.getRemainingDailyQuota());
 }
 
 
